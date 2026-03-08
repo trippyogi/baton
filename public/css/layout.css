@@ -1,0 +1,86 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* App shell */
+#app {
+  display: grid;
+  grid-template-columns: var(--rail-width) 1fr;
+  grid-template-rows: var(--topbar-height) 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Top bar */
+#topbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding: 0 var(--gap-lg);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+/* Left rail */
+#nav {
+  grid-column: 1;
+  grid-row: 2;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  padding: var(--gap) 0;
+  overflow-y: auto;
+}
+
+/* Main canvas */
+#canvas {
+  grid-column: 2;
+  grid-row: 2;
+  overflow-y: auto;
+  padding: 40px;
+}
+
+/* Overview max-width container */
+.canvas-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Screen utility */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* Grid layouts */
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--gap);
+  margin-bottom: var(--gap-lg);
+}
+
+.widget-grid-wide {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--gap);
+  margin-bottom: var(--gap-lg);
+}
+
+@media (max-width: 900px) {
+  .widget-grid-wide { grid-template-columns: 1fr; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ash); }

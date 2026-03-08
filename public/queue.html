@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Screen</title>
+    <style>
+        body { background-color: #1A1A2E; color: #ffffff; }
+        .card { padding: 20px; margin: 10px; border: 1px solid #7B2FBE; }
+        .green { background-color: #00E5CC; }
+        .yellow { background-color: #FFD700; }
+        .red { background-color: #FF4500; }
+    </style>
+</head>
+<body>
+    <h1>Queue Management</h1>
+    <div id="stream-cards"></div>
+    <h2>Recent Results</h2>
+    <table id="results-table">
+        <thead>
+            <tr>
+                <th>Job ID</th>
+                <th>Stream</th>
+                <th>Status</th>
+                <th>Model Used</th>
+                <th>Cost (USD)</th>
+                <th>Completed At</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="last-updated"></div>
+    <script>
+        async function fetchQueueData() {
+            const response = await fetch('/api/queue');
+            const data = await response.json();
+
+            const streamCardsHtml = data.streams.map(stream => {
+                const lagStatus = stream.lag === 0 && stream.pending < 3 ? 'green' : (stream.pending >= 3 ? 'yellow' : 'red');
+                return `<div class="card ${lagStatus}">
+                    <h2>${stream.name}</h2>
+                    <p>Queue Depth: ${stream.length}</p>
+                    <p>Consumers: ${stream.groups.length}</p>
+                    <p>Pending: ${stream.groups.reduce((sum, group) => sum + group.pending, 0)}</p>
+                    <p>Lag: ${stream.groups.reduce((sum, group) => sum + group.lag, 0)}</p>
+                </div>`;
+            }).join('');
+            document.getElementById('stream-cards').innerHTML = streamCardsHtml;
+
+            const resultsHtml = data.recentResults.map(result => `<tr>
+                <td>${result.job_id.substring(0, 8)}</td>
+                <td>${result.stream}</td>
+                <td>${result.status}</td>
+                <td>${result.model_used || '-'}</td>
+                <td>${result.cost_usd || '0'}</td>
+                <td>${new Date(result.completed_at).toLocaleString()}</td>
+            </tr>`).join('');
+            document.querySelector('#results-table tbody').innerHTML = resultsHtml;
+
+            document.getElementById('last-updated').innerText = `Last updated: just now`;
+        }
+
+        setInterval(async () => {
+            await fetchQueueData();
+        }, 3000);
+        fetchQueueData();
+    </script>
+</body>
+</html>

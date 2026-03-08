@@ -1,0 +1,7 @@
+node_modules/
+data/vmc.db
+data/vmc.db-shm
+data/vmc.db-wal
+.env
+*.log
+.DS_Store
