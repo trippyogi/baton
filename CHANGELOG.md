@@ -6,6 +6,12 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- Spectre seeded as the first webhook-dispatchable orchestrator agent.
+- Transport-neutral `baton.dispatch.v1` envelope builder and webhook/manual dispatch adapters.
+- Run ACK/status callback endpoints with optional bearer-token protection.
+- Fake Spectre local harness and `npm run smoke:dispatch` full-loop test.
+- Flexible review packet `sections` and `artifacts` fields.
+
 - `SHARED_REQUESTS_TOKEN` is documented in `.env.example` for optional shared requests.
 - Self-contained smoke test harness that starts BATON on a temporary database when `BATON_BASE_URL` is not set.
 - `/api/health` endpoint for local checks and smoke-test readiness polling.
@@ -13,6 +19,9 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 - Node runtime pin via `.nvmrc` and package engines.
 
 ### Changed
+
+- Configured delegate/assign/evaluator actions now create runs and dispatch to agents; unconfigured dispatch stays visible instead of faking motion.
+- Spectre review packet submission advances linked runs to `review_ready`; accepting review completes linked runs.
 
 - Prepared-only delegate/assign/evaluator actions now park touches outside active Flow instead of resurfacing the same card.
 - Idle-agent assignment candidates suppress duplicate generic delegate touches for the same task.
@@ -25,7 +34,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 - Flow touches rebuild at startup so seeded work appears immediately without making `GET /api/flow` mutate state.
 - Review touch primary actions now use executable `inspect` metadata while the UI labels them as Review.
 - Flow UI action availability now comes from backend-provided touch metadata.
-- Delegate/assign docs and smoke coverage now explicitly reflect prepared-only behavior when no dispatcher is configured.
+- Delegate/assign docs and smoke coverage now explicitly reflect truthful non-running behavior when no dispatcher is configured.
 
 ### Fixed
 

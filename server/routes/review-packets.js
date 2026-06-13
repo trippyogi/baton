@@ -12,6 +12,7 @@ router.get('/', (req, res) => {
     let sql = 'SELECT * FROM review_packets WHERE 1=1';
     const params = [];
     if (req.query.task_id) { sql += ' AND task_id = ?'; params.push(req.query.task_id); }
+    if (req.query.run_id) { sql += ' AND run_id = ?'; params.push(req.query.run_id); }
     if (req.query.packet_status) { sql += ' AND packet_status = ?'; params.push(req.query.packet_status); }
     sql += ' ORDER BY created_at DESC, rowid DESC LIMIT ?';
     params.push(Number(req.query.limit || 50));
@@ -36,40 +37,63 @@ router.post('/', (req, res) => {
       risks: normalizeList(req.body.risks),
       open_questions: normalizeList(req.body.open_questions),
       suggested_next_action: req.body.suggested_next_action || req.body.recommended_next_action || '',
+      schema_version: req.body.schema_version || req.body.schema || 'baton.review_packet.v1',
+      sections: normalizeList(req.body.sections),
+      artifacts: normalizeList(req.body.artifacts),
       confidence_score: req.body.confidence_score,
       quality_score: req.body.quality_score,
     };
+
+    if (!packet.evidence.length && packet.artifacts.length) packet.evidence = packet.artifacts.map(a => a.url || a.name || a.type || 'artifact');
+    if (!packet.evidence.length && packet.sections.length) packet.evidence = packet.sections.map(s => s.title || s.type || 'section');
+
+    if (!packet.task_id && packet.run_id) {
+      const run = db.prepare('SELECT task_id, agent_id FROM runs WHERE id = ?').get(packet.run_id);
+      if (run) {
+        packet.task_id = run.task_id || null;
+        packet.agent_id = packet.agent_id || run.agent_id || null;
+      }
+    }
+
     const validation = validateReviewPacket(packet);
 
     if (packet.task_id) {
       const task = db.prepare('SELECT id FROM tasks WHERE id = ?').get(packet.task_id);
       if (!task) return res.status(400).json({ error: `unknown task_id: ${packet.task_id}` });
     }
+    if (packet.run_id) {
+      const run = db.prepare('SELECT id FROM runs WHERE id = ?').get(packet.run_id);
+      if (!run) return res.status(400).json({ error: `unknown run_id: ${packet.run_id}` });
+    }
 
     const writeTx = db.transaction(() => {
       db.prepare(`
         INSERT INTO review_packets (
           id, task_id, run_id, agent_id, work_type, goal, artifact_url, summary, changes, rationale,
-          evidence, risks, open_questions, suggested_next_action, confidence_score, quality_score,
-          packet_status, validator_notes
+          evidence, risks, open_questions, suggested_next_action, schema_version, sections, artifacts,
+          confidence_score, quality_score, packet_status, validator_notes
         ) VALUES (
           @id, @task_id, @run_id, @agent_id, @work_type, @goal, @artifact_url, @summary, @changes, @rationale,
-          @evidence, @risks, @open_questions, @suggested_next_action, @confidence_score, @quality_score,
-          @packet_status, @validator_notes
+          @evidence, @risks, @open_questions, @suggested_next_action, @schema_version, @sections, @artifacts,
+          @confidence_score, @quality_score, @packet_status, @validator_notes
         )
       `).run({
         ...packet,
         evidence: stringifyJson(packet.evidence),
         risks: stringifyJson(packet.risks),
         open_questions: stringifyJson(packet.open_questions),
+        sections: stringifyJson(packet.sections),
+        artifacts: stringifyJson(packet.artifacts),
         confidence_score: Number(packet.confidence_score ?? 0.7),
         quality_score: Number(packet.quality_score ?? 0.7),
         packet_status: validation.packet_status,
         validator_notes: validation.validator_notes,
       });
 
-      if (packet.task_id) {
-        db.prepare(`UPDATE tasks SET status = 'review', updated_at = datetime('now') WHERE id = ?`).run(packet.task_id);
+      if (packet.task_id) db.prepare(`UPDATE tasks SET status = 'review', updated_at = datetime('now') WHERE id = ?`).run(packet.task_id);
+      if (packet.run_id) {
+        db.prepare(`UPDATE runs SET status = 'review_ready', review_packet_id = ?, last_status_at = datetime('now') WHERE id = ?`).run(packet.id, packet.run_id);
+        db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE current_run_id = ?`).run(packet.run_id);
       }
     });
     writeTx();
@@ -103,6 +127,8 @@ function parsePacket(row) {
     evidence: parseJson(row.evidence, []),
     risks: parseJson(row.risks, []),
     open_questions: parseJson(row.open_questions, []),
+    sections: parseJson(row.sections, []),
+    artifacts: parseJson(row.artifacts, []),
   };
 }
 

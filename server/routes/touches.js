@@ -6,6 +6,7 @@ const { sqliteDateTimeAfterMs, toSqliteDateTime } = require('../lib/flow/time');
 const { isActionAllowed } = require('../lib/flow/actions');
 const { rebuildTouches, parseTouch, rankOpenTouches } = require('../lib/flow/rebuild');
 const { markDomainTouched } = require('../lib/flow/portfolio');
+const { dispatchRun } = require('../lib/dispatch');
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.post('/rebuild', (_req, res) => {
   catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.patch('/:id/action', (req, res) => {
+router.patch('/:id/action', async (req, res) => {
   try {
     const touch = db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(req.params.id);
     if (!touch) return res.status(404).json({ error: 'Not found' });
@@ -41,6 +42,14 @@ router.patch('/:id/action', (req, res) => {
         touch_type: touch.type,
         action,
       });
+    }
+
+    if (['delegate', 'assign', 'send_to_evaluator'].includes(action)) {
+      const runId = createDispatchRun(touch, req.body, action);
+      const result = await dispatchRun({ db, runId, intent: action === 'send_to_evaluator' ? 'evaluate' : 'orchestrate', instructions: instructionsFromBody(req.body) });
+      const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(touch.id));
+      const updatedTask = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
+      return res.json({ touch: updatedTouch, task: updatedTask, run: result.run, dispatch_status: result.dispatch_status, message: result.message, error: result.error || null });
     }
 
     const tx = db.transaction(() => {
@@ -56,25 +65,16 @@ router.patch('/:id/action', (req, res) => {
         touchStatus = 'resolved';
         taskStatus = req.body.update_task === false ? null : 'done';
         resolvedAt = toSqliteDateTime();
+        completeLinkedRun(touch);
         message = taskStatus ? 'Accepted and marked task done.' : 'Accepted.';
       } else if (action === 'refine') {
         touchStatus = 'passed';
         taskStatus = req.body.update_task === false ? null : 'waiting';
         message = 'Feedback captured and task moved back for refinement.';
-      } else if (action === 'delegate' || action === 'assign') {
-        // Honest boundary: no worker dispatcher is configured yet, so park this
-        // pass-off outside active Flow without claiming agent motion.
-        touchStatus = 'prepared';
-        dispatchStatus = 'not_configured';
-        message = 'Prepared only — no dispatcher configured. Touch parked outside active Flow.';
       } else if (action === 'answer') {
         touchStatus = 'passed';
         taskStatus = 'ready';
         message = 'Answer captured; task is ready to pass.';
-      } else if (action === 'send_to_evaluator') {
-        touchStatus = 'prepared';
-        dispatchStatus = 'not_configured';
-        message = 'Prepared only — evaluator dispatch is not configured. Touch parked outside active Flow.';
       } else if (action === 'snooze') {
         touchStatus = 'snoozed';
         snoozedUntil = normalizeSnooze(req.body.until) || defaultSnooze();
@@ -118,8 +118,8 @@ router.patch('/:id/action', (req, res) => {
         stringifyJson({ feedback: req.body.feedback || '', instructions: req.body.instructions || '', reason: req.body.reason || '', dispatch_status: dispatchStatus })
       );
 
-      if (['accept', 'process', 'archive', 'answer', 'refine', 'delegate', 'assign', 'send_to_evaluator'].includes(action)) markDomainTouched(db, touch.domain);
-      if (taskStatus || ['archive', 'snooze', 'accept', 'process', 'delegate', 'assign', 'send_to_evaluator'].includes(action)) rebuildTouches(db);
+      if (['accept', 'process', 'archive', 'answer', 'refine'].includes(action)) markDomainTouched(db, touch.domain);
+      if (taskStatus || ['archive', 'snooze', 'accept', 'process'].includes(action)) rebuildTouches(db);
       else rankOpenTouches(db);
       const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(touch.id));
       const updatedTask = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
@@ -129,6 +129,68 @@ router.patch('/:id/action', (req, res) => {
     res.json(tx());
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+function createDispatchRun(touch, body, action) {
+  const task = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
+  const agent = resolveAgent(touch, body, action);
+  const runId = id('run');
+  const agentName = agent?.name || body.agent_name || 'manual';
+  const workerType = agent?.type || null;
+  const transport = agent?.dispatch_transport || 'manual';
+  const target = agent?.dispatch_target || null;
+  const tx = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO runs (
+        id, agent_name, worker_type, status, task_id, touch_id, agent_id,
+        dispatch_status, dispatch_transport, dispatch_target, steps, logs, created_at
+      ) VALUES (?, ?, ?, 'pending_dispatch', ?, ?, ?, 'queued', ?, ?, '[]', '[]', datetime('now'))
+    `).run(runId, agentName, workerType, task?.id || null, touch.id, agent?.id || null, transport, target);
+    db.prepare(`INSERT INTO touch_events (id, touch_id, event_type, actor, payload) VALUES (?, ?, ?, 'human', ?)`).run(
+      id('event'),
+      touch.id,
+      eventName(action),
+      stringifyJson({ action, run_id: runId, agent_id: agent?.id || null, instructions: body.instructions || body.feedback || '' })
+    );
+    markDomainTouched(db, touch.domain);
+  });
+  tx();
+  return runId;
+}
+
+function resolveAgent(touch, body, action) {
+  const ids = [touch.agent_id, body.agent_id].filter(Boolean);
+  if (action === 'send_to_evaluator') ids.push('evaluator-agent', 'spectre');
+  if (touch.task_id) {
+    const task = db.prepare('SELECT owner FROM tasks WHERE id = ?').get(touch.task_id);
+    if (task?.owner) ids.push(task.owner);
+  }
+  ids.push('spectre');
+  for (const agentId of ids) {
+    const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
+    if (agent) return agent;
+  }
+  return db.prepare(`SELECT * FROM agents WHERE status = 'idle' AND dispatch_enabled = 1 ORDER BY name LIMIT 1`).get() || null;
+}
+
+function instructionsFromBody(body) {
+  const text = body.instructions || body.feedback || '';
+  if (!text) return [];
+  return Array.isArray(text) ? text.map(String) : [String(text)];
+}
+
+function completeLinkedRun(touch) {
+  let runId = touch.run_id;
+  if (!runId && touch.review_packet_id) {
+    const packet = db.prepare('SELECT run_id FROM review_packets WHERE id = ?').get(touch.review_packet_id);
+    runId = packet?.run_id || null;
+  }
+  if (!runId) return;
+  const run = db.prepare('SELECT agent_id FROM runs WHERE id = ?').get(runId);
+  db.prepare(`UPDATE runs SET status = 'completed', ended_at = datetime('now'), last_status_at = datetime('now') WHERE id = ?`).run(runId);
+  if (run?.agent_id) {
+    db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE id = ?`).run(run.agent_id);
+  }
+}
 
 function defaultSnooze() {
   return sqliteDateTimeAfterMs(60 * 60 * 1000);

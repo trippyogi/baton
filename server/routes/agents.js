@@ -6,7 +6,7 @@ const { rebuildTouches } = require('../lib/flow/rebuild');
 
 const router = express.Router();
 const VALID_STATUSES = ['idle', 'running', 'blocked', 'failed', 'reviewing', 'paused', 'offline'];
-const ALLOWED = ['name', 'type', 'status', 'skills', 'permissions', 'current_task_id', 'current_run_id', 'cost_profile', 'quality_score', 'reliability_score', 'last_activity_at'];
+const ALLOWED = ['name', 'type', 'status', 'skills', 'permissions', 'current_task_id', 'current_run_id', 'cost_profile', 'dispatch_enabled', 'dispatch_transport', 'dispatch_target', 'dispatch_config', 'quality_score', 'reliability_score', 'last_activity_at'];
 
 router.get('/', (req, res) => {
   try {
@@ -38,7 +38,7 @@ router.patch('/:id', (req, res) => {
     for (const key of ALLOWED) {
       if (!(key in req.body)) continue;
       updates.push(`${key} = ?`);
-      vals.push(['skills', 'permissions', 'cost_profile'].includes(key) ? stringifyJson(req.body[key]) : req.body[key]);
+      vals.push(['skills', 'permissions', 'cost_profile', 'dispatch_config'].includes(key) ? stringifyJson(req.body[key]) : req.body[key]);
     }
     if (!updates.length) return res.status(400).json({ error: 'No valid fields to update' });
     updates.push('updated_at = datetime(\'now\')');
@@ -55,6 +55,8 @@ function parseAgent(row) {
     skills: parseJson(row.skills, []),
     permissions: parseJson(row.permissions, {}),
     cost_profile: parseJson(row.cost_profile, {}),
+    dispatch_enabled: Boolean(row.dispatch_enabled),
+    dispatch_config: parseJson(row.dispatch_config, {}),
   };
 }
 

@@ -93,7 +93,8 @@ function generateCandidates(db, context = {}) {
 
   const idleAssignmentCandidates = [];
   const assignedTaskIds = new Set();
-  const idleAgents = db.prepare(`SELECT * FROM agents WHERE status = 'idle'`).all();
+  const idleAgents = db.prepare(`SELECT * FROM agents WHERE status = 'idle'`).all()
+    .sort((a, b) => ownedReadyCount(b, readyTasks) - ownedReadyCount(a, readyTasks));
   for (const agent of idleAgents) {
     const availableTasks = readyTasks.filter(task => !assignedTaskIds.has(task.id) && !preparedTaskIds.has(task.id));
     const match = bestReadyTaskForAgent(agent, availableTasks);
@@ -142,6 +143,7 @@ function generateCandidates(db, context = {}) {
           agent_hours_unlocked: 1,
         }, portfolioMap);
         candidate.review_packet_id = packet.id;
+        candidate.run_id = packet.run_id || null;
         candidate.description = packet.summary || candidate.description;
         candidate.confidence_score = Number(packet.confidence_score ?? candidate.confidence_score);
         candidate.quality_score = Number(packet.quality_score ?? candidate.quality_score);
@@ -157,6 +159,7 @@ function generateCandidates(db, context = {}) {
         }, portfolioMap);
         if (packet) {
           candidate.review_packet_id = packet.id;
+          candidate.run_id = packet.run_id || null;
           candidate.description = packet.validator_notes || packet.summary || 'Review packet is missing required fields.';
           candidate.quality_score = Math.min(candidate.quality_score, 0.45);
         }
@@ -198,6 +201,10 @@ function generateCandidates(db, context = {}) {
   return candidates;
 }
 
+function ownedReadyCount(agent, tasks) {
+  return tasks.filter(task => task.owner === agent.id).length;
+}
+
 function bestReadyTaskForAgent(agent, tasks) {
   const skills = parseJson(agent.skills, []).map(s => String(s).toLowerCase());
   let best = null;
@@ -206,9 +213,10 @@ function bestReadyTaskForAgent(agent, tasks) {
     const text = `${task.title || ''} ${task.description || ''} ${task.tags || ''} ${domain}`.toLowerCase();
     const hits = skills.filter(skill => text.includes(skill));
     const domainFit = skills.includes(domain) ? 1 : 0;
-    if (!hits.length && !domainFit) continue;
+    const ownerFit = task.owner === agent.id ? 1 : 0;
+    if (!hits.length && !domainFit && !ownerFit) continue;
     const impactBonus = Math.min(0.15, Number(task.impact_score ?? 0) / 100);
-    const fit = Math.min(1, 0.20 + hits.length * 0.20 + domainFit * 0.25 + impactBonus);
+    const fit = Math.min(1, 0.20 + hits.length * 0.20 + domainFit * 0.25 + ownerFit * 0.35 + impactBonus);
     if (!best || fit > best.fit || (fit === best.fit && Number(task.impact_score ?? 0) > Number(best.task.impact_score ?? 0))) {
       best = { task, fit };
     }

@@ -21,6 +21,18 @@ db.exec(schema);
   if (!cols.includes('repo'))          db.exec('ALTER TABLE runs ADD COLUMN repo TEXT');
   if (!cols.includes('output_path'))   db.exec('ALTER TABLE runs ADD COLUMN output_path TEXT');
   if (!cols.includes('output_preview'))db.exec('ALTER TABLE runs ADD COLUMN output_preview TEXT');
+  if (!cols.includes('task_id'))       db.exec('ALTER TABLE runs ADD COLUMN task_id TEXT');
+  if (!cols.includes('touch_id'))      db.exec('ALTER TABLE runs ADD COLUMN touch_id TEXT');
+  if (!cols.includes('agent_id'))      db.exec('ALTER TABLE runs ADD COLUMN agent_id TEXT');
+  if (!cols.includes('dispatch_status'))    db.exec("ALTER TABLE runs ADD COLUMN dispatch_status TEXT DEFAULT 'not_configured'");
+  if (!cols.includes('dispatch_transport')) db.exec('ALTER TABLE runs ADD COLUMN dispatch_transport TEXT');
+  if (!cols.includes('dispatch_target'))    db.exec('ALTER TABLE runs ADD COLUMN dispatch_target TEXT');
+  if (!cols.includes('dispatch_payload'))   db.exec("ALTER TABLE runs ADD COLUMN dispatch_payload TEXT DEFAULT '{}'");
+  if (!cols.includes('external_run_id'))    db.exec('ALTER TABLE runs ADD COLUMN external_run_id TEXT');
+  if (!cols.includes('acknowledged_at'))    db.exec('ALTER TABLE runs ADD COLUMN acknowledged_at TEXT');
+  if (!cols.includes('last_status_at'))     db.exec('ALTER TABLE runs ADD COLUMN last_status_at TEXT');
+  if (!cols.includes('review_packet_id'))   db.exec('ALTER TABLE runs ADD COLUMN review_packet_id TEXT');
+  if (!cols.includes('error'))              db.exec('ALTER TABLE runs ADD COLUMN error TEXT');
 
   const touchCols = db.prepare('PRAGMA table_info(baton_touches)').all().map(c => c.name);
   if (!touchCols.includes('manual_priority_boost')) db.exec('ALTER TABLE baton_touches ADD COLUMN manual_priority_boost REAL DEFAULT 0');
@@ -41,6 +53,17 @@ db.exec(schema);
   if (!taskCols.includes('quality_score'))          db.exec('ALTER TABLE tasks ADD COLUMN quality_score REAL DEFAULT 0.7');
   if (!taskCols.includes('fun_score'))              db.exec('ALTER TABLE tasks ADD COLUMN fun_score REAL DEFAULT 0.0');
   if (!taskCols.includes('strategic_optionality'))  db.exec('ALTER TABLE tasks ADD COLUMN strategic_optionality REAL DEFAULT 0.0');
+
+  const agentCols = db.prepare('PRAGMA table_info(agents)').all().map(c => c.name);
+  if (!agentCols.includes('dispatch_enabled'))   db.exec('ALTER TABLE agents ADD COLUMN dispatch_enabled INTEGER NOT NULL DEFAULT 0');
+  if (!agentCols.includes('dispatch_transport')) db.exec("ALTER TABLE agents ADD COLUMN dispatch_transport TEXT DEFAULT 'manual'");
+  if (!agentCols.includes('dispatch_target'))    db.exec('ALTER TABLE agents ADD COLUMN dispatch_target TEXT');
+  if (!agentCols.includes('dispatch_config'))    db.exec("ALTER TABLE agents ADD COLUMN dispatch_config TEXT DEFAULT '{}'");
+
+  const packetCols = db.prepare('PRAGMA table_info(review_packets)').all().map(c => c.name);
+  if (!packetCols.includes('schema_version')) db.exec("ALTER TABLE review_packets ADD COLUMN schema_version TEXT DEFAULT 'baton.review_packet.v1'");
+  if (!packetCols.includes('sections'))       db.exec("ALTER TABLE review_packets ADD COLUMN sections TEXT DEFAULT '[]'");
+  if (!packetCols.includes('artifacts'))      db.exec("ALTER TABLE review_packets ADD COLUMN artifacts TEXT DEFAULT '[]'");
 
   // Migration: shared_requests table (2026-02-27)
   db.exec(`
@@ -92,6 +115,31 @@ db.exec(schema);
   for (const agent of agents) {
     insertAgent.run(agent[0], agent[1], agent[2], JSON.stringify(agent[3]), JSON.stringify(defaultAgentPermissions(agent[0])));
   }
+
+  const spectreDispatchConfig = {
+    transport: 'webhook',
+    url_env: 'SPECTRE_WEBHOOK_URL',
+    token_env: 'SPECTRE_DISPATCH_TOKEN',
+    timeout_ms: 10000,
+  };
+  db.prepare(`
+    INSERT OR IGNORE INTO agents (
+      id, name, type, status, skills, permissions,
+      dispatch_enabled, dispatch_transport, dispatch_target, dispatch_config
+    ) VALUES (?, ?, ?, 'idle', ?, ?, 1, 'webhook', 'SPECTRE_WEBHOOK_URL', ?)
+  `).run(
+    'spectre',
+    'Spectre',
+    'orchestrator',
+    JSON.stringify(['orchestration', 'metatravelers', 'strategy', 'research', 'coordination', 'revenue', 'launch']),
+    JSON.stringify(defaultAgentPermissions('spectre')),
+    JSON.stringify(spectreDispatchConfig)
+  );
+  db.prepare(`
+    UPDATE agents
+    SET dispatch_enabled = 1, dispatch_transport = 'webhook', dispatch_target = 'SPECTRE_WEBHOOK_URL', dispatch_config = ?
+    WHERE id = 'spectre'
+  `).run(JSON.stringify(spectreDispatchConfig));
 })();
 
 function defaultAgentPermissions(agentId) {
@@ -99,6 +147,8 @@ function defaultAgentPermissions(agentId) {
     github: { repos: ['trippyogi/baton'], can_push_branch: true, can_merge: false },
     spend: { daily_limit_usd: 0 },
     external_messages: { draft_only: true },
+    public_posting: false,
+    production_changes: false,
     agent_id: agentId,
   };
 }

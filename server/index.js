@@ -31,6 +31,7 @@ app.use('/api/touches',     require('./routes/touches'));
 app.use('/api/agents',      require('./routes/agents'));
 app.use('/api/review-packets', require('./routes/review-packets'));
 app.use('/api/queue',       require('./routes/queue'));
+app.use('/api/dispatch',    require('./routes/dispatch'));
 app.use('/api/webhook/github',   require('./routes/webhook'));
 app.use('/api/shared-requests', require('./routes/shared-requests'));
 app.use('/api/creatives',      require('./routes/creatives'));
