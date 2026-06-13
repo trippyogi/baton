@@ -1,14 +1,26 @@
 import { get, post, patch } from '../api.js';
+import { escapeHtml } from '../lib/html.js';
+
+const ACTIONS_BY_TYPE = {
+  blocker: ['answer', 'snooze', 'escalate', 'archive'],
+  review: ['accept', 'refine', 'send_to_evaluator', 'snooze', 'archive', 'inspect'],
+  refine: ['send_to_evaluator', 'snooze', 'archive', 'inspect'],
+  delegate: ['delegate', 'snooze', 'archive'],
+  capture: ['process', 'delegate', 'snooze', 'archive'],
+  stale_run: ['inspect', 'snooze', 'archive', 'escalate'],
+  idle_agent: ['assign', 'snooze', 'archive'],
+};
 
 const MODES = ['deep_build','triage','review','strategy_creative','launch','admin','cleanup','recovery'];
 let pollTimer = null;
 let selectedIndex = 0;
 let currentData = null;
 
-export async function renderFlow() {
+export async function renderFlow(options = {}) {
+  const force = options.force === true;
   const el = document.getElementById('screen-flow');
   if (!el) return;
-  if (document.activeElement?.id === 'flow-command-input') return;
+  if (!force && document.activeElement?.id === 'flow-command-input') return;
   el.innerHTML = `<div class="loading">Loading Flow…</div>`;
   try {
     currentData = await get('/api/flow');
@@ -111,14 +123,14 @@ function touchCard(touch, idx) {
           <textarea class="touch-feedback" rows="3" placeholder="Feedback, answer, refinement, or delegation instructions..."></textarea>
           <div class="touch-detail-actions">
             <button class="btn btn-primary touch-submit-feedback">Send feedback</button>
-            <button class="btn btn-ghost touch-accept">Accept</button>
-            <button class="btn btn-ghost touch-archive">Archive</button>
+            ${allows(touch, 'accept') ? '<button class="btn btn-ghost touch-accept">Accept</button>' : ''}
+            ${allows(touch, 'archive') ? '<button class="btn btn-ghost touch-archive">Archive</button>' : ''}
           </div>
         </div>
       </div>
       <div class="touch-actions">
         <button class="btn btn-primary touch-primary">${labelAction(touch.primary_action)}</button>
-        <button class="btn btn-ghost touch-snooze">Snooze</button>
+        ${allows(touch, 'snooze') ? '<button class="btn btn-ghost touch-snooze">Snooze</button>' : ''}
       </div>
     </article>`;
 }
@@ -131,7 +143,7 @@ function wireFlow(el) {
   const modeSelect = el.querySelector('#flow-mode-select');
   modeSelect.onchange = async () => {
     await patch('/api/flow/mode', { mode: modeSelect.value });
-    await renderFlow();
+    await renderFlow({ force: true });
   };
 
   const input = el.querySelector('#flow-command-input');
@@ -151,13 +163,13 @@ function wireFlow(el) {
       openSelected();
     };
     card.querySelector('.touch-primary').onclick = () => primaryAction(card.dataset.touchId);
-    card.querySelector('.touch-snooze').onclick = () => runAction(card.dataset.touchId, 'snooze');
-    card.querySelector('.touch-accept').onclick = () => runAction(card.dataset.touchId, 'accept');
-    card.querySelector('.touch-archive').onclick = () => runAction(card.dataset.touchId, 'archive');
+    card.querySelector('.touch-snooze')?.addEventListener('click', () => runAction(card.dataset.touchId, 'snooze'));
+    card.querySelector('.touch-accept')?.addEventListener('click', () => runAction(card.dataset.touchId, 'accept'));
+    card.querySelector('.touch-archive')?.addEventListener('click', () => runAction(card.dataset.touchId, 'archive'));
     card.querySelector('.touch-submit-feedback').onclick = () => {
       const touch = currentData.next_touches[Number(card.dataset.index || 0)];
       const feedback = card.querySelector('.touch-feedback').value;
-      const action = ['delegate', 'answer', 'process'].includes(touch.primary_action) ? touch.primary_action : 'refine';
+      const action = ['delegate', 'assign', 'answer', 'process', 'send_to_evaluator'].includes(touch.primary_action) ? touch.primary_action : 'refine';
       runAction(card.dataset.touchId, action, { feedback, instructions: feedback });
     };
   });
@@ -172,7 +184,7 @@ async function submitCommand(el) {
   const result = await post('/api/flow/command', { input: value });
   input.value = '';
   resultEl.textContent = result.message || 'Done.';
-  await renderFlow();
+  await renderFlow({ force: true });
 }
 
 function primaryAction(id) {
@@ -188,8 +200,10 @@ function primaryAction(id) {
 }
 
 async function runAction(id, action, extra = {}) {
+  const touch = (currentData?.next_touches || []).find(t => t.id === id);
+  if (touch && !allows(touch, action)) return;
   await patch(`/api/touches/${id}/action`, { action, ...extra });
-  await renderFlow();
+  await renderFlow({ force: true });
 }
 
 function handleKeys(event) {
@@ -212,9 +226,11 @@ function handleKeys(event) {
   } else if (event.key === 'x') {
     if (touches[selectedIndex]) runAction(touches[selectedIndex].id, 'archive');
   } else if (event.key === 'a') {
-    if (touches[selectedIndex]) runAction(touches[selectedIndex].id, 'accept');
+    if (touches[selectedIndex] && allows(touches[selectedIndex], 'accept')) runAction(touches[selectedIndex].id, 'accept');
   } else if (event.key === 'd') {
-    if (touches[selectedIndex]) runAction(touches[selectedIndex].id, 'delegate');
+    const touch = touches[selectedIndex];
+    if (touch && allows(touch, 'assign')) runAction(touch.id, 'assign');
+    else if (touch && allows(touch, 'delegate')) runAction(touch.id, 'delegate');
   } else if (event.key === 'r') {
     openSelected();
   } else if (event.key === 'm') {
@@ -243,6 +259,6 @@ function labelAction(action) {
   return String(action || 'open').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
+function allows(touch, action) {
+  return (ACTIONS_BY_TYPE[touch?.type] || []).includes(action);
 }
