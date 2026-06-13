@@ -25,6 +25,7 @@ app.use('/api/memory',      require('./routes/memory'));
 app.use('/api/team',        require('./routes/team'));
 app.use('/api/flow',        require('./routes/flow'));
 app.use('/api/touches',     require('./routes/touches'));
+app.use('/api/agents',      require('./routes/agents'));
 app.use('/api/review-packets', require('./routes/review-packets'));
 app.use('/api/queue',       require('./routes/queue'));
 app.use('/api/webhook/github',   require('./routes/webhook'));

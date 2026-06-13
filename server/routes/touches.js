@@ -51,10 +51,17 @@ router.patch('/:id/action', (req, res) => {
         touchStatus = 'passed';
         taskStatus = req.body.update_task === false ? null : 'waiting';
         message = 'Feedback captured and task moved back for refinement.';
-      } else if (action === 'delegate') {
+      } else if (action === 'delegate' || action === 'assign') {
         touchStatus = 'passed';
         taskStatus = 'in_progress';
-        message = 'Delegated and moved task airborne.';
+        if (touch.agent_id) {
+          db.prepare(`
+            UPDATE agents
+            SET status = 'running', current_task_id = ?, last_activity_at = datetime('now'), updated_at = datetime('now')
+            WHERE id = ?
+          `).run(touch.task_id, touch.agent_id);
+        }
+        message = touch.agent_id ? 'Assigned agent and moved task airborne.' : 'Delegated and moved task airborne.';
       } else if (action === 'answer') {
         touchStatus = 'passed';
         taskStatus = 'ready';
@@ -120,7 +127,7 @@ function defaultSnooze() {
 }
 
 function eventName(action) {
-  return ({ accept: 'accepted', refine: 'refined', delegate: 'delegated', answer: 'resolved', send_to_evaluator: 'delegated', snooze: 'snoozed', archive: 'archived', process: 'resolved', inspect: 'opened', escalate: 'escalated' })[action] || action;
+  return ({ accept: 'accepted', refine: 'refined', delegate: 'delegated', assign: 'delegated', answer: 'resolved', send_to_evaluator: 'delegated', snooze: 'snoozed', archive: 'archived', process: 'resolved', inspect: 'opened', escalate: 'escalated' })[action] || action;
 }
 
 module.exports = router;

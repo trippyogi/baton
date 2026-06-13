@@ -70,7 +70,33 @@ db.exec(schema);
     VALUES (?, ?, ?, ?, ?)
   `);
   for (const domain of domains) insertDomain.run(...domain);
+
+  const agents = [
+    ['code-agent', 'Code Agent', 'code', ['javascript', 'express', 'sqlite', 'frontend', 'api']],
+    ['research-agent', 'Research Agent', 'research', ['research', 'synthesis', 'market']],
+    ['copy-agent', 'Copy Agent', 'copy', ['copy', 'content', 'brand', 'email']],
+    ['design-agent', 'Design Agent', 'design', ['design', 'visual', 'creative']],
+    ['strategy-agent', 'Strategy Agent', 'strategy', ['strategy', 'product', 'revenue']],
+    ['evaluator-agent', 'Evaluator Agent', 'evaluator', ['review', 'quality', 'evaluator']],
+    ['ops-agent', 'Ops Agent', 'ops', ['ops', 'admin', 'maintenance']],
+  ];
+  const insertAgent = db.prepare(`
+    INSERT OR IGNORE INTO agents (id, name, type, status, skills, permissions)
+    VALUES (?, ?, ?, 'idle', ?, ?)
+  `);
+  for (const agent of agents) {
+    insertAgent.run(agent[0], agent[1], agent[2], JSON.stringify(agent[3]), JSON.stringify(defaultAgentPermissions(agent[0])));
+  }
 })();
+
+function defaultAgentPermissions(agentId) {
+  return {
+    github: { repos: ['trippyogi/baton'], can_push_branch: true, can_merge: false },
+    spend: { daily_limit_usd: 0 },
+    external_messages: { draft_only: true },
+    agent_id: agentId,
+  };
+}
 
 // Seed mock data if tables are empty
 const taskCount = db.prepare('SELECT COUNT(*) as n FROM tasks').get().n;

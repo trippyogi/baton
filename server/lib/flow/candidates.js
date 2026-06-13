@@ -1,5 +1,5 @@
 'use strict';
-const { hoursSince } = require('./utils');
+const { hoursSince, parseJson } = require('./utils');
 const { STALE_THRESHOLDS_MINUTES } = require('./modes');
 const { getPortfolioMap, domainMeta, starvationScore } = require('./portfolio');
 
@@ -10,6 +10,7 @@ const SECONDARY_ACTIONS = {
   delegate: ['snooze', 'archive'],
   capture: ['delegate', 'archive', 'snooze'],
   stale_run: ['snooze', 'archive', 'escalate'],
+  idle_agent: ['delegate', 'snooze', 'archive'],
 };
 
 function taskDomain(task) {
@@ -79,6 +80,7 @@ function riskScore(riskLevel) {
 function generateCandidates(db, context = {}) {
   const portfolioMap = getPortfolioMap(db);
   const tasks = db.prepare(`SELECT * FROM tasks WHERE status NOT IN ('done', 'backlog', 'archived')`).all();
+  const readyTasks = tasks.filter(t => t.status === 'ready');
   const candidates = [];
   const staleThresholdHours = (STALE_THRESHOLDS_MINUTES[context.mode || 'triage'] || 30) / 60;
 
@@ -153,7 +155,41 @@ function generateCandidates(db, context = {}) {
     }
   }
 
+  const idleAgents = db.prepare(`SELECT * FROM agents WHERE status = 'idle'`).all();
+  for (const agent of idleAgents) {
+    const match = bestReadyTaskForAgent(agent, readyTasks);
+    if (!match) continue;
+    const candidate = candidateFromTask(match.task, {
+      type: 'idle_agent',
+      primary_action: 'assign',
+      title: `Assign ${agent.name} to ${match.task.title}`,
+      mode_fit: 0.75,
+      human_touch_minutes: 2,
+      agent_hours_unlocked: 2,
+    }, portfolioMap);
+    candidate.agent_id = agent.id;
+    candidate.description = `${agent.name} is idle and matches a ready task.`;
+    candidate.idle_agent_fit = true;
+    candidate.confidence_score = Math.max(candidate.confidence_score, match.fit);
+    candidates.push(candidate);
+  }
+
   return candidates;
+}
+
+function bestReadyTaskForAgent(agent, tasks) {
+  const skills = parseJson(agent.skills, []).map(s => String(s).toLowerCase());
+  let best = null;
+  for (const task of tasks) {
+    const text = `${task.title || ''} ${task.description || ''} ${task.tags || ''} ${task.domain || ''}`.toLowerCase();
+    const hits = skills.filter(skill => text.includes(skill));
+    const domainFit = skills.includes(taskDomain(task)) ? 1 : 0;
+    const fit = Math.min(1, 0.45 + hits.length * 0.15 + domainFit * 0.2);
+    if (!best || fit > best.fit || (fit === best.fit && Number(task.impact_score || 0) > Number(best.task.impact_score || 0))) {
+      best = { task, fit };
+    }
+  }
+  return best && best.fit >= 0.45 ? best : null;
 }
 
 module.exports = { generateCandidates };
