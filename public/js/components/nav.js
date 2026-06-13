@@ -1,4 +1,5 @@
 const NAV_ITEMS = [
+  { id: 'flow',         icon: '↯', label: 'Flow' },
   { id: 'overview',     icon: '⬡', label: 'Overview' },
   { id: 'tasks',        icon: '✓', label: 'Tasks' },
   { id: 'board',        icon: '⊞', label: 'Board' },
@@ -22,8 +23,8 @@ export function renderNav(activeId) {
   el.innerHTML = `
     <div class="nav-brand">
       <div>
-        <div class="nav-brand-name">VECTOR MC</div>
-        <div class="nav-brand-sub">Mission Control v1.2</div>
+        <div class="nav-brand-name">BATON</div>
+        <div class="nav-brand-sub">Flow Ops</div>
       </div>
     </div>
     <div class="nav-section">

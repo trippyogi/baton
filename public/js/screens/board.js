@@ -1,7 +1,7 @@
 import { get, patch } from '../api.js';
 
 const COLUMNS = ['inbox','ready','in_progress','waiting','review','done'];
-const COL_LABELS = { inbox:'Inbox', ready:'Ready', in_progress:'In Progress', waiting:'Waiting', review:'Review', done:'Done' };
+const COL_LABELS = { inbox:'Inbox', ready:'Ready to Pass', in_progress:'Airborne', waiting:'Needs Touch', review:'Review', done:'Landed' };
 
 export async function renderBoard() {
   const el = document.getElementById('screen-board');
@@ -13,8 +13,8 @@ export async function renderBoard() {
 
     el.innerHTML = `
       <div class="screen-header">
-        <div class="screen-title">Board</div>
-        <div class="screen-subtitle">Drag to reorder coming Phase 2 — click to move status</div>
+        <div class="screen-title">Airspace Map</div>
+        <div class="screen-subtitle">Secondary map of work states — click to move status</div>
       </div>
       <div class="board">
         ${COLUMNS.map(col => `

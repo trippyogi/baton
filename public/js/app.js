@@ -1,6 +1,7 @@
 import { renderNav }      from './components/nav.js';
 import { renderTopbar }   from './components/topbar.js';
 import { renderOverview } from './screens/overview.js';
+import { renderFlow, destroyFlow } from './screens/flow.js';
 import { renderTasks }    from './screens/tasks.js';
 import { renderBoard }    from './screens/board.js';
 import { renderRuns }     from './screens/runs.js';
@@ -14,6 +15,7 @@ import { renderRequests }           from './screens/requests.js';
 import { renderCreatives, destroyCreatives } from './screens/creatives.js';
 
 const SCREENS = {
+  flow:        { el: 'screen-flow',        render: renderFlow },
   overview:    { el: 'screen-overview',    render: renderOverview },
   tasks:       { el: 'screen-tasks',       render: renderTasks },
   board:       { el: 'screen-board',       render: renderBoard },
@@ -29,8 +31,8 @@ const SCREENS = {
 };
 
 function getRoute() {
-  const hash = location.hash.replace('#/', '') || 'overview';
-  return SCREENS[hash] ? hash : 'overview';
+  const hash = location.hash.replace('#/', '') || 'flow';
+  return SCREENS[hash] ? hash : 'flow';
 }
 
 function navigate(route) {
@@ -44,6 +46,7 @@ function navigate(route) {
   // Re-render nav
   renderNav(route);
   // Render screen
+  if (typeof destroyFlow === 'function' && route !== 'flow') destroyFlow();
   if (typeof destroyQueue === 'function' && route !== 'queue') destroyQueue();
   if (typeof destroyCreatives === 'function' && route !== 'creatives') destroyCreatives();
   screen.render();
