@@ -15,6 +15,22 @@ The primary daily surface is **Flow**: a ranked next-touch queue plus a command 
 
 Implemented phases:
 
+- **Next-Touch Engine stabilization pass**
+  - Runs screen read endpoints and SSE stub.
+  - Extension routes load before the SPA fallback.
+  - Snoozed touches resurface after expiry; `passed` touches no longer suppress new generated touches.
+  - Touch actions are authorized by touch type; non-review touches cannot be accepted as done.
+  - Delegation/assignment is honest when no worker dispatcher exists: it prepares work but does not mark tasks/agents running.
+  - Invalid review packets create evaluator/refinement touches; valid packets create review touches.
+  - Flow command submit force-refreshes after action.
+  - User-controlled text is escaped across Flow-adjacent task/board/run surfaces.
+  - Task deletion is soft archive.
+  - `GET /api/flow` is read-safe and preserves manual escalation boosts.
+  - `idle agents` uses the real agent registry and assignment candidates avoid duplicate ready-task matches.
+  - Tasks API accepts ranking/autonomy fields.
+  - Webhook signature/payload handling is hardened.
+  - `npm run check:js`, `npm run smoke`, `npm run audit`, and `npm test` scripts are available.
+
 - **Phase 0 — Local app stabilization**
   - Declared missing `dotenv` and `ioredis` dependencies.
   - Fixed internal extension loading by importing `db` in `server/index.js`.
@@ -93,6 +109,18 @@ VMC_PORT=4420 npm start
 ```
 
 Redis is optional for local Flow development. Queue diagnostics gracefully return empty queue data when Redis is unavailable.
+
+## Checks
+
+With a server already running:
+
+```bash
+npm run check:js
+BATON_BASE_URL=http://127.0.0.1:4200 npm run smoke
+npm run audit
+```
+
+`npm test` runs syntax checks and smoke checks. Set `BATON_BASE_URL` when the server is on a non-default port.
 
 ## API overview
 
