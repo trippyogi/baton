@@ -110,6 +110,36 @@ VMC_PORT=4420 npm start
 
 Redis is optional for local Flow development. Queue diagnostics gracefully return empty queue data when Redis is unavailable.
 
+## Versioning
+
+BATON follows Semantic Versioning.
+
+Current version: `0.1.0`.
+
+Because BATON is still pre-1.0, minor versions may include breaking changes while the Next-Touch Engine stabilizes. Patch versions should be reserved for compatible fixes. Release notes should be recorded in `CHANGELOG.md`.
+
+Recommended release flow:
+
+1. update `package.json` version
+2. update `CHANGELOG.md`
+3. run checks/audit
+4. commit as `release: vX.Y.Z`
+5. tag with `vX.Y.Z`
+6. push commit and tag
+
+## Security
+
+See `SECURITY.md` for supported versions, vulnerability reporting, and the release security checklist.
+
+Key defaults:
+
+- `.env`, local DB files, logs, and secrets are ignored and should never be committed.
+- Webhooks validate HMAC signatures before doing work.
+- User-controlled UI output is escaped.
+- Touch actions are authorized by type.
+- Delegation does not claim work is running unless dispatch is configured.
+- `npm run audit` should pass before release tags.
+
 ## Checks
 
 With a server already running:
@@ -202,6 +232,14 @@ module.exports = {
 
 BATON detects and loads it at startup. It falls back gracefully if absent.
 
+## Contributing
+
+See `CONTRIBUTING.md` for local setup, product invariants, PR checklist, and security expectations.
+
+## Changelog
+
+See `CHANGELOG.md`.
+
 ## License
 
-MIT
+MIT — see `LICENSE`.
