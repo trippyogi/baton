@@ -1,0 +1,46 @@
+# Changelog
+
+BATON follows [Semantic Versioning](https://semver.org/). While the project is pre-1.0, minor versions may include breaking changes and patch versions are reserved for fixes.
+
+## [0.1.0] - 2026-06-13
+
+Initial open-source Next-Touch Engine foundation.
+
+### Added
+
+- Flow Home as the default route at `/#/flow`.
+- Ranked next-touch queue with deterministic candidate generation.
+- Flow modes and airspace summary.
+- Command box for capture, delegate, mode changes, review-next, and next-touch queries.
+- `baton_touches`, `flow_settings`, `portfolio_domains`, `review_packets`, `quality_policies`, and `agents` tables.
+- `/api/flow`, `/api/touches`, `/api/agents`, and `/api/review-packets` routes.
+- Review packet validation and quality gate.
+- Agent registry and idle-agent assignment candidates.
+- Runs read endpoints and SSE heartbeat stub.
+- Smoke test script and npm scripts for syntax, smoke, audit, and test.
+
+### Changed
+
+- Board language updated to Airspace Map terminology.
+- Redis queue/webhook integrations degrade cleanly when Redis is unavailable locally.
+- `GET /api/flow` is read-safe and does not run destructive rebuilds.
+- Delegation/assignment is truthful when no worker dispatch is configured: it prepares work but does not mark tasks/agents running.
+- Task delete now soft-archives tasks instead of hard-deleting.
+- Project branding updated from legacy Vector Mission Control copy to BATON Flow Ops.
+
+### Fixed
+
+- Missing dependency declarations for `dotenv` and `ioredis`.
+- Internal extension routes now load before the SPA fallback.
+- Snoozed touches resurface after expiry.
+- `passed` generated touches no longer suppress future visible touches.
+- Invalid review packets create evaluator/refinement touches.
+- Flow command submit refreshes immediately while the textarea remains focused.
+- User-controlled output is escaped across Flow-adjacent task, board, and run screens.
+- Touch actions are authorized by touch type; non-review touches cannot be accepted as done.
+- Webhook signature and payload handling hardened.
+
+### Security
+
+- Dependency audit cleaned to zero known moderate-or-higher production vulnerabilities as of this release.
+- Added `SECURITY.md` and contributor security checklist.

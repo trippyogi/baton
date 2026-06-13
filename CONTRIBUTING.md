@@ -1,0 +1,86 @@
+# Contributing to BATON
+
+Thanks for helping improve BATON.
+
+BATON is intentionally not a generic project-management app. The product center is the **Next-Touch Engine**: a ranked queue of the smallest human touches that unlock valuable agent motion.
+
+## Development setup
+
+```bash
+git clone https://github.com/trippyogi/baton.git
+cd baton
+npm install
+cp .env.example .env
+npm start
+```
+
+Open:
+
+```text
+http://127.0.0.1:4200/#/flow
+```
+
+Redis is optional for local Flow development. Queue screens degrade when Redis is unavailable.
+
+## Checks before opening a PR
+
+With the server running:
+
+```bash
+npm run check:js
+BATON_BASE_URL=http://127.0.0.1:4200 npm run smoke
+npm run audit
+```
+
+`npm test` runs syntax checks and smoke checks, but it expects a server to already be running. Set `BATON_BASE_URL` if using a different port.
+
+## Commit style
+
+Use small, focused commits. Prefer prefixes when useful:
+
+```text
+server: add runs read endpoint
+flow: fix snooze lifecycle
+ui: escape task titles
+security: harden webhook signature handling
+docs: update release checklist
+```
+
+Do not combine state-machine changes with styling-only changes.
+
+## Product invariants
+
+Changes should preserve these invariants:
+
+1. Flow is the default daily route.
+2. Board/Kanban is a secondary map, not the primary work surface.
+3. No fake uptime: do not mark work running unless a real run/dispatch exists.
+4. Touches are the unit of human attention.
+5. Manual human overrides should survive refreshes.
+6. Review touches require valid review packets.
+7. Unsafe actions must be blocked by touch type.
+
+## Security and privacy
+
+Never commit:
+
+- `.env`
+- SQLite DB files under `data/`
+- logs with private data
+- API tokens
+- private `baton-internal` extension code
+- webhook secrets or worker tokens
+
+If you find a security issue, follow `SECURITY.md` instead of opening a public issue.
+
+## Pull request checklist
+
+- [ ] Product invariant still holds.
+- [ ] State transitions are truthful.
+- [ ] User-controlled strings are escaped in UI.
+- [ ] New endpoints validate input.
+- [ ] Docs updated if behavior changed.
+- [ ] CHANGELOG updated for user-visible changes.
+- [ ] `npm run check:js` passes.
+- [ ] `npm run smoke` passes against a running server.
+- [ ] `npm run audit` passes or exception is documented.

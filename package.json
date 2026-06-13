@@ -1,6 +1,6 @@
 {
   "name": "baton",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "BATON Flow Ops — Next-Touch Engine",
   "main": "server/index.js",
   "scripts": {
@@ -15,5 +15,17 @@
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "ioredis": "^5.11.1"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trippyogi/baton.git"
+  },
+  "bugs": {
+    "url": "https://github.com/trippyogi/baton/issues"
+  },
+  "homepage": "https://github.com/trippyogi/baton#readme",
+  "engines": {
+    "node": ">=20"
   }
 }
