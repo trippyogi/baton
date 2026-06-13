@@ -99,7 +99,7 @@ function generateCandidates(db, context = {}) {
       const packet = db.prepare(`
         SELECT * FROM review_packets
         WHERE task_id = ?
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC, rowid DESC
         LIMIT 1
       `).get(task.id);
       if (packet?.packet_status === 'valid') {
