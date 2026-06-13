@@ -1,4 +1,5 @@
 import { get, fmtCost } from '../api.js';
+import { escapeHtml } from '../lib/html.js';
 
 export async function renderPerformance() {
   const el = document.getElementById('screen-performance');
@@ -40,7 +41,7 @@ export async function renderPerformance() {
       <div class="kpi-value ${roasCls(kpis.bestRoas)}">${kpis.bestRoas !== null ? kpis.bestRoas.toFixed(2) + 'x' : '—'}</div>
       <div class="kpi-label" style="margin-top:12px">
         ${kpis.bestRoas !== null
-          ? campaigns.find(c => c.roas !== null && Math.abs(c.roas - kpis.bestRoas) < 0.01)?.name || ''
+          ? escapeHtml(campaigns.find(c => c.roas !== null && Math.abs(c.roas - kpis.bestRoas) < 0.01)?.name || '')
           : 'No purchase data'}
       </div>
     </div>
@@ -127,7 +128,7 @@ function roasRow(c) {
   const ctrWarn   = c.ctr  !== null && c.ctr < 1.0;
   const cpmVal    = c.cpm  !== null ? fmtCost(c.cpm) : '—';
   return `<tr>
-    <td style="max-width:260px;font-weight:500">${c.name}</td>
+    <td style="max-width:260px;font-weight:500">${escapeHtml(c.name)}</td>
     <td style="text-align:right;font-family:var(--font-instrument)">${fmtCost(c.spend)}</td>
     <td style="text-align:right;font-family:var(--font-instrument)">${c.revenue > 0 ? fmtCost(c.revenue) : '—'}</td>
     <td style="text-align:right;font-family:var(--font-instrument);color:${roasColor(c.roas)};font-weight:600">${roasVal}</td>
@@ -141,11 +142,11 @@ function roasRow(c) {
 function degraded(title, msg) {
   return `<div class="canvas-inner">
     <div class="screen-header" style="padding-top:8px;margin-bottom:24px">
-      <div class="screen-title" style="font-size:28px;font-weight:600">${title}</div>
+      <div class="screen-title" style="font-size:28px;font-weight:600">${escapeHtml(title)}</div>
     </div>
     <div class="card" style="border-color:var(--color-ember)">
       <div style="color:var(--color-ember);font-weight:600;margin-bottom:8px">⚠ Data unavailable</div>
-      <div style="font-size:13px;color:var(--text-secondary)">${msg}</div>
+      <div style="font-size:13px;color:var(--text-secondary)">${escapeHtml(msg)}</div>
     </div>
   </div>`;
 }

@@ -15,15 +15,17 @@ const SECONDARY_ACTIONS = {
 };
 
 function taskDomain(task) {
-  if (task.domain) return task.domain;
+  const explicit = task.domain && task.domain !== 'product' ? task.domain : null;
+  if (explicit) return explicit;
+
   const tags = String(task.tags || '').toLowerCase();
   const text = `${task.title || ''} ${task.description || ''} ${tags}`.toLowerCase();
-  if (/revenue|sales|checkout|cart|campaign|ads|funnel|purchase/.test(text)) return 'revenue';
+  if (/revenue|sales|checkout|cart|campaign|ads|funnel|purchase|roas|cpa|meta/.test(text)) return 'revenue';
   if (/code|engineering|server|api|frontend|bug|refactor/.test(text)) return 'code';
   if (/copy|content|brand|carousel|email/.test(text)) return 'content';
   if (/admin|billing|invoice|tax/.test(text)) return 'admin';
   if (/maintenance|cleanup|ops/.test(text)) return 'maintenance';
-  return 'product';
+  return task.domain || 'product';
 }
 
 function candidateFromTask(task, attrs, portfolioMap) {
@@ -46,19 +48,19 @@ function candidateFromTask(task, attrs, portfolioMap) {
     context_key: task.context_key || null,
     mode_fit: attrs.mode_fit ?? 0.5,
     portfolio_weight: Number(meta.weight || 1),
-    impact_score: Number(task.impact_score || 5) || 5,
-    effort_score: Number(task.effort_score || 5) || 5,
+    impact_score: Number(task.impact_score ?? 5),
+    effort_score: Number(task.effort_score ?? 5),
     urgency_score: attrs.urgency_score ?? urgencyFor(task),
-    confidence_score: Number(task.confidence_score || 0.7),
-    quality_score: Number(task.quality_score || 0.7),
+    confidence_score: Number(task.confidence_score ?? 0.7),
+    quality_score: Number(task.quality_score ?? 0.7),
     risk_score: riskScore(task.risk_level),
-    fun_score: Number(task.fun_score || 0),
-    strategic_optionality: Number(task.strategic_optionality || 0),
+    fun_score: Number(task.fun_score ?? 0),
+    strategic_optionality: Number(task.strategic_optionality ?? 0),
     starvation_score: starvationScore(meta),
     context_switch_cost: attrs.context_switch_cost ?? 0.45,
-    human_touch_minutes: Number(task.human_touch_minutes || attrs.human_touch_minutes || 5),
-    agent_hours_unlocked: Number(task.agent_hours_unlocked || attrs.agent_hours_unlocked || 0.5),
-    autonomy_level: Number(task.autonomy_level || 1),
+    human_touch_minutes: Number(attrs.human_touch_minutes ?? task.human_touch_minutes ?? 5),
+    agent_hours_unlocked: Number(attrs.agent_hours_unlocked ?? task.agent_hours_unlocked ?? 0.5),
+    autonomy_level: Number(task.autonomy_level ?? 1),
     risk_level: task.risk_level || 'low',
     review_packet_id: null,
     spec_quality: task.spec_quality || 'unknown',
@@ -84,8 +86,36 @@ function generateCandidates(db, context = {}) {
   const readyTasks = tasks.filter(t => t.status === 'ready');
   const candidates = [];
   const staleThresholdHours = (STALE_THRESHOLDS_MINUTES[context.mode || 'triage'] || 30) / 60;
+  const preparedTaskIds = new Set(db.prepare(`
+    SELECT DISTINCT task_id FROM baton_touches
+    WHERE status = 'prepared' AND task_id IS NOT NULL
+  `).all().map(row => row.task_id));
+
+  const idleAssignmentCandidates = [];
+  const assignedTaskIds = new Set();
+  const idleAgents = db.prepare(`SELECT * FROM agents WHERE status = 'idle'`).all();
+  for (const agent of idleAgents) {
+    const availableTasks = readyTasks.filter(task => !assignedTaskIds.has(task.id) && !preparedTaskIds.has(task.id));
+    const match = bestReadyTaskForAgent(agent, availableTasks);
+    if (!match) continue;
+    assignedTaskIds.add(match.task.id);
+    const candidate = candidateFromTask(match.task, {
+      type: 'idle_agent',
+      primary_action: 'assign',
+      title: `Assign ${agent.name} to ${match.task.title}`,
+      mode_fit: 0.75,
+      human_touch_minutes: 2,
+      agent_hours_unlocked: 2,
+    }, portfolioMap);
+    candidate.agent_id = agent.id;
+    candidate.description = `${agent.name} is idle and has a quality match for this ready task. Prepare the pass-off; no worker is launched until dispatch exists.`;
+    candidate.idle_agent_fit = true;
+    candidate.confidence_score = Math.max(candidate.confidence_score, match.fit);
+    idleAssignmentCandidates.push(candidate);
+  }
 
   for (const task of tasks) {
+    if (preparedTaskIds.has(task.id)) continue;
     if (task.status === 'waiting') {
       candidates.push(candidateFromTask(task, {
         type: 'blocker',
@@ -113,8 +143,8 @@ function generateCandidates(db, context = {}) {
         }, portfolioMap);
         candidate.review_packet_id = packet.id;
         candidate.description = packet.summary || candidate.description;
-        candidate.confidence_score = Number(packet.confidence_score || candidate.confidence_score);
-        candidate.quality_score = Number(packet.quality_score || candidate.quality_score);
+        candidate.confidence_score = Number(packet.confidence_score ?? candidate.confidence_score);
+        candidate.quality_score = Number(packet.quality_score ?? candidate.quality_score);
         candidates.push(candidate);
       } else {
         const candidate = candidateFromTask(task, {
@@ -133,14 +163,16 @@ function generateCandidates(db, context = {}) {
         candidates.push(candidate);
       }
     } else if (task.status === 'ready') {
-      candidates.push(candidateFromTask(task, {
-        type: 'delegate',
-        primary_action: 'delegate',
-        title: `Delegate: ${task.title}`,
-        mode_fit: 0.65,
-        human_touch_minutes: 5,
-        agent_hours_unlocked: 2,
-      }, portfolioMap));
+      if (!assignedTaskIds.has(task.id)) {
+        candidates.push(candidateFromTask(task, {
+          type: 'delegate',
+          primary_action: 'delegate',
+          title: `Delegate: ${task.title}`,
+          mode_fit: 0.65,
+          human_touch_minutes: 5,
+          agent_hours_unlocked: 2,
+        }, portfolioMap));
+      }
     } else if (task.status === 'inbox') {
       candidates.push(candidateFromTask(task, {
         type: 'capture',
@@ -162,28 +194,7 @@ function generateCandidates(db, context = {}) {
     }
   }
 
-  const idleAgents = db.prepare(`SELECT * FROM agents WHERE status = 'idle'`).all();
-  const reservedTaskIds = new Set();
-  for (const agent of idleAgents) {
-    const availableTasks = readyTasks.filter(task => !reservedTaskIds.has(task.id));
-    const match = bestReadyTaskForAgent(agent, availableTasks);
-    if (!match) continue;
-    reservedTaskIds.add(match.task.id);
-    const candidate = candidateFromTask(match.task, {
-      type: 'idle_agent',
-      primary_action: 'assign',
-      title: `Assign ${agent.name} to ${match.task.title}`,
-      mode_fit: 0.75,
-      human_touch_minutes: 2,
-      agent_hours_unlocked: 2,
-    }, portfolioMap);
-    candidate.agent_id = agent.id;
-    candidate.description = `${agent.name} is idle and matches a ready task.`;
-    candidate.idle_agent_fit = true;
-    candidate.confidence_score = Math.max(candidate.confidence_score, match.fit);
-    candidates.push(candidate);
-  }
-
+  candidates.push(...idleAssignmentCandidates);
   return candidates;
 }
 
@@ -191,15 +202,18 @@ function bestReadyTaskForAgent(agent, tasks) {
   const skills = parseJson(agent.skills, []).map(s => String(s).toLowerCase());
   let best = null;
   for (const task of tasks) {
-    const text = `${task.title || ''} ${task.description || ''} ${task.tags || ''} ${task.domain || ''}`.toLowerCase();
+    const domain = taskDomain(task);
+    const text = `${task.title || ''} ${task.description || ''} ${task.tags || ''} ${domain}`.toLowerCase();
     const hits = skills.filter(skill => text.includes(skill));
-    const domainFit = skills.includes(taskDomain(task)) ? 1 : 0;
-    const fit = Math.min(1, 0.45 + hits.length * 0.15 + domainFit * 0.2);
-    if (!best || fit > best.fit || (fit === best.fit && Number(task.impact_score || 0) > Number(best.task.impact_score || 0))) {
+    const domainFit = skills.includes(domain) ? 1 : 0;
+    if (!hits.length && !domainFit) continue;
+    const impactBonus = Math.min(0.15, Number(task.impact_score ?? 0) / 100);
+    const fit = Math.min(1, 0.20 + hits.length * 0.20 + domainFit * 0.25 + impactBonus);
+    if (!best || fit > best.fit || (fit === best.fit && Number(task.impact_score ?? 0) > Number(best.task.impact_score ?? 0))) {
       best = { task, fit };
     }
   }
-  return best && best.fit >= 0.45 ? best : null;
+  return best && best.fit >= 0.50 ? best : null;
 }
 
 module.exports = { generateCandidates };

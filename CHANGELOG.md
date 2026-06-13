@@ -6,12 +6,21 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- `SHARED_REQUESTS_TOKEN` is documented in `.env.example` for optional shared requests.
 - Self-contained smoke test harness that starts BATON on a temporary database when `BATON_BASE_URL` is not set.
 - `/api/health` endpoint for local checks and smoke-test readiness polling.
 - `BATON_DB_PATH` override for isolated test databases.
 - Node runtime pin via `.nvmrc` and package engines.
 
 ### Changed
+
+- Prepared-only delegate/assign/evaluator actions now park touches outside active Flow instead of resurfacing the same card.
+- Idle-agent assignment candidates suppress duplicate generic delegate touches for the same task.
+- Idle-agent matching now requires skill/domain fit instead of assigning random work.
+- Candidate ranking inputs now preserve zero values and let touch-type defaults override task defaults.
+- Domain classification can override default `product` for obvious revenue/code/content/admin/maintenance work.
+- Smoke boot failures now print child server logs by default.
+- `.env` is loaded before database initialization, and server logs no longer include environment-specific SSH hints by default.
 
 - Flow touches rebuild at startup so seeded work appears immediately without making `GET /api/flow` mutate state.
 - Review touch primary actions now use executable `inspect` metadata while the UI labels them as Review.

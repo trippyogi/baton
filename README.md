@@ -111,7 +111,9 @@ VMC_PORT=4420 npm start
 
 Redis is optional for local Flow development. Queue diagnostics gracefully return empty queue data when Redis is unavailable.
 
-BATON is pinned to Node 20 via `.nvmrc`; `package.json` supports Node `>=20 <23`.
+The Requests screen is optional and token-protected; set `SHARED_REQUESTS_TOKEN` in `.env` to enable it locally.
+
+BATON is pinned to Node 20 via `.nvmrc`; `package.json` supports Node `>=20 <21` because `better-sqlite3` is a native dependency.
 
 ## Versioning
 

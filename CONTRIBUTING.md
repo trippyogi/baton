@@ -11,6 +11,7 @@ git clone https://github.com/trippyogi/baton.git
 cd baton
 nvm use
 npm install
+# BATON currently requires Node 20 for native SQLite install consistency
 cp .env.example .env
 npm start
 ```

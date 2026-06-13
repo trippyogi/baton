@@ -33,7 +33,7 @@ export async function renderBoard() {
       card.onclick = () => showMoveModal(card.dataset.id, card.dataset.status, tasks);
     });
   } catch(err) {
-    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${err.message}</div>`;
+    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${escapeHtml(err.message)}</div>`;
   }
 }
 

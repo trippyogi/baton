@@ -1,4 +1,5 @@
 import { get, timeAgo, fmtCost } from '../api.js';
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 let _pollTimer = null;
 
@@ -16,7 +17,7 @@ function statusBadge(status) {
     pending:   { bg: '#9898AC',             text: '#fff'    },
   };
   const s = map[status] || { bg: '#9898AC', text: '#fff' };
-  return `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:${s.bg};color:${s.text}">${status}</span>`;
+  return `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:${s.bg};color:${s.text}">${escapeHtml(status)}</span>`;
 }
 
 export async function renderQueue() {
@@ -73,7 +74,7 @@ export async function renderQueue() {
     _pollTimer = setInterval(() => renderQueue(), 15_000);
 
   } catch (err) {
-    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${err.message}</div>`;
+    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -84,8 +85,8 @@ export function destroyQueue() {
 function kpi(label, value) {
   return `
     <div class="kpi-card">
-      <div class="kpi-label">${label}</div>
-      <div class="kpi-value">${value}</div>
+      <div class="kpi-label">${escapeHtml(label)}</div>
+      <div class="kpi-value">${escapeHtml(value)}</div>
     </div>`;
 }
 
@@ -95,17 +96,17 @@ function streamCard(stream) {
   return `
     <div class="card">
       <div class="card-header" style="margin-bottom:12px">
-        <span class="card-title" style="font-family:monospace;font-size:13px">${stream.name}</span>
-        <span style="font-size:11px;color:var(--text-secondary)">${stream.length} msgs</span>
+        <span class="card-title" style="font-family:monospace;font-size:13px">${escapeHtml(stream.name)}</span>
+        <span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(stream.length)} msgs</span>
       </div>
       ${groups.length === 0
         ? `<div style="font-size:12px;color:var(--text-secondary)">No consumer groups</div>`
         : groups.map(g => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-            <span>${statusDot(g.lag || 0)}<span style="color:var(--text-primary)">${g.name}</span></span>
-            <span style="color:var(--text-secondary)">${g.consumers} consumer${g.consumers !== 1 ? 's' : ''}</span>
-            <span style="color:${(g.lag || 0) > 0 ? '#fbbf24' : 'var(--color-lime)'}">lag ${g.lag ?? 0}</span>
-            <span style="color:var(--text-secondary)">pending ${g.pending ?? 0}</span>
+            <span>${statusDot(g.lag || 0)}<span style="color:var(--text-primary)">${escapeHtml(g.name)}</span></span>
+            <span style="color:var(--text-secondary)">${escapeHtml(g.consumers)} consumer${g.consumers !== 1 ? 's' : ''}</span>
+            <span style="color:${(g.lag || 0) > 0 ? '#fbbf24' : 'var(--color-lime)'}">lag ${escapeHtml(g.lag ?? 0)}</span>
+            <span style="color:var(--text-secondary)">pending ${escapeHtml(g.pending ?? 0)}</span>
           </div>`).join('')}
     </div>`;
 }
@@ -126,11 +127,11 @@ function pendingTable(ss) {
         </tr></thead>
         <tbody>
           ${allPending.map(j => `<tr>
-            <td style="font-size:11px;color:var(--text-secondary)">${j.stream}</td>
-            <td style="font-family:monospace;font-size:11px">${(j.job_id || '—').slice(0, 8)}</td>
-            <td style="font-size:11px">${j.type || '—'}</td>
-            <td style="font-size:11px;color:var(--text-secondary)">${j.repo || '—'}</td>
-            <td style="font-size:11px;color:var(--text-secondary)">${timeAgo(j.created_at)}</td>
+            <td style="font-size:11px;color:var(--text-secondary)">${escapeHtml(j.stream)}</td>
+            <td style="font-family:monospace;font-size:11px">${escapeHtml((j.job_id || '—').slice(0, 8))}</td>
+            <td style="font-size:11px">${escapeHtml(j.type || '—')}</td>
+            <td style="font-size:11px;color:var(--text-secondary)">${escapeHtml(j.repo || '—')}</td>
+            <td style="font-size:11px;color:var(--text-secondary)">${escapeHtml(timeAgo(j.created_at))}</td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -153,12 +154,12 @@ function recentRunsTable(runs) {
               ? Math.round((new Date(r.ended_at) - new Date(r.started_at)) / 1000) + 's'
               : r.status === 'running' ? '⏱' : '—';
             return `<tr>
-              <td style="font-family:monospace;font-size:11px">${r.id.slice(0, 8)}</td>
-              <td style="font-size:11px;color:var(--text-secondary)">${r.type || r.agent_name || '—'}</td>
+              <td style="font-family:monospace;font-size:11px">${escapeHtml(r.id.slice(0, 8))}</td>
+              <td style="font-size:11px;color:var(--text-secondary)">${escapeHtml(r.type || r.agent_name || '—')}</td>
               <td>${statusBadge(r.status)}</td>
               <td style="font-family:var(--font-instrument)">${fmtCost(r.cost)}</td>
-              <td style="font-size:12px;font-family:var(--font-instrument)">${dur}</td>
-              <td style="font-size:11px;color:var(--text-secondary)">${timeAgo(r.started_at)}</td>
+              <td style="font-size:12px;font-family:var(--font-instrument)">${escapeHtml(dur)}</td>
+              <td style="font-size:11px;color:var(--text-secondary)">${escapeHtml(timeAgo(r.started_at))}</td>
             </tr>`;
           }).join('')}
         </tbody>

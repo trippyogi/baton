@@ -11,6 +11,13 @@ let BASE = process.env.BATON_BASE_URL || process.env.BASE_URL || '';
 const stamp = Date.now();
 let child = null;
 let tempDir = null;
+let childOut = '';
+let childErr = '';
+
+function printChildLogs() {
+  if (childOut) console.error(`Server stdout:\n${childOut}`);
+  if (childErr) console.error(`Server stderr:\n${childErr}`);
+}
 
 async function request(path, { method = 'GET', body, ok = true } = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -34,6 +41,7 @@ async function waitForHealth(timeoutMs = 10000) {
     } catch (_) {}
     await new Promise(resolve => setTimeout(resolve, 150));
   }
+  printChildLogs();
   throw new Error(`Timed out waiting for ${BASE}/api/health`);
 }
 
@@ -53,10 +61,19 @@ async function startServerIfNeeded() {
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  child.stdout.on('data', data => process.env.BATON_SMOKE_VERBOSE && process.stdout.write(data));
-  child.stderr.on('data', data => process.env.BATON_SMOKE_VERBOSE && process.stderr.write(data));
+  child.stdout.on('data', data => {
+    childOut += data.toString();
+    if (process.env.BATON_SMOKE_VERBOSE) process.stdout.write(data);
+  });
+  child.stderr.on('data', data => {
+    childErr += data.toString();
+    if (process.env.BATON_SMOKE_VERBOSE) process.stderr.write(data);
+  });
   child.on('exit', code => {
-    if (code && code !== 0 && process.env.BATON_SMOKE_VERBOSE) console.error(`smoke server exited ${code}`);
+    if (code && code !== 0) {
+      console.error(`smoke server exited ${code}`);
+      printChildLogs();
+    }
   });
   await waitForHealth();
 }
@@ -121,9 +138,14 @@ async function main() {
     body: { action: 'delegate' },
   })).json;
   assert.equal(preparedDelegate.dispatch_status, 'not_configured', 'delegate is prepared-only without dispatcher');
+  assert.equal(preparedDelegate.touch.status, 'prepared', 'prepared delegate leaves active queue');
   assert.equal(preparedDelegate.task.status, 'ready', 'prepared delegate does not mark task airborne');
+  const afterPrepare = (await request('/api/flow')).json;
+  assert.ok(!afterPrepare.next_touches.some(t => t.id === delegate.created.touch_id), 'prepared touch is not in next touches');
 
-  const snooze = (await request(`/api/touches/${delegate.created.touch_id}/action`, {
+  const snoozeTarget = flow.next_touches.find(t => t.id !== delegate.created.touch_id) || afterPrepare.next_touches[0];
+  assert.ok(snoozeTarget?.id, 'touch available for snooze test');
+  const snooze = (await request(`/api/touches/${snoozeTarget.id}/action`, {
     method: 'PATCH',
     body: { action: 'snooze', until: '2000-01-01 00:00:00' },
   })).json;

@@ -1,14 +1,15 @@
 {
   "name": "baton",
   "version": "0.1.0",
-  "description": "BATON Flow Ops — Next-Touch Engine",
+  "description": "BATON Flow Ops \u2014 Next-Touch Engine",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
     "check:js": "find server public/js -name '*.js' -print0 | xargs -0 -n1 node --check",
     "smoke": "node scripts/smoke-flow.js",
     "audit": "npm audit --audit-level=moderate --omit=dev",
-    "test": "npm run check:js && npm run smoke"
+    "test": "npm run check:js && npm run smoke",
+    "preinstall": "node -e \"const major=process.versions.node.split('.')[0]; if(major !== '20'){ console.error('BATON requires Node 20. Run: nvm use'); process.exit(1); }\""
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
@@ -26,6 +27,6 @@
   },
   "homepage": "https://github.com/trippyogi/baton#readme",
   "engines": {
-    "node": ">=20 <23"
+    "node": ">=20 <21"
   }
 }

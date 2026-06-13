@@ -1,4 +1,5 @@
 import { get, fmtCost, humanTime } from '../api.js';
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 export async function renderCosts() {
   const el = document.getElementById('screen-costs');
@@ -127,8 +128,8 @@ export async function renderCosts() {
                 ? (pct > 90 ? 'var(--color-red)' : pct > 70 ? 'var(--color-ember)' : 'var(--color-lime)')
                 : 'var(--text-secondary)';
               return `<tr>
-                <td style="max-width:260px;font-weight:500">${c.name}</td>
-                <td><span class="badge badge-${c.status === 'ACTIVE' ? 'ready' : 'waiting'}">${c.status}</span></td>
+                <td style="max-width:260px;font-weight:500">${escapeHtml(c.name)}</td>
+                <td><span class="badge badge-${escapeAttr(c.status === 'ACTIVE' ? 'ready' : 'waiting')}">${escapeHtml(c.status)}</span></td>
                 <td style="text-align:right;font-family:var(--font-instrument)">${c.dailyBudget ? fmtCost(c.dailyBudget) : '—'}</td>
                 <td style="text-align:right;font-family:var(--font-instrument)">${fmtCost(c.spendToday)}</td>
                 <td style="text-align:right;font-family:var(--font-instrument)">${fmtCost(c.spend7d)}</td>
@@ -164,11 +165,11 @@ function exhaustLabel(isoStr, pct) {
 function degraded(title, msg) {
   return `<div class="canvas-inner">
     <div class="screen-header" style="padding-top:8px;margin-bottom:24px">
-      <div class="screen-title" style="font-size:28px;font-weight:600">${title}</div>
+      <div class="screen-title" style="font-size:28px;font-weight:600">${escapeHtml(title)}</div>
     </div>
     <div class="card" style="border-color:var(--color-ember)">
       <div style="color:var(--color-ember);font-weight:600;margin-bottom:8px">⚠ Data unavailable</div>
-      <div style="font-size:13px;color:var(--text-secondary)">${msg}</div>
+      <div style="font-size:13px;color:var(--text-secondary)">${escapeHtml(msg)}</div>
     </div>
   </div>`;
 }
