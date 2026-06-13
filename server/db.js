@@ -22,6 +22,21 @@ db.exec(schema);
   if (!cols.includes('output_path'))   db.exec('ALTER TABLE runs ADD COLUMN output_path TEXT');
   if (!cols.includes('output_preview'))db.exec('ALTER TABLE runs ADD COLUMN output_preview TEXT');
 
+  const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map(c => c.name);
+  if (!taskCols.includes('domain'))                 db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'product'");
+  if (!taskCols.includes('project_key'))            db.exec('ALTER TABLE tasks ADD COLUMN project_key TEXT');
+  if (!taskCols.includes('context_key'))            db.exec('ALTER TABLE tasks ADD COLUMN context_key TEXT');
+  if (!taskCols.includes('autonomy_level'))         db.exec('ALTER TABLE tasks ADD COLUMN autonomy_level INTEGER DEFAULT 1');
+  if (!taskCols.includes('risk_level'))             db.exec("ALTER TABLE tasks ADD COLUMN risk_level TEXT DEFAULT 'low'");
+  if (!taskCols.includes('quality_gate'))           db.exec("ALTER TABLE tasks ADD COLUMN quality_gate TEXT DEFAULT 'general'");
+  if (!taskCols.includes('spec_quality'))           db.exec("ALTER TABLE tasks ADD COLUMN spec_quality TEXT DEFAULT 'unknown'");
+  if (!taskCols.includes('human_touch_minutes'))    db.exec('ALTER TABLE tasks ADD COLUMN human_touch_minutes INTEGER DEFAULT 5');
+  if (!taskCols.includes('agent_hours_unlocked'))   db.exec('ALTER TABLE tasks ADD COLUMN agent_hours_unlocked REAL DEFAULT 0.5');
+  if (!taskCols.includes('confidence_score'))       db.exec('ALTER TABLE tasks ADD COLUMN confidence_score REAL DEFAULT 0.7');
+  if (!taskCols.includes('quality_score'))          db.exec('ALTER TABLE tasks ADD COLUMN quality_score REAL DEFAULT 0.7');
+  if (!taskCols.includes('fun_score'))              db.exec('ALTER TABLE tasks ADD COLUMN fun_score REAL DEFAULT 0.0');
+  if (!taskCols.includes('strategic_optionality'))  db.exec('ALTER TABLE tasks ADD COLUMN strategic_optionality REAL DEFAULT 0.0');
+
   // Migration: shared_requests table (2026-02-27)
   db.exec(`
     CREATE TABLE IF NOT EXISTS shared_requests (
@@ -35,6 +50,26 @@ db.exec(schema);
       updated_at TEXT DEFAULT (datetime('now'))
     );
   `);
+
+  const domains = [
+    ['revenue', 'Revenue', 1.40, 0, 14],
+    ['product', 'Product', 1.30, 0, 14],
+    ['code', 'Code', 1.10, 0, 14],
+    ['content', 'Content', 1.05, 0, 14],
+    ['personal_brand', 'Personal Brand', 1.00, 1, 14],
+    ['relationships', 'Relationships', 1.00, 1, 14],
+    ['health_life', 'Health / Life', 1.00, 1, 14],
+    ['creative_exploration', 'Creative Exploration', 0.95, 0, 14],
+    ['learning', 'Learning', 0.90, 0, 14],
+    ['fun', 'Fun', 0.85, 0, 14],
+    ['maintenance', 'Maintenance', 0.80, 0, 14],
+    ['admin', 'Admin', 0.70, 0, 14],
+  ];
+  const insertDomain = db.prepare(`
+    INSERT OR IGNORE INTO portfolio_domains (id, label, weight, protected_minimum, starvation_days)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  for (const domain of domains) insertDomain.run(...domain);
 })();
 
 // Seed mock data if tables are empty

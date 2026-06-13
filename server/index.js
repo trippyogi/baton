@@ -23,6 +23,8 @@ app.use('/api/costs',       require('./routes/costs'));
 app.use('/api/performance', require('./routes/performance'));
 app.use('/api/memory',      require('./routes/memory'));
 app.use('/api/team',        require('./routes/team'));
+app.use('/api/flow',        require('./routes/flow'));
+app.use('/api/touches',     require('./routes/touches'));
 app.use('/api/queue',       require('./routes/queue'));
 app.use('/api/webhook/github',   require('./routes/webhook'));
 app.use('/api/shared-requests', require('./routes/shared-requests'));
