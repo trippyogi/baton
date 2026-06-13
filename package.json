@@ -1,7 +1,7 @@
 {
   "name": "vector-mission-control",
   "version": "1.0.0",
-  "description": "Vector Mission Control — Phase 1",
+  "description": "BATON Flow Ops — Next-Touch Engine",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js"

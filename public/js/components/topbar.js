@@ -4,12 +4,12 @@ export function renderTopbar(health = 'loading') {
               : health === 'healthy' ? 'Online'
               : 'Degraded';
   el.innerHTML = `
-    <span class="topbar-logo">VMC</span>
-    <input class="topbar-search" type="text" placeholder="Search tasks, runs, alerts…" id="global-search">
+    <span class="topbar-logo">BATON</span>
+    <input class="topbar-search" type="text" placeholder="Search touches, tasks, runs…" id="global-search">
     <div class="topbar-right">
       <div class="topbar-status">
         <span class="status-dot ${health} live-dot"></span>
-        <span>Vector ${label}</span>
+        <span>BATON ${label}</span>
       </div>
       <button class="btn btn-primary btn-sm" id="btn-create-task">+ Task</button>
     </div>`;
@@ -20,5 +20,5 @@ export function updateHealthDot(health) {
   if (!dot) return;
   dot.className = `status-dot ${health} live-dot`;
   const label = dot.nextElementSibling;
-  if (label) label.textContent = `Vector ${health === 'healthy' ? 'Online' : 'Degraded'}`;
+  if (label) label.textContent = `BATON ${health === 'healthy' ? 'Online' : 'Degraded'}`;
 }

@@ -51,10 +51,12 @@ function scoreTouch(touch, context = {}) {
   const riskPenalty = risk * 20;
   const unclearSpecPenalty = touch.spec_quality === 'weak' ? 15 : 0;
   const reviewDebtPenalty = context.reviewDebtHigh && touch.type === 'delegate' ? 10 : 0;
+  const manualBoost = clamp01(touch.manual_priority_boost ?? 0) * 20;
+  const pinnedBonus = Number(touch.pinned || 0) ? 30 : 0;
 
   const raw = Math.round(
     baseValue + agentMotionBonus + modeBonus + portfolioBonus + starvationBonus + urgencyBonus +
-    reviewAgeBonus + blockedAgeBonus + idleAgentBonus + funOptionBonus - humanTouchPenalty -
+    reviewAgeBonus + blockedAgeBonus + idleAgentBonus + funOptionBonus + manualBoost + pinnedBonus - humanTouchPenalty -
     contextSwitchPenalty - riskPenalty - unclearSpecPenalty - reviewDebtPenalty
   );
   return Math.max(0, Math.min(100, raw));

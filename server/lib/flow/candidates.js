@@ -163,9 +163,12 @@ function generateCandidates(db, context = {}) {
   }
 
   const idleAgents = db.prepare(`SELECT * FROM agents WHERE status = 'idle'`).all();
+  const reservedTaskIds = new Set();
   for (const agent of idleAgents) {
-    const match = bestReadyTaskForAgent(agent, readyTasks);
+    const availableTasks = readyTasks.filter(task => !reservedTaskIds.has(task.id));
+    const match = bestReadyTaskForAgent(agent, availableTasks);
     if (!match) continue;
+    reservedTaskIds.add(match.task.id);
     const candidate = candidateFromTask(match.task, {
       type: 'idle_agent',
       primary_action: 'assign',

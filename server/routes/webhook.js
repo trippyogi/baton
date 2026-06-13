@@ -27,19 +27,23 @@ const validateHMAC = (req) => {
   const hmac = crypto.createHmac('sha256', secret);
   hmac.update(rawBody);
   const expectedSignature = `sha256=${hmac.digest('hex')}`;
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  const actual = Buffer.from(signature);
+  const expected = Buffer.from(expectedSignature);
+  if (actual.length !== expected.length) return false;
+  return crypto.timingSafeEqual(actual, expected);
 };
 
 router.post('/', async (req, res) => {
   if (!validateHMAC(req)) {
     return res.status(403).send('Invalid signature');
   }
-  const { action, check_suite } = req.body;
+  const { action, check_suite } = req.body || {};
+  if (!check_suite) return res.status(200).send('Ignoring non-check-suite event');
   if (action !== 'completed' || check_suite.conclusion !== 'failure') {
     return res.status(200).send('Ignoring non-failure event');
   }
 
-  const headBranch = check_suite.head_branch;
+  const headBranch = check_suite.head_branch || '';
   if (!headBranch.startsWith('circuit/')) {
     return res.status(200).send('Ignoring non-circuit branch');
   }
@@ -57,7 +61,10 @@ router.post('/', async (req, res) => {
     return res.status(200).send('Run marked as failed — max fix attempts reached');
   }
 
-  const fetchLogs = await fetch(`https://api.github.com/repos/${req.body.repository.full_name}/check-suites/${check_suite.id}/check-runs`, {
+  const repoName = req.body?.repository?.full_name;
+  if (!repoName) return res.status(200).send('Ignoring event without repository');
+
+  const fetchLogs = await fetch(`https://api.github.com/repos/${repoName}/check-suites/${check_suite.id}/check-runs`, {
     method: 'GET',
     headers: { 'Authorization': `Bearer ${process.env.GITHUB_WORKER_TOKEN}` }
   });
@@ -69,7 +76,7 @@ router.post('/', async (req, res) => {
     schema_version: 1,
     type: 'fix',
     created_at: new Date().toISOString(),
-    repo: req.body.repository.full_name,
+    repo: repoName,
     base_branch: 'main',
     target_branch: headBranch,
     prompt: `CI failed on branch ${headBranch}. Fix the TypeScript errors so all checks pass.`,

@@ -12,7 +12,7 @@ export async function renderTeam() {
 
   <div class="screen-header" style="padding-top:8px;margin-bottom:24px">
     <div class="screen-title" style="font-size:28px;font-weight:600;letter-spacing:-0.02em">Team</div>
-    <div class="screen-subtitle" style="margin-top:8px">Active agents in the Vector / Circuit system</div>
+    <div class="screen-subtitle" style="margin-top:8px">Active agents in the BATON Flow Ops system</div>
   </div>
 
   <div class="team-grid">

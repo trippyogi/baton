@@ -1,5 +1,5 @@
 'use strict';
-const { id, stringifyJson } = require('./utils');
+const { id, stringifyJson, parseJson } = require('./utils');
 const { normalizeMode, VALID_MODES } = require('./modes');
 const { rebuildTouches, listOpenTouches } = require('./rebuild');
 
@@ -43,7 +43,16 @@ function executeCommand(db, input) {
   }
 
   if (lower === 'idle agents') {
-    return { interpreted_as: 'idle_agents', agents: [], message: 'Agent capacity lands in Phase 3; no agent registry yet.' };
+    rebuildTouches(db);
+    const agents = db.prepare(`SELECT * FROM agents WHERE status = 'idle' ORDER BY name`).all()
+      .map(agent => ({ ...agent, skills: parseJson(agent.skills, []), permissions: parseJson(agent.permissions, {}) }));
+    const touches = listOpenTouches(db, 50).filter(t => t.type === 'idle_agent');
+    return {
+      interpreted_as: 'idle_agents',
+      agents,
+      touches,
+      message: `${agents.length} idle agents. ${touches.length} assignment candidates ready.`,
+    };
   }
 
   if (lower.startsWith('delegate ')) {
