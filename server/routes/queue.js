@@ -4,7 +4,17 @@ const Redis   = require('ioredis');
 const db      = require('../db');
 
 const router = express.Router();
-const redis  = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
+const redis  = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+  lazyConnect: true,
+  maxRetriesPerRequest: 1,
+  enableOfflineQueue: false,
+  connectTimeout: 250,
+});
+
+redis.on('error', () => {
+  // Queue status is diagnostic only. Keep local development usable when Redis is
+  // not running; individual helpers below degrade to empty queue data.
+});
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 

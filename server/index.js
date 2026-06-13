@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const path    = require('path');
+const db      = require('./db');
 require('dotenv').config();
 
 const app  = express();
