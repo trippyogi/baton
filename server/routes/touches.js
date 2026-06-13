@@ -59,6 +59,10 @@ router.patch('/:id/action', (req, res) => {
         touchStatus = 'passed';
         taskStatus = 'ready';
         message = 'Answer captured; task is ready to pass.';
+      } else if (action === 'send_to_evaluator') {
+        touchStatus = 'passed';
+        taskStatus = 'in_progress';
+        message = 'Sent to evaluator/refiner.';
       } else if (action === 'snooze') {
         touchStatus = 'snoozed';
         snoozedUntil = req.body.until || defaultSnooze();
@@ -116,7 +120,7 @@ function defaultSnooze() {
 }
 
 function eventName(action) {
-  return ({ accept: 'accepted', refine: 'refined', delegate: 'delegated', answer: 'resolved', snooze: 'snoozed', archive: 'archived', process: 'resolved', inspect: 'opened', escalate: 'escalated' })[action] || action;
+  return ({ accept: 'accepted', refine: 'refined', delegate: 'delegated', answer: 'resolved', send_to_evaluator: 'delegated', snooze: 'snoozed', archive: 'archived', process: 'resolved', inspect: 'opened', escalate: 'escalated' })[action] || action;
 }
 
 module.exports = router;

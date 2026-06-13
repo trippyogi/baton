@@ -5,7 +5,8 @@ const { getPortfolioMap, domainMeta, starvationScore } = require('./portfolio');
 
 const SECONDARY_ACTIONS = {
   blocker: ['snooze', 'escalate', 'archive'],
-  review: ['refine', 'accept', 'snooze', 'archive'],
+  review: ['refine', 'accept', 'send_to_evaluator', 'snooze', 'archive'],
+  refine: ['send_to_evaluator', 'snooze', 'archive'],
   delegate: ['snooze', 'archive'],
   capture: ['delegate', 'archive', 'snooze'],
   stale_run: ['snooze', 'archive', 'escalate'],
@@ -92,14 +93,36 @@ function generateCandidates(db, context = {}) {
         agent_hours_unlocked: 1.5,
       }, portfolioMap));
     } else if (task.status === 'review') {
-      candidates.push(candidateFromTask(task, {
-        type: 'review',
-        primary_action: 'review',
-        title: `Review: ${task.title}`,
-        mode_fit: 0.75,
-        human_touch_minutes: 7,
-        agent_hours_unlocked: 1,
-      }, portfolioMap));
+      const packet = db.prepare(`
+        SELECT * FROM review_packets
+        WHERE task_id = ? AND packet_status = 'valid'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).get(task.id);
+      if (packet) {
+        const candidate = candidateFromTask(task, {
+          type: 'review',
+          primary_action: 'review',
+          title: `Review: ${task.title}`,
+          mode_fit: 0.75,
+          human_touch_minutes: 7,
+          agent_hours_unlocked: 1,
+        }, portfolioMap);
+        candidate.review_packet_id = packet.id;
+        candidate.description = packet.summary || candidate.description;
+        candidate.confidence_score = Number(packet.confidence_score || candidate.confidence_score);
+        candidate.quality_score = Number(packet.quality_score || candidate.quality_score);
+        candidates.push(candidate);
+      } else {
+        candidates.push(candidateFromTask(task, {
+          type: 'refine',
+          primary_action: 'send_to_evaluator',
+          title: `Refine review packet: ${task.title}`,
+          mode_fit: 0.55,
+          human_touch_minutes: 3,
+          agent_hours_unlocked: 0.75,
+        }, portfolioMap));
+      }
     } else if (task.status === 'ready') {
       candidates.push(candidateFromTask(task, {
         type: 'delegate',

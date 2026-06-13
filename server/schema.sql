@@ -151,3 +151,40 @@ CREATE TABLE IF NOT EXISTS touch_events (
 
 INSERT OR IGNORE INTO flow_settings (id, current_mode)
 VALUES ('default', 'triage');
+
+CREATE TABLE IF NOT EXISTS review_packets (
+  id TEXT PRIMARY KEY,
+  task_id TEXT,
+  run_id TEXT,
+  agent_id TEXT,
+  work_type TEXT NOT NULL DEFAULT 'general',
+  goal TEXT NOT NULL,
+  artifact_url TEXT,
+  summary TEXT DEFAULT '',
+  changes TEXT DEFAULT '',
+  rationale TEXT DEFAULT '',
+  evidence TEXT DEFAULT '[]',
+  risks TEXT DEFAULT '[]',
+  open_questions TEXT DEFAULT '[]',
+  suggested_next_action TEXT DEFAULT '',
+  confidence_score REAL DEFAULT 0.70,
+  quality_score REAL DEFAULT 0.70,
+  packet_status TEXT NOT NULL DEFAULT 'draft',
+  validator_notes TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY(task_id) REFERENCES tasks(id)
+);
+
+CREATE TABLE IF NOT EXISTS quality_policies (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  policy_type TEXT NOT NULL DEFAULT 'general',
+  applies_to TEXT DEFAULT '[]',
+  source_touch_id TEXT,
+  confidence REAL DEFAULT 0.70,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
