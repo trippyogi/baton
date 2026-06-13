@@ -1,7 +1,7 @@
 {
   "name": "baton",
   "version": "0.1.0",
-  "description": "BATON Flow Ops — Next-Touch Engine",
+  "description": "BATON Flow Ops \u2014 Next-Touch Engine",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
@@ -9,7 +9,9 @@
     "smoke": "node scripts/smoke-flow.js",
     "audit": "npm audit --audit-level=moderate --omit=dev",
     "test": "npm run check:js && npm run smoke",
-    "preinstall": "node -e \"const major=process.versions.node.split('.')[0]; if(major !== '20'){ console.error('BATON requires Node 20. Run: nvm use'); process.exit(1); }\""
+    "preinstall": "node -e \"const major=process.versions.node.split('.')[0]; if(major !== '20'){ console.error('BATON requires Node 20. Run: nvm use'); process.exit(1); }\"",
+    "fake:spectre": "node scripts/fake-spectre.js",
+    "smoke:dispatch": "node scripts/smoke-dispatch-spectre.js"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",

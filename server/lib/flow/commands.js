@@ -3,12 +3,30 @@ const { id, stringifyJson, parseJson } = require('./utils');
 const { normalizeMode, VALID_MODES } = require('./modes');
 const { rebuildTouches, listOpenTouches } = require('./rebuild');
 
-function createTask(db, { title, description = '', status = 'inbox', priority = 'medium' }) {
+function createTask(db, {
+  title,
+  description = '',
+  status = 'inbox',
+  priority = 'medium',
+  owner = 'jeremy',
+  tags = [],
+  domain = 'product',
+  project_key = null,
+  autonomy_level = 1,
+  risk_level = 'low',
+  quality_gate = 'general',
+  human_touch_minutes = 5,
+  agent_hours_unlocked = 0.5,
+  impact_score = 5,
+  effort_score = 5,
+}) {
   const taskId = id('task');
   db.prepare(`
-    INSERT INTO tasks (id, title, description, status, priority, owner, tags, impact_score, effort_score)
-    VALUES (?, ?, ?, ?, ?, 'jeremy', '[]', 5, 5)
-  `).run(taskId, title, description, status, priority);
+    INSERT INTO tasks (
+      id, title, description, status, priority, owner, tags, impact_score, effort_score,
+      domain, project_key, autonomy_level, risk_level, quality_gate, human_touch_minutes, agent_hours_unlocked
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(taskId, title, description, status, priority, owner, stringifyJson(tags), impact_score, effort_score, domain, project_key, autonomy_level, risk_level, quality_gate, human_touch_minutes, agent_hours_unlocked);
   return db.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
 }
 
@@ -47,12 +65,32 @@ function executeCommand(db, input) {
     const agents = db.prepare(`SELECT * FROM agents WHERE status = 'idle' ORDER BY name`).all()
       .map(agent => ({ ...agent, skills: parseJson(agent.skills, []), permissions: parseJson(agent.permissions, {}) }));
     const touches = listOpenTouches(db, 50).filter(t => t.type === 'idle_agent');
-    return {
-      interpreted_as: 'idle_agents',
-      agents,
-      touches,
-      message: `${agents.length} idle agents. ${touches.length} assignment candidates ready.`,
-    };
+    return { interpreted_as: 'idle_agents', agents, touches, message: `${agents.length} idle agents. ${touches.length} assignment candidates ready.` };
+  }
+
+  const spectreMatch = raw.match(/^(?:delegate|assign)\s+spectre\s+(.+)$/i) || raw.match(/^spectre\s+(.+)$/i);
+  if (spectreMatch) {
+    const title = spectreMatch[1].trim();
+    const task = createTask(db, {
+      title,
+      status: 'ready',
+      priority: 'high',
+      owner: 'spectre',
+      tags: ['spectre', 'metatravelers', 'launch'],
+      domain: 'revenue',
+      project_key: 'metatravelers',
+      autonomy_level: 3,
+      risk_level: 'medium',
+      quality_gate: 'strategy',
+      human_touch_minutes: 3,
+      agent_hours_unlocked: 2,
+      impact_score: 8,
+      effort_score: 2,
+    });
+    rebuildTouches(db);
+    const touch = db.prepare(`SELECT * FROM baton_touches WHERE task_id = ? AND type = 'idle_agent' ORDER BY created_at DESC LIMIT 1`).get(task.id)
+      || db.prepare(`SELECT * FROM baton_touches WHERE task_id = ? ORDER BY created_at DESC LIMIT 1`).get(task.id);
+    return { interpreted_as: 'delegate_spectre', created: { task_id: task.id, touch_id: touch?.id || null }, message: 'Created a Spectre-ready task and assignment touch.' };
   }
 
   if (lower.startsWith('delegate ')) {

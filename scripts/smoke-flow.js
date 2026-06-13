@@ -137,11 +137,11 @@ async function main() {
     method: 'PATCH',
     body: { action: 'delegate' },
   })).json;
-  assert.equal(preparedDelegate.dispatch_status, 'not_configured', 'delegate is prepared-only without dispatcher');
-  assert.equal(preparedDelegate.touch.status, 'prepared', 'prepared delegate leaves active queue');
-  assert.equal(preparedDelegate.task.status, 'ready', 'prepared delegate does not mark task airborne');
+  assert.equal(preparedDelegate.dispatch_status, 'not_configured', 'delegate is not configured without dispatcher');
+  assert.equal(preparedDelegate.touch.status, 'active', 'unconfigured delegate remains visible');
+  assert.equal(preparedDelegate.task.status, 'ready', 'unconfigured delegate does not mark task airborne');
   const afterPrepare = (await request('/api/flow')).json;
-  assert.ok(!afterPrepare.next_touches.some(t => t.id === delegate.created.touch_id), 'prepared touch is not in next touches');
+  assert.ok(afterPrepare.next_touches.some(t => t.id === delegate.created.touch_id), 'unconfigured touch stays in next touches');
 
   const snoozeTarget = flow.next_touches.find(t => t.id !== delegate.created.touch_id) || afterPrepare.next_touches[0];
   assert.ok(snoozeTarget?.id, 'touch available for snooze test');

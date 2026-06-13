@@ -107,10 +107,12 @@ function touchCard(touch, idx) {
           <span>~${touch.human_touch_minutes || 5}m</span>
           <span>${escapeHtml(touch.risk_level || 'low')} risk</span>
           <span>L${touch.autonomy_level || 1}</span>
+          ${touch.agent_id ? `<span>Agent: ${escapeHtml(touch.agent_id)}</span>` : ''}
         </div>
         <div class="touch-why">${escapeHtml(touch.why_now || 'Ranks well for current mode.')}</div>
         <div class="touch-detail" hidden>
           <div><strong>Summary</strong><br>${escapeHtml(touch.description || 'No extra context yet.')}</div>
+          ${touch.agent_id ? `<div><strong>Dispatch</strong><br>Agent: ${escapeHtml(touch.agent_id)} · Action: Prepare</div>` : ''}
           <textarea class="touch-feedback" rows="3" placeholder="Feedback, answer, refinement, or delegation instructions..."></textarea>
           <div class="touch-detail-actions">
             <button class="btn btn-primary touch-submit-feedback">Send feedback</button>

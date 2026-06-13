@@ -20,7 +20,7 @@ Implemented phases:
   - Extension routes load before the SPA fallback.
   - Snoozed touches resurface after expiry; `passed` touches no longer suppress new generated touches.
   - Touch actions are authorized by touch type; non-review touches cannot be accepted as done.
-  - Delegation/assignment is honest when no worker dispatcher exists: it prepares work but does not mark tasks/agents running.
+  - Delegation/assignment is truthful: configured agents dispatch through a run lifecycle; unconfigured agents remain visible and do not fake motion.
   - Invalid review packets create evaluator/refinement touches; valid packets create review touches.
   - Flow command submit force-refreshes after action.
   - User-controlled text is escaped across Flow-adjacent task/board/run surfaces.
@@ -29,7 +29,7 @@ Implemented phases:
   - `idle agents` uses the real agent registry and assignment candidates avoid duplicate ready-task matches.
   - Tasks API accepts ranking/autonomy fields.
   - Webhook signature/payload handling is hardened.
-  - `npm run check:js`, `npm run smoke`, `npm run audit`, and `npm test` scripts are available.
+  - `npm run check:js`, `npm run smoke`, `npm run smoke:dispatch`, `npm run audit`, and `npm test` scripts are available.
 
 - **Phase 0 — Local app stabilization**
   - Declared missing `dotenv` and `ioredis` dependencies.
@@ -55,7 +55,15 @@ Implemented phases:
   - `/api/agents` endpoint.
   - Idle-agent counts in Flow airspace.
   - Idle-agent candidate generation against ready tasks.
-  - Assigning an idle-agent touch prepares the handoff. Until a dispatcher is configured, BATON does not mark the task airborne or the agent running.
+  - Assigning an idle-agent touch creates a dispatch run when the agent has configured transport. BATON marks agents running only after ACK.
+
+
+- **Spectre webhook dispatch v1**
+  - Spectre is seeded as the first real dispatch-capable orchestrator agent.
+  - `delegate Spectre ...` creates a Spectre-owned ready task and one assignment touch.
+  - Prepare/Assign creates a run, sends a compact `baton.dispatch.v1` envelope by webhook, waits for ACK, then marks the run/agent/task in motion.
+  - Spectre review packets advance runs to `review_ready`; accepting the review completes the task and run.
+  - `npm run fake:spectre` and `npm run smoke:dispatch` exercise the full local loop.
 
 ## Product model
 
@@ -142,17 +150,18 @@ Key defaults:
 - Webhooks validate HMAC signatures before doing work.
 - User-controlled UI output is escaped.
 - Touch actions are authorized by type.
-- Delegation/assignment is currently prepared-only unless dispatch is configured; it does not mark tasks airborne or agents running.
+- Delegation/assignment only marks tasks airborne and agents running after configured dispatch ACKs. Unconfigured dispatch remains visible and honest.
 - `npm run audit` should pass before release tags.
 
 ## Checks
 
 ```bash
 npm test
+npm run smoke:dispatch
 npm run audit
 ```
 
-`npm test` runs syntax checks and a self-contained smoke test. The smoke test starts BATON on a temporary port with an isolated SQLite database unless `BATON_BASE_URL` is set.
+`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop.
 
 ## API overview
 
@@ -187,6 +196,14 @@ GET  /api/review-packets
 POST /api/review-packets
 ```
 
+Dispatch:
+
+```text
+POST /api/dispatch/test
+POST /api/runs/:id/ack
+POST /api/runs/:id/status
+```
+
 Existing routes remain available for tasks, runs, overview, queue, costs, performance, memory, team, shared requests, and creatives.
 
 ## Command box examples
@@ -195,6 +212,7 @@ Existing routes remain available for tasks, runs, overview, queue, costs, perfor
 capture improve onboarding copy for MetaTravelers
 idea make review packets mandatory before human review
 delegate audit checkout funnel copy
+delegate Spectre review MetaTravelers launch plan
 mode launch
 mode review
 review next

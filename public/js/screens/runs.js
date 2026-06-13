@@ -150,11 +150,19 @@ async function showRunDetail(id, cached) {
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px">
         <div><div class="kpi-label">Status</div><span class="badge badge-${escapeAttr(run.status)}">${escapeHtml(run.status)}</span></div>
+        <div><div class="kpi-label">Dispatch</div><span class="badge badge-${escapeAttr(run.dispatch_status || 'not_configured')}">${escapeHtml(run.dispatch_status || 'not_configured')}</span></div>
+        <div><div class="kpi-label">Agent ID</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.agent_id || '—')}</div></div>
+        <div><div class="kpi-label">Task ID</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.task_id || '—')}</div></div>
+        <div><div class="kpi-label">External</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.external_run_id || '—')}</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px">
         <div><div class="kpi-label">Worker</div>${workerBadge(run.worker_type)}</div>
         <div><div class="kpi-label">Tokens</div><div style="font-family:var(--font-instrument)">${fmtTokens(run.tokens)}</div></div>
         <div><div class="kpi-label">Cost</div><div style="font-family:var(--font-instrument);color:var(--accent)">${fmtCost(run.cost)}</div></div>
         <div><div class="kpi-label">Started</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.started_at || '—')}</div></div>
+        <div><div class="kpi-label">Last Status</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.last_status_at || '—')}</div></div>
       </div>
+      ${run.error ? `<div style="font-size:12px;color:var(--color-red);margin-bottom:12px">Dispatch error: ${escapeHtml(run.error)}</div>` : ''}
       ${run.output_path ? `
         <div class="kpi-label" style="margin-bottom:6px">Output</div>
         <div style="font-size:11px;font-family:monospace;background:var(--bg-base);border-radius:var(--radius-sm);padding:8px 12px;color:var(--color-ash);margin-bottom:12px">${escapeHtml(run.output_path)}</div>` : ''}

@@ -13,7 +13,6 @@ function explainTouch(touch, context = {}) {
   if (touch.type === 'delegate') reasons.push('ready to pass');
   if (touch.type === 'idle_agent') reasons.push('idle agent matched to ready work');
   if (touch.type === 'refine') reasons.push('needs evaluator/refiner pass-off');
-  if (touch.status === 'prepared') reasons.push('prepared only, awaiting dispatcher configuration');
   if (touch.type === 'capture') reasons.push('prevents idea loss');
   if (touch.type === 'stale_run') reasons.push('airborne work may be stale');
   if ((touch.agent_hours_unlocked ?? 0) >= 2) reasons.push(`unlocks ~${touch.agent_hours_unlocked}h agent work`);
