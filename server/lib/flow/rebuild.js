@@ -4,7 +4,7 @@ const { generateCandidates } = require('./candidates');
 const { scoreTouch } = require('./ranking');
 const { explainTouch } = require('./explain');
 
-const ACTIVE_STATUSES = ['pending', 'active', 'passed', 'snoozed'];
+const ACTIVE_STATUSES = ['pending', 'active', 'snoozed'];
 
 function loadSettings(db) {
   return db.prepare(`SELECT * FROM flow_settings WHERE id = 'default'`).get()
@@ -75,7 +75,18 @@ function upsertTouch(db, touch, context) {
   return { id: touchId, generated: true };
 }
 
+function reactivateExpiredSnoozes(db) {
+  return db.prepare(`
+    UPDATE baton_touches
+    SET status = 'pending', snoozed_until = NULL, updated_at = datetime('now')
+    WHERE status = 'snoozed'
+      AND snoozed_until IS NOT NULL
+      AND snoozed_until <= datetime('now')
+  `).run().changes;
+}
+
 function rankOpenTouches(db) {
+  reactivateExpiredSnoozes(db);
   const rows = db.prepare(`
     SELECT id FROM baton_touches
     WHERE status IN ('pending', 'active')
@@ -96,7 +107,10 @@ function rebuildTouches(db) {
   let archived = 0;
   const candidateKeys = new Set(candidates.map(c => keyFor({ ...c, source: 'generated' })));
 
+  let reactivated = 0;
+
   const tx = db.transaction(() => {
+    reactivated = reactivateExpiredSnoozes(db);
     for (const candidate of candidates) {
       const result = upsertTouch(db, candidate, context);
       if (result.generated) generated += 1;
@@ -114,10 +128,11 @@ function rebuildTouches(db) {
   });
   tx();
 
-  return { generated, updated, archived, duration_ms: Date.now() - started };
+  return { generated, updated, archived, reactivated, duration_ms: Date.now() - started };
 }
 
 function listOpenTouches(db, limit = 7) {
+  reactivateExpiredSnoozes(db);
   const rows = db.prepare(`
     SELECT * FROM baton_touches
     WHERE status IN ('pending', 'active')
@@ -132,4 +147,4 @@ function parseTouch(t) {
   return { ...t, secondary_actions: parseJson(t.secondary_actions, []) };
 }
 
-module.exports = { loadSettings, rebuildTouches, listOpenTouches, parseTouch, rankOpenTouches };
+module.exports = { loadSettings, rebuildTouches, listOpenTouches, parseTouch, rankOpenTouches, reactivateExpiredSnoozes };

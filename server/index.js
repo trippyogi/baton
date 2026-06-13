@@ -5,7 +5,7 @@ const db      = require('./db');
 require('dotenv').config();
 
 const app  = express();
-const PORT = process.env.VMC_PORT || 4200;
+const PORT = process.env.VMC_PORT || process.env.PORT || 4200;
 const HOST = '127.0.0.1';
 
 app.use(express.json({
@@ -32,13 +32,7 @@ app.use('/api/webhook/github',   require('./routes/webhook'));
 app.use('/api/shared-requests', require('./routes/shared-requests'));
 app.use('/api/creatives',      require('./routes/creatives'));
 
-// SPA fallback
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
-
-
-// Load internal extension if present
+// Load internal extension if present. This must be before SPA fallback.
 try {
   const ext = require('../baton-internal/extension');
   ext.register(app, db);
@@ -47,8 +41,13 @@ try {
   console.log('[baton] Running without internal extension');
 }
 
+// SPA fallback must be last.
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
 const server = app.listen(PORT, HOST, () => {
-  console.log(`Vector Mission Control running at http://${HOST}:${PORT}`);
+  console.log(`BATON running at http://${HOST}:${PORT}`);
   console.log(`SSH tunnel: ssh -L ${PORT}:${HOST}:${PORT} ubuntu@18.144.11.180`);
 });
 
