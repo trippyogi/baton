@@ -55,7 +55,7 @@ Implemented phases:
   - `/api/agents` endpoint.
   - Idle-agent counts in Flow airspace.
   - Idle-agent candidate generation against ready tasks.
-  - Assigning an idle-agent touch moves the task airborne and marks the agent running.
+  - Assigning an idle-agent touch prepares the handoff. Until a dispatcher is configured, BATON does not mark the task airborne or the agent running.
 
 ## Product model
 
@@ -91,6 +91,7 @@ Mode affects touch scoring and prioritization.
 ```bash
 git clone https://github.com/trippyogi/baton.git
 cd baton
+nvm use
 npm install
 cp .env.example .env
 npm start
@@ -109,6 +110,8 @@ VMC_PORT=4420 npm start
 ```
 
 Redis is optional for local Flow development. Queue diagnostics gracefully return empty queue data when Redis is unavailable.
+
+BATON is pinned to Node 20 via `.nvmrc`; `package.json` supports Node `>=20 <23`.
 
 ## Versioning
 
@@ -137,20 +140,17 @@ Key defaults:
 - Webhooks validate HMAC signatures before doing work.
 - User-controlled UI output is escaped.
 - Touch actions are authorized by type.
-- Delegation does not claim work is running unless dispatch is configured.
+- Delegation/assignment is currently prepared-only unless dispatch is configured; it does not mark tasks airborne or agents running.
 - `npm run audit` should pass before release tags.
 
 ## Checks
 
-With a server already running:
-
 ```bash
-npm run check:js
-BATON_BASE_URL=http://127.0.0.1:4200 npm run smoke
+npm test
 npm run audit
 ```
 
-`npm test` runs syntax checks and smoke checks. Set `BATON_BASE_URL` when the server is on a non-default port.
+`npm test` runs syntax checks and a self-contained smoke test. The smoke test starts BATON on a temporary port with an isolated SQLite database unless `BATON_BASE_URL` is set.
 
 ## API overview
 

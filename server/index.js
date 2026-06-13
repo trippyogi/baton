@@ -2,6 +2,7 @@
 const express = require('express');
 const path    = require('path');
 const db      = require('./db');
+const { rebuildTouches } = require('./lib/flow/rebuild');
 require('dotenv').config();
 
 const app  = express();
@@ -14,6 +15,7 @@ app.use(express.json({
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Routes
+app.use('/api/health',   require('./routes/health'));
 app.use('/api/overview', require('./routes/overview'));
 app.use('/api/tasks',    require('./routes/tasks'));
 app.use('/api/runs',     require('./routes/runs'));
@@ -31,6 +33,13 @@ app.use('/api/queue',       require('./routes/queue'));
 app.use('/api/webhook/github',   require('./routes/webhook'));
 app.use('/api/shared-requests', require('./routes/shared-requests'));
 app.use('/api/creatives',      require('./routes/creatives'));
+
+try {
+  const result = rebuildTouches(db);
+  console.log('[baton] Flow touches rebuilt on startup', result);
+} catch (err) {
+  console.warn('[baton] Flow startup rebuild failed:', err.message);
+}
 
 // Load internal extension if present. This must be before SPA fallback.
 try {

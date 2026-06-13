@@ -26,6 +26,6 @@
   },
   "homepage": "https://github.com/trippyogi/baton#readme",
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <23"
   }
 }

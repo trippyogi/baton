@@ -1,4 +1,5 @@
 import { get, post, patch, humanTime } from '../api.js';
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 const TYPES    = ['all', 'tool', 'feature', 'app', 'skill'];
 const STATUSES = ['shipped', 'wip', 'broken'];
@@ -47,9 +48,9 @@ function paint(el, builds) {
     ${TYPES.map(t => `
       <button
         class="btn btn-ghost btn-sm workshop-filter${activeType === t ? ' filter-active' : ''}"
-        data-type="${t}"
+        data-type="${escapeAttr(t)}"
         style="${activeType === t ? 'border-color:var(--color-teal);color:var(--color-teal)' : ''}"
-      >${t === 'all' ? 'All' : cap(t)}</button>`).join('')}
+      >${escapeHtml(t === 'all' ? 'All' : cap(t))}</button>`).join('')}
     <span style="margin-left:auto;font-size:12px;color:var(--text-secondary);align-self:center">${filtered.length} build${filtered.length !== 1 ? 's' : ''}</span>
   </div>
 
@@ -103,44 +104,44 @@ function paint(el, builds) {
 function buildCard(b) {
   const isExpanded = expandedId === b.id;
   const tags = (b.tags || []).map(t =>
-    `<span class="badge badge-medium" style="font-size:10px">${t}</span>`
+    `<span class="badge badge-medium" style="font-size:10px">${escapeHtml(t)}</span>`
   ).join(' ');
 
   return `
-<div class="card build-card${isExpanded ? ' build-card-expanded' : ''}" data-id="${b.id}" style="cursor:pointer">
+<div class="card build-card${isExpanded ? ' build-card-expanded' : ''}" data-id="${escapeAttr(b.id)}" style="cursor:pointer">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span class="badge badge-type-${b.type}">${b.type}</span>
-        <span class="badge badge-status-${b.status}">${b.status}</span>
+        <span class="badge badge-type-${escapeAttr(b.type)}">${escapeHtml(b.type)}</span>
+        <span class="badge badge-status-${escapeAttr(b.status)}">${escapeHtml(b.status)}</span>
       </div>
-      <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.name}</div>
-      <div style="font-size:13px;color:var(--text-secondary);line-height:1.4">${b.description}</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(b.name)}</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.4">${escapeHtml(b.description)}</div>
     </div>
     <div style="text-align:right;flex-shrink:0">
-      <div style="font-size:11px;color:var(--text-secondary)">${b.nightly_date || '—'}</div>
-      <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${b.built_by}</div>
+      <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml(b.nightly_date || '—')}</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${escapeHtml(b.built_by)}</div>
     </div>
   </div>
 
   ${tags ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${tags}</div>` : ''}
 
-  <div style="font-family:var(--font-instrument);font-size:11px;color:var(--color-teal);opacity:0.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.path || '—'}</div>
+  <div style="font-family:var(--font-instrument);font-size:11px;color:var(--color-teal);opacity:0.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(b.path || '—')}</div>
 
   <!-- Expanded notes section -->
   ${isExpanded && b.notes ? `
   <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-secondary);margin-bottom:8px">Notes</div>
-    <div style="font-size:13px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap">${b.notes}</div>
+    <div style="font-size:13px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap">${escapeHtml(b.notes)}</div>
   </div>` : ''}
 
   ${isExpanded ? `
   <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:6px">
     <span style="font-size:11px;color:var(--text-secondary);align-self:center;margin-right:4px">Mark as:</span>
     ${STATUSES.filter(s => s !== b.status).map(s => `
-      <button class="btn btn-ghost btn-sm build-status-btn" data-id="${b.id}" data-status="${s}" style="font-size:11px">${s}</button>
+      <button class="btn btn-ghost btn-sm build-status-btn" data-id="${escapeAttr(b.id)}" data-status="${escapeAttr(s)}" style="font-size:11px">${escapeHtml(s)}</button>
     `).join('')}
-    <span style="font-size:11px;color:var(--text-secondary);margin-left:auto;align-self:center">${humanTime(b.created_at)}</span>
+    <span style="font-size:11px;color:var(--text-secondary);margin-left:auto;align-self:center">${escapeHtml(humanTime(b.created_at))}</span>
   </div>` : ''}
 </div>`;
 }

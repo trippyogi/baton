@@ -114,6 +114,13 @@ function normalizeTaskBody(values, { partial }) {
   if ('priority' in out && !VALID_PRIORITIES.includes(out.priority)) return { error: `invalid priority: ${out.priority}` };
   if ('risk_level' in out && !VALID_RISK_LEVELS.includes(out.risk_level)) return { error: `invalid risk_level: ${out.risk_level}` };
   if ('domain' in out && !validDomains().includes(out.domain)) return { error: `invalid domain: ${out.domain}` };
+  for (const field of JSON_FIELDS) {
+    if (field in out) {
+      const normalized = normalizeStringArray(out[field]);
+      if (!normalized.ok) return { error: `${field} must be an array of strings` };
+      out[field] = normalized.value;
+    }
+  }
   for (const key of ['impact_score', 'effort_score']) if (key in out) out[key] = clampNumber(out[key], 0, 10, key);
   if ('autonomy_level' in out) out.autonomy_level = clampNumber(out.autonomy_level, 0, 7, 'autonomy_level');
   for (const key of ['confidence_score', 'quality_score', 'fun_score', 'strategic_optionality']) if (key in out) out[key] = clampNumber(out[key], 0, 1, key);
@@ -121,6 +128,17 @@ function normalizeTaskBody(values, { partial }) {
   for (const [key, value] of Object.entries(out)) if (Number.isNaN(value)) return { error: `invalid numeric value for ${key}` };
   if (!partial && !out.title) return { error: 'title is required' };
   return { values: out };
+}
+
+function normalizeStringArray(value) {
+  let arr = value;
+  if (typeof value === 'string') {
+    try { arr = JSON.parse(value); }
+    catch (_) { return { ok: false }; }
+  }
+  if (!Array.isArray(arr)) return { ok: false };
+  if (!arr.every(item => typeof item === 'string')) return { ok: false };
+  return { ok: true, value: arr };
 }
 
 function clampNumber(value, min, max, key) {
@@ -138,7 +156,16 @@ function sqlValue(value) {
 }
 
 function parse(t) {
-  return { ...t, tags: JSON.parse(t.tags || '[]'), linked_run_ids: JSON.parse(t.linked_run_ids || '[]') };
+  return { ...t, tags: safeJsonArray(t.tags), linked_run_ids: safeJsonArray(t.linked_run_ids) };
+}
+
+function safeJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
 }
 
 module.exports = router;

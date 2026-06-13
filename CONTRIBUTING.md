@@ -9,6 +9,7 @@ BATON is intentionally not a generic project-management app. The product center 
 ```bash
 git clone https://github.com/trippyogi/baton.git
 cd baton
+nvm use
 npm install
 cp .env.example .env
 npm start
@@ -24,15 +25,12 @@ Redis is optional for local Flow development. Queue screens degrade when Redis i
 
 ## Checks before opening a PR
 
-With the server running:
-
 ```bash
-npm run check:js
-BATON_BASE_URL=http://127.0.0.1:4200 npm run smoke
+npm test
 npm run audit
 ```
 
-`npm test` runs syntax checks and smoke checks, but it expects a server to already be running. Set `BATON_BASE_URL` if using a different port.
+`npm test` runs syntax checks and a self-contained smoke test on an isolated temp database. Set `BATON_BASE_URL` only when you intentionally want to smoke-test an already-running server.
 
 ## Commit style
 
