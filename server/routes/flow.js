@@ -66,7 +66,7 @@ function getAirspace() {
     running: countTask('in_progress'),
     needs_touch: countTask('waiting'),
     review: countTask('review'),
-    idle: 0,
+    idle: db.prepare("SELECT COUNT(*) AS n FROM agents WHERE status = 'idle'").get().n,
     stale,
     failed,
     ready_to_pass: countTask('ready'),

@@ -188,3 +188,20 @@ CREATE TABLE IF NOT EXISTS quality_policies (
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS agents (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'general',
+  status TEXT NOT NULL DEFAULT 'idle',
+  skills TEXT DEFAULT '[]',
+  permissions TEXT DEFAULT '{}',
+  current_task_id TEXT,
+  current_run_id TEXT,
+  cost_profile TEXT DEFAULT '{}',
+  quality_score REAL DEFAULT 0.70,
+  reliability_score REAL DEFAULT 0.70,
+  last_activity_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
