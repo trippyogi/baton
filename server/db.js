@@ -22,6 +22,11 @@ db.exec(schema);
   if (!cols.includes('output_path'))   db.exec('ALTER TABLE runs ADD COLUMN output_path TEXT');
   if (!cols.includes('output_preview'))db.exec('ALTER TABLE runs ADD COLUMN output_preview TEXT');
 
+  const touchCols = db.prepare('PRAGMA table_info(baton_touches)').all().map(c => c.name);
+  if (!touchCols.includes('manual_priority_boost')) db.exec('ALTER TABLE baton_touches ADD COLUMN manual_priority_boost REAL DEFAULT 0');
+  if (!touchCols.includes('pinned'))                db.exec('ALTER TABLE baton_touches ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0');
+  if (!touchCols.includes('manual_override_until')) db.exec('ALTER TABLE baton_touches ADD COLUMN manual_override_until TEXT');
+
   const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map(c => c.name);
   if (!taskCols.includes('domain'))                 db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'product'");
   if (!taskCols.includes('project_key'))            db.exec('ALTER TABLE tasks ADD COLUMN project_key TEXT');
@@ -125,7 +130,7 @@ if (taskCount === 0) {
     insertTask.run({ id:id(), title:'Build 1% LAL campaign', description:'180d purchasers/ATC source, $20/day, target US', status:'ready', priority:'high', owner:'jeremy', tags:'["meta","ads"]', impact:8, effort:2 });
     insertTask.run({ id:id(), title:'Fix Email 2 CTA in abandoned cart', description:'"View cart" → "Complete My Order"', status:'done', priority:'low', owner:'vector', tags:'["email"]', impact:4, effort:1 });
     insertTask.run({ id:id(), title:'Fill 14 remaining character briefs', description:'From 4Horseman email threads', status:'backlog', priority:'medium', owner:'vector', tags:'["content"]', impact:6, effort:8 });
-    insertTask.run({ id:id(), title:'Vector Mission Control Phase 1', description:'Overview, Tasks, Board, Runs, Alerts', status:'in_progress', priority:'critical', owner:'circuit', tags:'["engineering","dashboard"]', impact:10, effort:7 });
+    insertTask.run({ id:id(), title:'BATON Flow Ops Phase 1', description:'Flow, Tasks, Airspace, Runs, Alerts', status:'in_progress', priority:'critical', owner:'circuit', tags:'["engineering","flow"]', impact:10, effort:7 });
   });
   seedTasks();
 

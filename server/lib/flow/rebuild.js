@@ -37,6 +37,12 @@ function upsertTouch(db, touch, context) {
   `).get(touch.type, touch.task_id, touch.run_id, touch.agent_id, ...ACTIVE_STATUSES);
 
   if (existing) {
+    const preserved = {
+      manual_priority_boost: existing.manual_priority_boost || 0,
+      pinned: existing.pinned || 0,
+      manual_override_until: existing.manual_override_until || null,
+    };
+    const score = scoreTouch({ ...touch, ...preserved }, context);
     db.prepare(`
       UPDATE baton_touches SET
         title=@title, description=@description, primary_action=@primary_action,
@@ -50,7 +56,7 @@ function upsertTouch(db, touch, context) {
         autonomy_level=@autonomy_level, risk_level=@risk_level, review_packet_id=@review_packet_id,
         score=@score, generated_at=datetime('now'), updated_at=datetime('now')
       WHERE id=@id
-    `).run({ ...touch, id: existing.id, secondary_actions: stringifyJson(touch.secondary_actions || []), why_now: why, score });
+    `).run({ ...touch, ...preserved, id: existing.id, secondary_actions: stringifyJson(touch.secondary_actions || []), why_now: why, score });
     return { id: existing.id, updated: true };
   }
 
@@ -91,7 +97,7 @@ function rankOpenTouches(db) {
     SELECT id FROM baton_touches
     WHERE status IN ('pending', 'active')
       AND (snoozed_until IS NULL OR snoozed_until <= datetime('now'))
-    ORDER BY score DESC, created_at ASC
+    ORDER BY pinned DESC, score DESC, created_at ASC
   `).all();
   const update = db.prepare('UPDATE baton_touches SET rank = ?, updated_at = datetime(\'now\') WHERE id = ?');
   rows.forEach((row, index) => update.run(index + 1, row.id));
@@ -137,7 +143,7 @@ function listOpenTouches(db, limit = 7) {
     SELECT * FROM baton_touches
     WHERE status IN ('pending', 'active')
       AND (snoozed_until IS NULL OR snoozed_until <= datetime('now'))
-    ORDER BY score DESC, created_at ASC
+    ORDER BY pinned DESC, score DESC, created_at ASC
     LIMIT ?
   `).all(limit);
   return rows.map(parseTouch);

@@ -1,3 +1,4 @@
 #!/bin/bash
-cd /home/ubuntu/clawd/mission-control
+set -euo pipefail
+cd "$(dirname "$0")"
 exec node server/index.js

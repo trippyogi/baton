@@ -2,14 +2,14 @@
 const express = require('express');
 const db = require('../db');
 const { VALID_MODES, normalizeMode } = require('../lib/flow/modes');
-const { loadSettings, rebuildTouches, listOpenTouches } = require('../lib/flow/rebuild');
+const { loadSettings, rebuildTouches, listOpenTouches, rankOpenTouches } = require('../lib/flow/rebuild');
 const { executeCommand } = require('../lib/flow/commands');
 
 const router = express.Router();
 
 router.get('/', (req, res) => {
   try {
-    rebuildTouches(db);
+    rankOpenTouches(db);
     const settings = loadSettings(db);
     const limit = Number(req.query.limit || settings.max_visible_touches || 7);
     res.json({

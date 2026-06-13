@@ -91,7 +91,13 @@ router.patch('/:id/action', (req, res) => {
         touchStatus = 'active';
         message = 'Marked for inspection.';
       } else if (action === 'escalate') {
-        db.prepare(`UPDATE baton_touches SET urgency_score = MIN(1.0, urgency_score + 0.2), updated_at = datetime('now') WHERE id = ?`).run(touch.id);
+        db.prepare(`
+          UPDATE baton_touches
+          SET manual_priority_boost = MIN(1.0, COALESCE(manual_priority_boost, 0) + 0.2),
+              score = MIN(100, COALESCE(score, 0) + 4),
+              updated_at = datetime('now')
+          WHERE id = ?
+        `).run(touch.id);
         message = 'Escalated touch priority.';
       }
 
