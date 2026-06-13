@@ -71,3 +71,83 @@ CREATE TABLE IF NOT EXISTS builds (
   notes TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS flow_settings (
+  id TEXT PRIMARY KEY DEFAULT 'default',
+  current_mode TEXT NOT NULL DEFAULT 'triage',
+  active_context_key TEXT,
+  active_project_key TEXT,
+  max_visible_touches INTEGER NOT NULL DEFAULT 7,
+  review_debt_limit INTEGER NOT NULL DEFAULT 5,
+  agent_wip_limit INTEGER NOT NULL DEFAULT 12,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS portfolio_domains (
+  id TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  weight REAL NOT NULL DEFAULT 1.0,
+  protected_minimum INTEGER NOT NULL DEFAULT 0,
+  starvation_days INTEGER NOT NULL DEFAULT 14,
+  last_touched_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS baton_touches (
+  id TEXT PRIMARY KEY,
+  task_id TEXT,
+  run_id TEXT,
+  agent_id TEXT,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  type TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  primary_action TEXT NOT NULL,
+  secondary_actions TEXT DEFAULT '[]',
+  why_now TEXT DEFAULT '',
+  domain TEXT DEFAULT 'product',
+  project_key TEXT,
+  context_key TEXT,
+  mode_fit REAL DEFAULT 0.50,
+  portfolio_weight REAL DEFAULT 1.00,
+  impact_score INTEGER DEFAULT 5,
+  effort_score INTEGER DEFAULT 5,
+  urgency_score REAL DEFAULT 0.30,
+  confidence_score REAL DEFAULT 0.70,
+  quality_score REAL DEFAULT 0.70,
+  risk_score REAL DEFAULT 0.30,
+  fun_score REAL DEFAULT 0.00,
+  strategic_optionality REAL DEFAULT 0.00,
+  starvation_score REAL DEFAULT 0.00,
+  context_switch_cost REAL DEFAULT 0.50,
+  human_touch_minutes INTEGER DEFAULT 5,
+  agent_hours_unlocked REAL DEFAULT 0.50,
+  autonomy_level INTEGER DEFAULT 1,
+  risk_level TEXT DEFAULT 'low',
+  review_packet_id TEXT,
+  score INTEGER DEFAULT 0,
+  rank INTEGER,
+  source TEXT DEFAULT 'generated',
+  generated_at TEXT DEFAULT (datetime('now')),
+  last_touched_at TEXT,
+  snoozed_until TEXT,
+  resolved_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY(task_id) REFERENCES tasks(id)
+);
+
+CREATE TABLE IF NOT EXISTS touch_events (
+  id TEXT PRIMARY KEY,
+  touch_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  actor TEXT DEFAULT 'human',
+  payload TEXT DEFAULT '{}',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY(touch_id) REFERENCES baton_touches(id)
+);
+
+INSERT OR IGNORE INTO flow_settings (id, current_mode)
+VALUES ('default', 'triage');
