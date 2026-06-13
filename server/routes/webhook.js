@@ -2,7 +2,16 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
 const Redis = require('ioredis');
-const redisClient = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
+const redisClient = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+  lazyConnect: true,
+  maxRetriesPerRequest: 1,
+  enableOfflineQueue: false,
+  connectTimeout: 250,
+});
+redisClient.on('error', () => {
+  // Webhook fix dispatch requires Redis, but local app boot should not be noisy
+  // when the queue is intentionally offline.
+});
 const router = express.Router();
 
 // Function to validate the HMAC — must use raw body bytes (not re-serialized JSON)
@@ -75,7 +84,12 @@ router.post('/', async (req, res) => {
       ci_logs: ciLogs,
     },
   };
-  await redisClient.xadd('jobs:circuit', '*', 'payload', JSON.stringify(fixJob));
+  try {
+    await redisClient.xadd('jobs:circuit', '*', 'payload', JSON.stringify(fixJob));
+  } catch (err) {
+    console.warn('[webhook] Redis unavailable; fix job was not dispatched:', err.message);
+    return res.status(503).send('Redis queue unavailable; fix job not dispatched');
+  }
 
   // Increment fix_attempts counter if we have a DB record
   if (runDetails) {
