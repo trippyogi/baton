@@ -1,11 +1,11 @@
 {
   "name": "baton",
   "version": "0.1.0",
-  "description": "BATON Flow Ops \u2014 Next-Touch Engine",
+  "description": "BATON Flow Ops — Next-Touch Engine",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "check:js": "find server public/js -name '*.js' -print0 | xargs -0 -n1 node --check",
+    "check:js": "node scripts/check-js.js",
     "smoke": "node scripts/smoke-flow.js",
     "audit": "npm audit --audit-level=moderate --omit=dev",
     "test": "npm run check:js && npm run smoke",
