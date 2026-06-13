@@ -1,9 +1,10 @@
 'use strict';
+require('dotenv').config();
+
 const express = require('express');
 const path    = require('path');
 const db      = require('./db');
 const { rebuildTouches } = require('./lib/flow/rebuild');
-require('dotenv').config();
 
 const app  = express();
 const PORT = process.env.VMC_PORT || process.env.PORT || 4200;
@@ -57,7 +58,7 @@ app.get('*', (_req, res) => {
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`BATON running at http://${HOST}:${PORT}`);
-  console.log(`SSH tunnel: ssh -L ${PORT}:${HOST}:${PORT} ubuntu@18.144.11.180`);
+  if (process.env.BATON_SSH_HINT) console.log(process.env.BATON_SSH_HINT);
 });
 
 // Graceful shutdown

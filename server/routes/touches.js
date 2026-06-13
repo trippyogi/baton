@@ -62,19 +62,19 @@ router.patch('/:id/action', (req, res) => {
         taskStatus = req.body.update_task === false ? null : 'waiting';
         message = 'Feedback captured and task moved back for refinement.';
       } else if (action === 'delegate' || action === 'assign') {
-        // Honest boundary: no worker dispatcher is configured yet, so do not claim
-        // the task is airborne or the agent is running.
-        touchStatus = 'active';
+        // Honest boundary: no worker dispatcher is configured yet, so park this
+        // pass-off outside active Flow without claiming agent motion.
+        touchStatus = 'prepared';
         dispatchStatus = 'not_configured';
-        message = 'Prepared for delegation. No worker dispatch configured.';
+        message = 'Prepared only — no dispatcher configured. Touch parked outside active Flow.';
       } else if (action === 'answer') {
         touchStatus = 'passed';
         taskStatus = 'ready';
         message = 'Answer captured; task is ready to pass.';
       } else if (action === 'send_to_evaluator') {
-        touchStatus = 'active';
+        touchStatus = 'prepared';
         dispatchStatus = 'not_configured';
-        message = 'Prepared for evaluator/refiner. No worker dispatch configured.';
+        message = 'Prepared only — evaluator dispatch is not configured. Touch parked outside active Flow.';
       } else if (action === 'snooze') {
         touchStatus = 'snoozed';
         snoozedUntil = normalizeSnooze(req.body.until) || defaultSnooze();
@@ -118,8 +118,8 @@ router.patch('/:id/action', (req, res) => {
         stringifyJson({ feedback: req.body.feedback || '', instructions: req.body.instructions || '', reason: req.body.reason || '', dispatch_status: dispatchStatus })
       );
 
-      if (['accept', 'process', 'archive'].includes(action)) markDomainTouched(db, touch.domain);
-      if (taskStatus || ['archive', 'snooze', 'accept', 'process'].includes(action)) rebuildTouches(db);
+      if (['accept', 'process', 'archive', 'answer', 'refine', 'delegate', 'assign', 'send_to_evaluator'].includes(action)) markDomainTouched(db, touch.domain);
+      if (taskStatus || ['archive', 'snooze', 'accept', 'process', 'delegate', 'assign', 'send_to_evaluator'].includes(action)) rebuildTouches(db);
       else rankOpenTouches(db);
       const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(touch.id));
       const updatedTask = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;

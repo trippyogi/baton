@@ -64,6 +64,7 @@ function flowMarkup(data) {
           ${airspaceItem('Stale', data.airspace.stale)}
           ${airspaceItem('Failed', data.airspace.failed)}
           ${airspaceItem('Ready', data.airspace.ready_to_pass)}
+          ${airspaceItem('Prepared', data.airspace.prepared)}
           ${airspaceItem('Inbox', data.airspace.inbox)}
         </div>
       </section>
@@ -192,8 +193,10 @@ function primaryAction(id) {
 async function runAction(id, action, extra = {}) {
   const touch = (currentData?.next_touches || []).find(t => t.id === id);
   if (touch && !allows(touch, action)) return;
-  await patch(`/api/touches/${id}/action`, { action, ...extra });
+  const result = await patch(`/api/touches/${id}/action`, { action, ...extra });
   await renderFlow({ force: true });
+  const resultEl = document.getElementById('flow-command-result');
+  if (resultEl) resultEl.textContent = result.message || 'Done.';
 }
 
 function handleKeys(event) {

@@ -1,4 +1,5 @@
 import { get, createSSE, humanTime, fmtCost, fmtTokens } from '../api.js';
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 import { updateHealthDot } from '../components/topbar.js';
 
 let sseConn       = null;
@@ -86,7 +87,7 @@ export async function renderOverview() {
   <!-- Screen Header -->
   <div class="screen-header" style="padding-top:8px;margin-bottom:24px">
     <div class="screen-title" style="font-size:28px;font-weight:600;letter-spacing:-0.02em">Command Deck</div>
-    <div class="screen-subtitle" style="margin-top:8px">${new Date().toLocaleString()} — Real-time operational status</div>
+    <div class="screen-subtitle" style="margin-top:8px">${escapeHtml(new Date().toLocaleString())} — Real-time operational status</div>
   </div>
 
   <!-- Command Strip -->
@@ -94,17 +95,17 @@ export async function renderOverview() {
     <div class="command-strip-item">
       <span class="status-dot ${health.dotCls}"></span>
       <span>BATON</span>
-      <span class="command-strip-val">${health.label}</span>
+      <span class="command-strip-val">${escapeHtml(health.label)}</span>
     </div>
     <div class="command-strip-sep"></div>
     <div class="command-strip-item">
       <span>Queue</span>
-      <span class="command-strip-val">${queueDepth}</span>
+      <span class="command-strip-val">${escapeHtml(queueDepth)}</span>
     </div>
     <div class="command-strip-sep"></div>
     <div class="command-strip-item">
       <span>Spend delta</span>
-      <span class="command-strip-val" style="${deltaCls}">${deltaStr}</span>
+      <span class="command-strip-val" style="${deltaCls}">${escapeHtml(deltaStr)}</span>
     </div>
     <div class="command-strip-sep"></div>
     <div class="command-strip-item">
@@ -231,9 +232,9 @@ export async function renderOverview() {
           ? '<div class="empty-state"><span class="empty-state-icon">✓</span>Queue clear</div>'
           : d.priorityQueue.map(t => `
             <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 4px;border-bottom:1px solid color-mix(in srgb,var(--border) 40%,transparent);transition:background 0.1s">
-              <span class="badge badge-${t.priority}">${t.priority}</span>
-              <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</span>
-              <span class="badge badge-${t.status}">${t.status.replace('_',' ')}</span>
+              <span class="badge badge-${escapeAttr(t.priority)}">${escapeHtml(t.priority)}</span>
+              <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(t.title)}</span>
+              <span class="badge badge-${escapeAttr(t.status)}">${escapeHtml(t.status.replace('_',' '))}</span>
             </div>`).join('')}
       </div>
     </div>
@@ -241,17 +242,17 @@ export async function renderOverview() {
     <div class="card">
       <div class="card-header">
         <span class="card-title">Alerts</span>
-        <span style="font-size:11px;color:var(--text-secondary)">${d.alerts.length} active</span>
+        <span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(d.alerts.length)} active</span>
       </div>
       ${d.alerts.length === 0
         ? '<div class="empty-state"><span class="empty-state-icon">◎</span>All clear</div>'
         : d.alerts.map(a => `
-          <div class="alert-item ${a.severity}">
+          <div class="alert-item ${escapeAttr(a.severity)}">
             <div style="flex:1">
-              <div class="alert-msg">${a.message}</div>
-              <div class="alert-time">${humanTime(a.created_at)}</div>
+              <div class="alert-msg">${escapeHtml(a.message)}</div>
+              <div class="alert-time">${escapeHtml(humanTime(a.created_at))}</div>
             </div>
-            <button class="btn btn-ghost btn-sm resolve-alert-btn" style="font-size:11px;opacity:0.7" data-alert-id="${a.id}">Resolve</button>
+            <button class="btn btn-ghost btn-sm resolve-alert-btn" style="font-size:11px;opacity:0.7" data-alert-id="${escapeAttr(a.id)}">Resolve</button>
           </div>`).join('')}
     </div>
 
@@ -325,7 +326,7 @@ export async function renderOverview() {
     }
 
   } catch (err) {
-    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error loading command deck: ${err.message}</div>`;
+    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error loading command deck: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -341,16 +342,16 @@ function renderRunRows(runs, anomalies = new Set()) {
           ? r.logs[r.logs.length - 1]
           : JSON.stringify(r.logs[r.logs.length - 1]))
       : '';
-    const titleAttr  = lastLog ? ` title="${lastLog.replace(/"/g, '&quot;').slice(0, 120)}"` : '';
+    const titleAttr  = lastLog ? ` title="${escapeAttr(lastLog.slice(0, 120))}"` : '';
     return `
       <div class="run-row${isAnomaly ? ' anomaly' : ''}"${titleAttr}>
-        <span style="width:80px"><span class="badge badge-${r.status}">${r.status}</span></span>
-        <span class="run-agent" style="flex:1">${r.agent_name}${isAnomaly ? ' <span class="run-anomaly-badge">⚡ anomaly</span>' : ''}</span>
-        <span class="run-duration" style="width:56px">${fmtDuration(r.started_at, r.ended_at)}</span>
-        <span style="width:40px;text-align:right;font-family:var(--font-instrument);font-size:12px;color:${retryCount !== '—' ? 'var(--color-ember)' : 'var(--text-secondary)'}">${retryCount}</span>
+        <span style="width:80px"><span class="badge badge-${escapeAttr(r.status)}">${escapeHtml(r.status)}</span></span>
+        <span class="run-agent" style="flex:1">${escapeHtml(r.agent_name)}${isAnomaly ? ' <span class="run-anomaly-badge">⚡ anomaly</span>' : ''}</span>
+        <span class="run-duration" style="width:56px">${escapeHtml(fmtDuration(r.started_at, r.ended_at))}</span>
+        <span style="width:40px;text-align:right;font-family:var(--font-instrument);font-size:12px;color:${retryCount !== '—' ? 'var(--color-ember)' : 'var(--text-secondary)'}">${escapeHtml(retryCount)}</span>
         <span class="run-tokens" style="width:72px;text-align:right">${fmtTokens(r.tokens)}</span>
         <span class="run-cost" style="width:64px;text-align:right">${fmtCost(r.cost)}</span>
-        <span class="alert-time" style="width:72px;text-align:right">${humanTime(r.started_at)}</span>
+        <span class="alert-time" style="width:72px;text-align:right">${escapeHtml(humanTime(r.started_at))}</span>
       </div>`;
   }).join('');
 }

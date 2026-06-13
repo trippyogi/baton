@@ -7,8 +7,12 @@ function clamp01(n) {
 }
 
 function parseJson(value, fallback) {
-  try { return JSON.parse(value || ''); }
-  catch (_) { return fallback; }
+  try {
+    const parsed = JSON.parse(value || '');
+    return parsed ?? fallback;
+  } catch (_) {
+    return fallback;
+  }
 }
 
 function stringifyJson(value) {

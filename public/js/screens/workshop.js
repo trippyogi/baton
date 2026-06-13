@@ -20,7 +20,7 @@ export async function renderWorkshop() {
     expandedId   = null;
     paint(el, cachedBuilds);
   } catch (err) {
-    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${err.message}</div>`;
+    el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${escapeHtml(err.message)}</div>`;
   }
 }
 
