@@ -3,6 +3,7 @@ const express = require('express');
 const db      = require('../db');
 const router  = express.Router();
 const { randomUUID } = require('crypto');
+const { rebuildTouches } = require('../lib/flow/rebuild');
 
 const VALID_STATUSES  = ['inbox','ready','in_progress','waiting','review','done','backlog','archived'];
 const VALID_PRIORITIES = ['low','medium','high','critical'];
@@ -45,6 +46,7 @@ router.post('/', (req, res) => {
       VALUES (?,?,?,?,?,?,?,?,?,?,?)
     `).run(id, title, description, status, priority, owner, JSON.stringify(tags), due_at, JSON.stringify(linked_run_ids), impact_score, effort_score);
 
+    rebuildTouches(db);
     res.status(201).json(parse(db.prepare('SELECT * FROM tasks WHERE id = ?').get(id)));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -67,15 +69,30 @@ router.patch('/:id', (req, res) => {
     updates.push('updated_at = datetime(\'now\')');
     vals.push(req.params.id);
     db.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`).run(...vals);
+    rebuildTouches(db);
     res.json(parse(db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id)));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.delete('/:id', (req, res) => {
   try {
-    const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
-    if (!result.changes) return res.status(404).json({ error: 'Not found' });
-    res.json({ deleted: req.params.id });
+    const tx = db.transaction(() => {
+      const result = db.prepare(`
+        UPDATE tasks
+        SET status = 'archived', updated_at = datetime('now')
+        WHERE id = ?
+      `).run(req.params.id);
+      if (!result.changes) return false;
+      db.prepare(`
+        UPDATE baton_touches
+        SET status = 'archived', updated_at = datetime('now')
+        WHERE task_id = ? AND status NOT IN ('resolved', 'archived')
+      `).run(req.params.id);
+      rebuildTouches(db);
+      return true;
+    });
+    if (!tx()) return res.status(404).json({ error: 'Not found' });
+    res.json({ archived: req.params.id });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

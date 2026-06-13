@@ -1,4 +1,5 @@
 import { get, post, patch, del } from '../api.js';
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 let tasksAbort = null; // AbortController for event delegation
 
@@ -124,18 +125,18 @@ export async function renderTasks() {
 
 function taskRow(t, isDone) {
   const tags = (t.tags || []).map(tag =>
-    `<span class="badge badge-medium" style="font-size:10px">${tag}</span>`
+    `<span class="badge badge-medium" style="font-size:10px">${escapeHtml(tag)}</span>`
   ).join(' ');
 
   const rowStyle = isDone ? ' class="task-done-row"' : '';
 
   return `<tr data-id="${t.id}"${rowStyle}>
-    <td style="max-width:240px${isDone ? ';color:var(--text-secondary);text-decoration:line-through;opacity:0.7' : ''}">${t.title}</td>
-    <td><span class="badge badge-${t.status}">${t.status.replace('_',' ')}</span></td>
-    <td><span class="badge badge-${t.priority}">${t.priority}</span></td>
-    <td style="color:var(--text-secondary)">${t.owner}</td>
+    <td style="max-width:240px${isDone ? ';color:var(--text-secondary);text-decoration:line-through;opacity:0.7' : ''}">${escapeHtml(t.title)}</td>
+    <td><span class="badge badge-${escapeAttr(t.status)}">${escapeHtml(t.status.replace('_',' '))}</span></td>
+    <td><span class="badge badge-${escapeAttr(t.priority)}">${escapeHtml(t.priority)}</span></td>
+    <td style="color:var(--text-secondary)">${escapeHtml(t.owner)}</td>
     <td>${tags}</td>
-    <td style="color:var(--text-secondary);font-size:12px">${t.due_at ? t.due_at.slice(0,10) : '—'}</td>
+    <td style="color:var(--text-secondary);font-size:12px">${t.due_at ? escapeHtml(t.due_at.slice(0,10)) : '—'}</td>
     <td style="white-space:nowrap">
       ${isDone
         ? `<button class="btn btn-ghost btn-sm task-archive" data-id="${t.id}" style="font-size:11px;opacity:0.7">Archive</button>`
@@ -155,31 +156,31 @@ function showTaskModal(task = null) {
       <div class="modal-title">${task ? 'Edit Task' : 'New Task'}</div>
       <div class="form-field">
         <label class="form-label">Title</label>
-        <input class="form-input" id="f-title" value="${task?.title || ''}">
+        <input class="form-input" id="f-title" value="${escapeAttr(task?.title || '')}">
       </div>
       <div class="form-field">
         <label class="form-label">Description</label>
-        <textarea class="form-textarea" id="f-desc">${task?.description || ''}</textarea>
+        <textarea class="form-textarea" id="f-desc">${escapeHtml(task?.description || '')}</textarea>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-field">
           <label class="form-label">Status</label>
           <select class="form-select" id="f-status">
             ${['inbox','ready','in_progress','waiting','review','done','backlog'].map(s =>
-              `<option value="${s}"${task?.status === s ? ' selected' : ''}>${s.replace('_',' ')}</option>`).join('')}
+              `<option value="${escapeAttr(s)}"${task?.status === s ? ' selected' : ''}>${escapeHtml(s.replace('_',' '))}</option>`).join('')}
           </select>
         </div>
         <div class="form-field">
           <label class="form-label">Priority</label>
           <select class="form-select" id="f-priority">
             ${['low','medium','high','critical'].map(p =>
-              `<option value="${p}"${task?.priority === p ? ' selected' : ''}>${p}</option>`).join('')}
+              `<option value="${escapeAttr(p)}"${task?.priority === p ? ' selected' : ''}>${escapeHtml(p)}</option>`).join('')}
           </select>
         </div>
       </div>
       <div class="form-field">
         <label class="form-label">Owner</label>
-        <input class="form-input" id="f-owner" value="${task?.owner || 'vector'}">
+        <input class="form-input" id="f-owner" value="${escapeAttr(task?.owner || 'vector')}">
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
