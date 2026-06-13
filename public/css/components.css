@@ -541,3 +541,198 @@ details[open] .complete-chevron { transform: rotate(180deg); }
 
 /* ── HUD lines ───────────────────────────────────────── */
 .hud-line { height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.3; margin: var(--gap-lg) 0; }
+
+/* ── Flow Home ───────────────────────────────────────── */
+.flow-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.flow-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+.screen-title {
+  font-family: var(--font-instrument);
+  font-size: 28px;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+}
+.screen-subtitle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 2px;
+}
+.flow-mode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.mode-select,
+.flow-command-input,
+.touch-feedback {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  outline: none;
+}
+.mode-select {
+  padding: 7px 10px;
+}
+.mode-select:focus,
+.flow-command-input:focus,
+.touch-feedback:focus {
+  border-color: var(--accent);
+}
+.flow-airspace {
+  margin-bottom: var(--gap);
+}
+.flow-airspace-title,
+.flow-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.flow-airspace-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(84px, 1fr));
+  gap: 8px;
+}
+.flow-airspace-item {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-surface) 70%, transparent);
+}
+.flow-airspace-value {
+  font-family: var(--font-instrument);
+  font-weight: var(--fw-bold);
+  font-size: 22px;
+  line-height: 1;
+}
+.flow-airspace-label {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.flow-command {
+  margin-bottom: 24px;
+}
+.flow-command-input {
+  display: block;
+  width: 100%;
+  min-height: 58px;
+  max-height: 180px;
+  resize: none;
+  padding: 12px;
+  line-height: 1.45;
+}
+.flow-command-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+.flow-hint,
+.flow-command-result {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.flow-command-result {
+  min-height: 18px;
+  margin-top: 8px;
+}
+.flow-board-link {
+  color: var(--accent);
+  text-decoration: none;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+.touch-card {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 12px;
+  align-items: start;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: border-color 120ms, transform 120ms, background 120ms;
+}
+.touch-card:hover,
+.touch-card-active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  transform: translateY(-1px);
+}
+.touch-rank {
+  font-family: var(--font-instrument);
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  color: var(--accent);
+}
+.touch-title {
+  font-weight: var(--fw-bold);
+  margin-bottom: 6px;
+}
+.touch-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.touch-why {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.touch-actions,
+.touch-detail-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.touch-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+.touch-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.touch-feedback {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  resize: vertical;
+}
+.flow-empty {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 980px) {
+  .flow-airspace-grid { grid-template-columns: repeat(4, 1fr); }
+  .touch-card { grid-template-columns: 42px 1fr; }
+  .touch-actions { grid-column: 2; flex-direction: row; }
+}
