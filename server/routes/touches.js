@@ -1,7 +1,9 @@
 'use strict';
 const express = require('express');
 const db = require('../db');
-const { id, stringifyJson, parseJson } = require('../lib/flow/utils');
+const { id, stringifyJson } = require('../lib/flow/utils');
+const { sqliteDateTimeAfterMs, toSqliteDateTime } = require('../lib/flow/time');
+const { isActionAllowed } = require('../lib/flow/actions');
 const { rebuildTouches, parseTouch, rankOpenTouches } = require('../lib/flow/rebuild');
 const { markDomainTouched } = require('../lib/flow/portfolio');
 
@@ -33,6 +35,13 @@ router.patch('/:id/action', (req, res) => {
     if (!touch) return res.status(404).json({ error: 'Not found' });
     const action = req.body.action;
     if (!action) return res.status(400).json({ error: 'action is required' });
+    if (!isActionAllowed(touch.type, action)) {
+      return res.status(400).json({
+        error: `action ${action} is not allowed for touch type ${touch.type}`,
+        touch_type: touch.type,
+        action,
+      });
+    }
 
     const tx = db.transaction(() => {
       const eventId = id('event');
@@ -41,38 +50,34 @@ router.patch('/:id/action', (req, res) => {
       let message = 'Touch updated.';
       let snoozedUntil = null;
       let resolvedAt = null;
+      let dispatchStatus = null;
 
       if (action === 'accept') {
         touchStatus = 'resolved';
         taskStatus = req.body.update_task === false ? null : 'done';
-        resolvedAt = new Date().toISOString();
+        resolvedAt = toSqliteDateTime();
         message = taskStatus ? 'Accepted and marked task done.' : 'Accepted.';
       } else if (action === 'refine') {
         touchStatus = 'passed';
         taskStatus = req.body.update_task === false ? null : 'waiting';
         message = 'Feedback captured and task moved back for refinement.';
       } else if (action === 'delegate' || action === 'assign') {
-        touchStatus = 'passed';
-        taskStatus = 'in_progress';
-        if (touch.agent_id) {
-          db.prepare(`
-            UPDATE agents
-            SET status = 'running', current_task_id = ?, last_activity_at = datetime('now'), updated_at = datetime('now')
-            WHERE id = ?
-          `).run(touch.task_id, touch.agent_id);
-        }
-        message = touch.agent_id ? 'Assigned agent and moved task airborne.' : 'Delegated and moved task airborne.';
+        // Honest boundary: no worker dispatcher is configured yet, so do not claim
+        // the task is airborne or the agent is running.
+        touchStatus = 'active';
+        dispatchStatus = 'not_configured';
+        message = 'Prepared for delegation. No worker dispatch configured.';
       } else if (action === 'answer') {
         touchStatus = 'passed';
         taskStatus = 'ready';
         message = 'Answer captured; task is ready to pass.';
       } else if (action === 'send_to_evaluator') {
-        touchStatus = 'passed';
-        taskStatus = 'in_progress';
-        message = 'Sent to evaluator/refiner.';
+        touchStatus = 'active';
+        dispatchStatus = 'not_configured';
+        message = 'Prepared for evaluator/refiner. No worker dispatch configured.';
       } else if (action === 'snooze') {
         touchStatus = 'snoozed';
-        snoozedUntil = req.body.until || defaultSnooze();
+        snoozedUntil = normalizeSnooze(req.body.until) || defaultSnooze();
         message = `Snoozed until ${snoozedUntil}.`;
       } else if (action === 'archive') {
         touchStatus = 'archived';
@@ -80,7 +85,7 @@ router.patch('/:id/action', (req, res) => {
       } else if (action === 'process') {
         touchStatus = 'resolved';
         taskStatus = req.body.task_status || 'ready';
-        resolvedAt = new Date().toISOString();
+        resolvedAt = toSqliteDateTime();
         message = 'Processed capture and made task ready.';
       } else if (action === 'inspect') {
         touchStatus = 'active';
@@ -88,8 +93,6 @@ router.patch('/:id/action', (req, res) => {
       } else if (action === 'escalate') {
         db.prepare(`UPDATE baton_touches SET urgency_score = MIN(1.0, urgency_score + 0.2), updated_at = datetime('now') WHERE id = ?`).run(touch.id);
         message = 'Escalated touch priority.';
-      } else {
-        return { error: `unsupported action: ${action}` };
       }
 
       db.prepare(`
@@ -106,24 +109,30 @@ router.patch('/:id/action', (req, res) => {
         eventId,
         touch.id,
         eventName(action),
-        stringifyJson({ feedback: req.body.feedback || '', instructions: req.body.instructions || '', reason: req.body.reason || '' })
+        stringifyJson({ feedback: req.body.feedback || '', instructions: req.body.instructions || '', reason: req.body.reason || '', dispatch_status: dispatchStatus })
       );
 
       if (['accept', 'process', 'archive'].includes(action)) markDomainTouched(db, touch.domain);
-      rankOpenTouches(db);
+      if (taskStatus || ['archive', 'snooze', 'accept', 'process'].includes(action)) rebuildTouches(db);
+      else rankOpenTouches(db);
       const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(touch.id));
       const updatedTask = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
-      return { touch: updatedTouch, task: updatedTask, event_id: eventId, message };
+      return { touch: updatedTouch, task: updatedTask, run: null, event_id: eventId, dispatch_status: dispatchStatus, message };
     });
 
-    const result = tx();
-    if (result.error) return res.status(400).json(result);
-    res.json(result);
+    res.json(tx());
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 function defaultSnooze() {
-  return new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  return sqliteDateTimeAfterMs(60 * 60 * 1000);
+}
+
+function normalizeSnooze(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return toSqliteDateTime(date);
 }
 
 function eventName(action) {
