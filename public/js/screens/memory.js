@@ -1,4 +1,5 @@
 import { get } from '../api.js';
+import { escapeHtml, escapeAttr, safeUrl } from '../lib/html.js';
 
 export async function renderMemory() {
   const el = document.getElementById('screen-memory');
@@ -47,7 +48,7 @@ export async function renderMemory() {
       </div>
       <div class="card" style="border-color:var(--color-red)">
         <div style="color:var(--color-red);font-weight:600;margin-bottom:8px">Error loading memory</div>
-        <div style="font-size:13px;color:var(--text-secondary)">${err.message}</div>
+        <div style="font-size:13px;color:var(--text-secondary)">${escapeHtml(err.message)}</div>
       </div>
     </div>`;
   }
@@ -160,7 +161,7 @@ function inline(s) {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g,     '<em>$1</em>')
     .replace(/`(.+?)`/g,       '<code class="md-code">$1</code>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="md-link" target="_blank" rel="noopener">$1</a>');
+    .replace(/\[(.+?)\]\((.+?)\)/g, (_match, label, href) => `<a href="${escapeAttr(safeUrl(href))}" class="md-link" target="_blank" rel="noopener">${label}</a>`);
 }
 
 function esc(s) {

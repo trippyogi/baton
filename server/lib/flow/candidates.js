@@ -105,7 +105,7 @@ function generateCandidates(db, context = {}) {
       if (packet?.packet_status === 'valid') {
         const candidate = candidateFromTask(task, {
           type: 'review',
-          primary_action: 'review',
+          primary_action: 'inspect',
           title: `Review: ${task.title}`,
           mode_fit: 0.75,
           human_touch_minutes: 7,

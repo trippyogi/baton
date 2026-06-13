@@ -93,7 +93,7 @@ export async function renderOverview() {
   <div class="command-strip">
     <div class="command-strip-item">
       <span class="status-dot ${health.dotCls}"></span>
-      <span>Vector</span>
+      <span>BATON</span>
       <span class="command-strip-val">${health.label}</span>
     </div>
     <div class="command-strip-sep"></div>
@@ -213,7 +213,7 @@ export async function renderOverview() {
     <div style="display:flex;gap:8px;flex-wrap:nowrap;align-items:center">
       <a href="#/tasks" class="btn btn-ghost btn-sm">+ New Task</a>
       <a href="#/runs"  class="btn btn-ghost btn-sm">View Runs</a>
-      <a href="#/board" class="btn btn-ghost btn-sm">View Board</a>
+      <a href="#/board" class="btn btn-ghost btn-sm">View Airspace</a>
       <button class="btn btn-ghost btn-sm" id="btn-resolve-info" style="margin-left:auto">Resolve All Info Alerts</button>
     </div>
   </div>

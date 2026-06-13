@@ -1,4 +1,5 @@
 // requests.js — Shared Requests screen (Jeremy ↔ Marko)
+import { escapeHtml, escapeAttr, safeUrl } from '../lib/html.js';
 
 const TOKEN_KEY = 'shared_requests_token';
 
@@ -41,12 +42,13 @@ function statusBadge(status) {
     dismissed: { bg: '#444466', text: '#ccc' },
   };
   const s = map[status] || { bg: '#9898AC', text: '#fff' };
-  return `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:${s.bg};color:${s.text};text-transform:uppercase">${status}</span>`;
+  return `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:${s.bg};color:${s.text};text-transform:uppercase">${escapeHtml(status)}</span>`;
 }
 
 function requestCard(req, isInbox) {
-  const artifactLink = req.artifact_url
-    ? `<a href="${req.artifact_url}" target="_blank" style="color:var(--accent);font-size:12px;word-break:break-all">${req.artifact_url}</a>`
+  const artifactUrl = safeUrl(req.artifact_url);
+  const artifactLink = req.artifact_url && artifactUrl !== '#'
+    ? `<a href="${escapeAttr(artifactUrl)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:12px;word-break:break-all">${escapeHtml(req.artifact_url)}</a>`
     : '';
   const actions = isInbox && req.status === 'pending'
     ? `<div style="margin-top:10px;display:flex;gap:8px">
@@ -55,15 +57,15 @@ function requestCard(req, isInbox) {
        </div>`
     : '';
   return `
-    <div class="req-card" data-id="${req.id}" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--card-bg)">
+    <div class="req-card" data-id="${escapeAttr(req.id)}" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--card-bg)">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-        <p style="margin:0;font-size:14px;line-height:1.5;flex:1">${req.request}</p>
+        <p style="margin:0;font-size:14px;line-height:1.5;flex:1">${escapeHtml(req.request)}</p>
         ${statusBadge(req.status)}
       </div>
       ${artifactLink ? `<div style="margin-top:6px">${artifactLink}</div>` : ''}
       <div style="margin-top:8px;font-size:11px;color:var(--muted)">
-        ${isInbox ? `From <strong>Marko</strong>` : `To <strong>Marko</strong>`} · ${fmt(req.created_at)}
-        ${req.updated_at !== req.created_at ? ` · updated ${fmt(req.updated_at)}` : ''}
+        ${isInbox ? `From <strong>Marko</strong>` : `To <strong>Marko</strong>`} · ${escapeHtml(fmt(req.created_at))}
+        ${req.updated_at !== req.created_at ? ` · updated ${escapeHtml(fmt(req.updated_at))}` : ''}
       </div>
       ${actions}
     </div>`;
@@ -220,7 +222,7 @@ export async function renderRequests() {
         <div class="screen-title">Shared Requests</div>
         <div class="screen-subtitle">Jeremy ↔ Marko async task queue</div>
       </div>
-      <div style="color:var(--color-red);padding:16px">Error: ${err.message}</div>
+      <div style="color:var(--color-red);padding:16px">Error: ${escapeHtml(err.message)}</div>
       <button id="btn-reset-token-err" style="margin:8px 16px;padding:6px 14px;border-radius:6px;border:1px solid #444;background:transparent;color:#aaa;cursor:pointer;font-size:12px">Reset Token</button>`;
     const rb = document.getElementById('btn-reset-token-err');
     if (rb) rb.onclick = () => { localStorage.removeItem(TOKEN_KEY); renderRequests(); };

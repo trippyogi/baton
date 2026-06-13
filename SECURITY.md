@@ -45,8 +45,7 @@ BATON should follow these defaults:
 Run:
 
 ```bash
-npm run check:js
-BATON_BASE_URL=http://127.0.0.1:4200 npm run smoke
+npm test
 npm run audit
 ```
 

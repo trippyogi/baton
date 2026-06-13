@@ -1,4 +1,5 @@
 import { get } from '../api.js';
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 let _refreshTimer = null;
 
@@ -256,10 +257,10 @@ function organicRow(c) {
     : `<span style="color:var(--text-secondary);font-size:12px">awaiting gate</span>`;
 
   return `<tr>
-    <td style="font-weight:500;font-family:var(--font-instrument)">${c.creative_id}</td>
-    <td><span class="badge">${c.format}</span></td>
-    <td><span class="badge">${c.hook_type}</span></td>
-    <td style="color:var(--text-secondary);font-size:12px">${fmt_date(c.posted_at)}</td>
+    <td style="font-weight:500;font-family:var(--font-instrument)">${escapeHtml(c.creative_id)}</td>
+    <td><span class="badge">${escapeHtml(c.format)}</span></td>
+    <td><span class="badge">${escapeHtml(c.hook_type)}</span></td>
+    <td style="color:var(--text-secondary);font-size:12px">${escapeHtml(fmt_date(c.posted_at))}</td>
     <td>${gateStatus}</td>
     <td style="text-align:right">${signalBadge}</td>
     <td>${actionLabel}</td>
@@ -268,7 +269,7 @@ function organicRow(c) {
 
 function paidTestRow(c) {
   const lastTest = c.paid_tests?.[c.paid_tests.length - 1];
-  if (!lastTest) return `<tr><td colspan="8" style="color:var(--text-secondary)">${c.creative_id} — no test data</td></tr>`;
+  if (!lastTest) return `<tr><td colspan="8" style="color:var(--text-secondary)">${escapeHtml(c.creative_id)} — no test data</td></tr>`;
 
   const daysRunning = lastTest.start
     ? Math.floor((Date.now() - new Date(lastTest.start)) / 86400_000)
@@ -278,13 +279,13 @@ function paidTestRow(c) {
   const cpaStr = cpa ? `<span style="color:${cpa < 25 ? 'var(--color-lime)' : cpa < 40 ? 'var(--color-ember)' : 'var(--color-red)'};font-weight:600">$${cpa.toFixed(2)}</span>` : '—';
 
   return `<tr>
-    <td style="font-weight:500;font-family:var(--font-instrument)">${c.creative_id}</td>
-    <td style="text-align:center"><span class="badge">T${lastTest.tier || 1}</span></td>
-    <td style="font-size:12px;color:var(--text-secondary)">${lastTest.audience || '—'}</td>
-    <td style="text-align:right;font-family:var(--font-instrument)">$${lastTest.budget_day || '—'}</td>
-    <td style="font-size:12px;color:var(--text-secondary)">${fmt_date(lastTest.start)}</td>
-    <td style="text-align:right">${daysRunning}d</td>
-    <td style="font-size:12px;color:var(--text-secondary)">${fmt_date(lastTest.first_read)}</td>
+    <td style="font-weight:500;font-family:var(--font-instrument)">${escapeHtml(c.creative_id)}</td>
+    <td style="text-align:center"><span class="badge">T${escapeHtml(lastTest.tier || 1)}</span></td>
+    <td style="font-size:12px;color:var(--text-secondary)">${escapeHtml(lastTest.audience || '—')}</td>
+    <td style="text-align:right;font-family:var(--font-instrument)">$${escapeHtml(lastTest.budget_day || '—')}</td>
+    <td style="font-size:12px;color:var(--text-secondary)">${escapeHtml(fmt_date(lastTest.start))}</td>
+    <td style="text-align:right">${escapeHtml(daysRunning)}d</td>
+    <td style="font-size:12px;color:var(--text-secondary)">${escapeHtml(fmt_date(lastTest.first_read))}</td>
     <td style="text-align:right">${cpaStr}</td>
   </tr>`;
 }
@@ -304,12 +305,12 @@ function evergreenRow(c) {
   const audience = lastTest?.audience || '—';
 
   return `<tr>
-    <td style="font-weight:500;font-family:var(--font-instrument)">${c.creative_id}</td>
-    <td><span class="badge">${c.format}</span></td>
+    <td style="font-weight:500;font-family:var(--font-instrument)">${escapeHtml(c.creative_id)}</td>
+    <td><span class="badge">${escapeHtml(c.format)}</span></td>
     <td style="text-align:right;font-family:var(--font-instrument);color:${bestCpa !== null && bestCpa < 25 ? 'var(--color-lime)' : 'var(--text-primary)'};font-weight:${bestCpa !== null ? '600' : '400'}">${bestCpa !== null ? '$' + bestCpa.toFixed(2) : '—'}</td>
     <td style="text-align:right;font-family:var(--font-instrument);color:${bestRoas !== null && bestRoas >= 2 ? 'var(--color-lime)' : 'var(--text-primary)'};font-weight:${bestRoas !== null ? '600' : '400'}">${bestRoas !== null ? bestRoas.toFixed(2) + 'x' : '—'}</td>
-    <td style="font-size:12px;color:var(--text-secondary)">${audience}</td>
-    <td style="font-size:12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.notes || ''}">${c.notes || '—'}</td>
+    <td style="font-size:12px;color:var(--text-secondary)">${escapeHtml(audience)}</td>
+    <td style="font-size:12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeAttr(c.notes || '')}">${escapeHtml(c.notes || '—')}</td>
   </tr>`;
 }
 
@@ -317,19 +318,19 @@ function historicalRow(c) {
   const lastTest = c.paid_tests?.[c.paid_tests.length - 1];
   const result   = lastTest?.result;
   const decision = result?.decision
-    ? `<span style="color:${result.decision === 'kill' ? 'var(--color-red)' : result.decision === 'scale' ? 'var(--color-lime)' : 'var(--color-ember)'};font-weight:600">${result.decision}</span>`
+    ? `<span style="color:${result.decision === 'kill' ? 'var(--color-red)' : result.decision === 'scale' ? 'var(--color-lime)' : 'var(--color-ember)'};font-weight:600">${escapeHtml(result.decision)}</span>`
     : '—';
 
   return `<tr>
-    <td style="font-weight:500;font-family:var(--font-instrument)">${c.creative_id}</td>
-    <td><span class="badge">${c.format}</span></td>
-    <td style="color:var(--color-red);font-size:12px">${c.status}</td>
+    <td style="font-weight:500;font-family:var(--font-instrument)">${escapeHtml(c.creative_id)}</td>
+    <td><span class="badge">${escapeHtml(c.format)}</span></td>
+    <td style="color:var(--color-red);font-size:12px">${escapeHtml(c.status)}</td>
     <td style="font-family:var(--font-instrument)">${result?.spend != null ? '$' + result.spend.toFixed(2) : '—'}</td>
     <td style="text-align:right">${result?.purchases ?? '—'}</td>
     <td style="text-align:right;font-family:var(--font-instrument)">${result?.cpa != null ? '$' + result.cpa.toFixed(2) : '—'}</td>
     <td style="text-align:right;font-family:var(--font-instrument)">${result?.roas != null ? result.roas.toFixed(2) + 'x' : '—'}</td>
     <td>${decision}</td>
-    <td style="font-size:12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.notes || ''}">${c.notes || '—'}</td>
+    <td style="font-size:12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeAttr(c.notes || '')}">${escapeHtml(c.notes || '—')}</td>
   </tr>`;
 }
 
@@ -344,11 +345,11 @@ function fmt_date(d) {
 function degraded(title, msg) {
   return `<div class="canvas-inner">
     <div class="screen-header" style="padding-top:8px;margin-bottom:24px">
-      <div class="screen-title" style="font-size:28px;font-weight:600">${title}</div>
+      <div class="screen-title" style="font-size:28px;font-weight:600">${escapeHtml(title)}</div>
     </div>
     <div class="card" style="border-color:var(--color-ember)">
       <div style="color:var(--color-ember);font-weight:600;margin-bottom:8px">⚠ Data unavailable</div>
-      <div style="font-size:13px;color:var(--text-secondary)">${msg}</div>
+      <div style="font-size:13px;color:var(--text-secondary)">${escapeHtml(msg)}</div>
     </div>
   </div>`;
 }

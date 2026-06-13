@@ -11,3 +11,14 @@ export function escapeHtml(value) {
 export function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
+
+export function safeUrl(value) {
+  const raw = String(value || '').trim();
+  try {
+    const url = new URL(raw);
+    if (!['http:', 'https:'].includes(url.protocol)) return '#';
+    return url.href;
+  } catch (_) {
+    return '#';
+  }
+}

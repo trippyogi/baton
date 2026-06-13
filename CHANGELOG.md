@@ -2,6 +2,29 @@
 
 BATON follows [Semantic Versioning](https://semver.org/). While the project is pre-1.0, minor versions may include breaking changes and patch versions are reserved for fixes.
 
+## [Unreleased]
+
+### Added
+
+- Self-contained smoke test harness that starts BATON on a temporary database when `BATON_BASE_URL` is not set.
+- `/api/health` endpoint for local checks and smoke-test readiness polling.
+- `BATON_DB_PATH` override for isolated test databases.
+- Node runtime pin via `.nvmrc` and package engines.
+
+### Changed
+
+- Flow touches rebuild at startup so seeded work appears immediately without making `GET /api/flow` mutate state.
+- Review touch primary actions now use executable `inspect` metadata while the UI labels them as Review.
+- Flow UI action availability now comes from backend-provided touch metadata.
+- Delegate/assign docs and smoke coverage now explicitly reflect prepared-only behavior when no dispatcher is configured.
+
+### Fixed
+
+- Review packet creation is transactional for packet/task writes and accepts agent field aliases.
+- Task JSON fields validate array shape and malformed stored JSON no longer breaks reads.
+- Legacy visible screens escape user/agent text and protocol-validate rendered URLs.
+- Removed stale placeholder route code.
+
 ## [0.1.0] - 2026-06-13
 
 Initial open-source Next-Touch Engine foundation.

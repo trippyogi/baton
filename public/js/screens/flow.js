@@ -1,15 +1,5 @@
 import { get, post, patch } from '../api.js';
-import { escapeHtml } from '../lib/html.js';
-
-const ACTIONS_BY_TYPE = {
-  blocker: ['answer', 'snooze', 'escalate', 'archive'],
-  review: ['accept', 'refine', 'send_to_evaluator', 'snooze', 'archive', 'inspect'],
-  refine: ['send_to_evaluator', 'snooze', 'archive', 'inspect'],
-  delegate: ['delegate', 'snooze', 'archive'],
-  capture: ['process', 'delegate', 'snooze', 'archive'],
-  stale_run: ['inspect', 'snooze', 'archive', 'escalate'],
-  idle_agent: ['assign', 'snooze', 'archive'],
-};
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 const MODES = ['deep_build','triage','review','strategy_creative','launch','admin','cleanup','recovery'];
 let pollTimer = null;
@@ -106,12 +96,12 @@ function airspaceItem(label, value) {
 function touchCard(touch, idx) {
   const active = idx === selectedIndex ? ' touch-card-active' : '';
   return `
-    <article class="touch-card${active}" data-touch-id="${touch.id}" data-index="${idx}">
+    <article class="touch-card${active}" data-touch-id="${escapeAttr(touch.id)}" data-index="${escapeAttr(idx)}">
       <div class="touch-rank">#${touch.rank || idx + 1}</div>
       <div class="touch-body">
         <div class="touch-title">${escapeHtml(touch.title)}</div>
         <div class="touch-meta">
-          <span class="badge badge-${escapeHtml(touch.type)}">${escapeHtml(touch.type)}</span>
+          <span class="badge badge-${escapeAttr(touch.type)}">${escapeHtml(touch.type)}</span>
           <span>${escapeHtml(touch.domain || 'product')}</span>
           <span>~${touch.human_touch_minutes || 5}m</span>
           <span>${escapeHtml(touch.risk_level || 'low')} risk</span>
@@ -129,7 +119,7 @@ function touchCard(touch, idx) {
         </div>
       </div>
       <div class="touch-actions">
-        <button class="btn btn-primary touch-primary">${labelAction(touch.primary_action)}</button>
+        <button class="btn btn-primary touch-primary">${primaryLabel(touch)}</button>
         ${allows(touch, 'snooze') ? '<button class="btn btn-ghost touch-snooze">Snooze</button>' : ''}
       </div>
     </article>`;
@@ -190,7 +180,7 @@ async function submitCommand(el) {
 function primaryAction(id) {
   const touch = (currentData.next_touches || []).find(t => t.id === id);
   if (!touch) return;
-  if (['review', 'refine', 'delegate', 'answer', 'decide'].includes(touch.primary_action) || touch.type === 'review') {
+  if (touch.type === 'review' || ['refine', 'delegate', 'assign', 'answer', 'decide', 'send_to_evaluator'].includes(touch.primary_action)) {
     const card = document.querySelector(`.touch-card[data-touch-id="${id}"]`);
     const detail = card?.querySelector('.touch-detail');
     if (detail) detail.hidden = !detail.hidden;
@@ -259,6 +249,16 @@ function labelAction(action) {
   return String(action || 'open').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function primaryLabel(touch) {
+  if (touch.type === 'review' && touch.primary_action === 'inspect') return 'Review';
+  if (['delegate', 'assign'].includes(touch.primary_action)) return 'Prepare';
+  return labelAction(touch.primary_action);
+}
+
+function actionsFor(touch) {
+  return new Set([touch?.primary_action, ...(touch?.secondary_actions || [])].filter(Boolean));
+}
+
 function allows(touch, action) {
-  return (ACTIONS_BY_TYPE[touch?.type] || []).includes(action);
+  return actionsFor(touch).has(action);
 }
