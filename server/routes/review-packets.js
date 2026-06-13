@@ -67,17 +67,26 @@ router.post('/', (req, res) => {
       validator_notes: validation.validator_notes,
     });
 
-    if (packet.task_id && validation.valid) {
+    if (packet.task_id) {
       db.prepare(`UPDATE tasks SET status = 'review', updated_at = datetime('now') WHERE id = ?`).run(packet.task_id);
     }
 
     const rebuild = rebuildTouches(db);
     const saved = parsePacket(db.prepare('SELECT * FROM review_packets WHERE id = ?').get(packet.id));
-    const touch = validation.valid && packet.task_id
+    const touch = packet.task_id
       ? db.prepare(`SELECT * FROM baton_touches WHERE review_packet_id = ? AND status NOT IN ('archived','resolved') ORDER BY created_at DESC LIMIT 1`).get(packet.id)
       : null;
+    const reviewTouchId = validation.valid ? touch?.id || null : null;
+    const refineTouchId = validation.valid ? null : touch?.id || null;
 
-    res.status(201).json({ packet: saved, valid: validation.valid, review_touch_id: touch?.id || null, rebuild });
+    res.status(201).json({
+      packet: saved,
+      valid: validation.valid,
+      review_touch_id: reviewTouchId,
+      refine_touch_id: refineTouchId,
+      validator_notes: validation.validator_notes,
+      rebuild,
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

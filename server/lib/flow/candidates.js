@@ -2,15 +2,16 @@
 const { hoursSince, parseJson } = require('./utils');
 const { STALE_THRESHOLDS_MINUTES } = require('./modes');
 const { getPortfolioMap, domainMeta, starvationScore } = require('./portfolio');
+const { allowedActions } = require('./actions');
 
 const SECONDARY_ACTIONS = {
   blocker: ['snooze', 'escalate', 'archive'],
-  review: ['refine', 'accept', 'send_to_evaluator', 'snooze', 'archive'],
+  review: ['accept', 'refine', 'send_to_evaluator', 'snooze', 'archive'],
   refine: ['send_to_evaluator', 'snooze', 'archive'],
   delegate: ['snooze', 'archive'],
   capture: ['delegate', 'archive', 'snooze'],
   stale_run: ['snooze', 'archive', 'escalate'],
-  idle_agent: ['delegate', 'snooze', 'archive'],
+  idle_agent: ['assign', 'snooze', 'archive'],
 };
 
 function taskDomain(task) {
@@ -38,7 +39,7 @@ function candidateFromTask(task, attrs, portfolioMap) {
     type: attrs.type,
     status: 'pending',
     primary_action: attrs.primary_action,
-    secondary_actions: SECONDARY_ACTIONS[attrs.type] || ['snooze', 'archive'],
+    secondary_actions: SECONDARY_ACTIONS[attrs.type] || allowedActions(attrs.type),
     why_now: '',
     domain,
     project_key: task.project_key || null,
@@ -97,11 +98,11 @@ function generateCandidates(db, context = {}) {
     } else if (task.status === 'review') {
       const packet = db.prepare(`
         SELECT * FROM review_packets
-        WHERE task_id = ? AND packet_status = 'valid'
+        WHERE task_id = ?
         ORDER BY created_at DESC
         LIMIT 1
       `).get(task.id);
-      if (packet) {
+      if (packet?.packet_status === 'valid') {
         const candidate = candidateFromTask(task, {
           type: 'review',
           primary_action: 'review',
@@ -116,14 +117,20 @@ function generateCandidates(db, context = {}) {
         candidate.quality_score = Number(packet.quality_score || candidate.quality_score);
         candidates.push(candidate);
       } else {
-        candidates.push(candidateFromTask(task, {
+        const candidate = candidateFromTask(task, {
           type: 'refine',
           primary_action: 'send_to_evaluator',
           title: `Refine review packet: ${task.title}`,
           mode_fit: 0.55,
           human_touch_minutes: 3,
           agent_hours_unlocked: 0.75,
-        }, portfolioMap));
+        }, portfolioMap);
+        if (packet) {
+          candidate.review_packet_id = packet.id;
+          candidate.description = packet.validator_notes || packet.summary || 'Review packet is missing required fields.';
+          candidate.quality_score = Math.min(candidate.quality_score, 0.45);
+        }
+        candidates.push(candidate);
       }
     } else if (task.status === 'ready') {
       candidates.push(candidateFromTask(task, {
