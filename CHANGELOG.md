@@ -6,6 +6,8 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- Task detail modals now include Dispatch Prep for creating a manual, non-launching dispatch envelope.
+- Task API can prepare dispatch runs via `POST /api/tasks/:id/dispatch/prepare` without sending work to an agent.
 - Strategy Packet API (`/api/strategy-packets`) for turning high-level goals into ready, manual-dispatch task sets.
 - Flow command `strategy ...` now drafts a strategy packet and populates Airspace with ready tasks.
 - Airspace Map now auto-refreshes periodically while visible so API/other-client task moves show up without a manual browser refresh.

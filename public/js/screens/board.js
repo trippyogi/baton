@@ -253,6 +253,16 @@ function showTaskDetailModal(id, tasks) {
         ${task.domain ? `<div><span>Domain</span><code>${escapeHtml(task.domain)}</code></div>` : ''}
         ${task.risk_level ? `<div><span>Risk</span><code>${escapeHtml(task.risk_level)}</code></div>` : ''}
       </div>
+      <div class="board-dispatch-panel">
+        <div class="board-dispatch-header">
+          <div>
+            <div class="board-dispatch-title">Dispatch prep</div>
+            <div class="board-dispatch-subtitle">Prepare a run envelope without launching an agent.</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="board-dispatch-prepare">Prepare</button>
+        </div>
+        <div id="board-dispatch-result" class="board-dispatch-result" hidden></div>
+      </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="board-edit-cancel">Cancel</button>
         <button class="btn btn-primary" id="board-edit-save">Save</button>
@@ -262,6 +272,7 @@ function showTaskDetailModal(id, tasks) {
   modal.onclick = () => modal.remove();
   document.getElementById('board-edit-title').focus();
   document.getElementById('board-edit-cancel').onclick = () => modal.remove();
+  document.getElementById('board-dispatch-prepare').onclick = () => prepareDispatchFromModal(id);
   document.getElementById('board-edit-save').onclick = async () => {
     const body = {
       title: document.getElementById('board-edit-title').value.trim(),
@@ -276,4 +287,38 @@ function showTaskDetailModal(id, tasks) {
     modal.remove();
     renderBoard();
   };
+}
+
+async function prepareDispatchFromModal(id) {
+  const button = document.getElementById('board-dispatch-prepare');
+  const resultEl = document.getElementById('board-dispatch-result');
+  if (!button || !resultEl) return;
+  button.disabled = true;
+  button.textContent = 'Preparing…';
+  resultEl.hidden = false;
+  resultEl.textContent = 'Preparing dispatch envelope…';
+  try {
+    const result = await post(`/api/tasks/${id}/dispatch/prepare`, {});
+    const envelope = result.envelope || {};
+    resultEl.innerHTML = `
+      <div class="board-dispatch-summary">
+        <div><span>Run</span><code>${escapeHtml(result.run?.id || 'unknown')}</code></div>
+        <div><span>Agent</span><code>${escapeHtml(envelope.agent_id || result.run?.agent_name || 'manual')}</code></div>
+        <div><span>Status</span><code>${escapeHtml(result.run?.dispatch_status || 'prepared')}</code></div>
+      </div>
+      <label class="form-label" for="board-dispatch-envelope">Envelope</label>
+      <textarea class="form-textarea board-dispatch-envelope" id="board-dispatch-envelope" readonly>${escapeHtml(JSON.stringify(envelope, null, 2))}</textarea>
+      <div class="board-dispatch-actions">
+        <button class="btn btn-ghost btn-sm" id="board-dispatch-copy">Copy envelope</button>
+      </div>`;
+    document.getElementById('board-dispatch-copy').onclick = async () => {
+      await navigator.clipboard?.writeText(JSON.stringify(envelope, null, 2));
+      document.getElementById('board-dispatch-copy').textContent = 'Copied';
+    };
+  } catch (err) {
+    resultEl.textContent = `Could not prepare dispatch: ${err.message}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Prepare';
+  }
 }
