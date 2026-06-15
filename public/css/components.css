@@ -354,6 +354,15 @@ tr:last-child td { border-bottom: none; }
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: border-color 0.12s, background 0.12s;
+}
+.board-col.drop-target {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg-surface));
+}
+.board-col.drop-saving {
+  border-color: var(--color-teal);
+  background: color-mix(in srgb, var(--color-teal) 7%, var(--bg-surface));
 }
 
 .board-col-header {
@@ -397,6 +406,7 @@ tr:last-child td { border-bottom: none; }
   transition: border-color 0.12s;
 }
 .board-card:hover { border-color: var(--accent); }
+.board-card.dragging { opacity: 0.45; border-color: var(--accent); }
 .board-card-title { font-size: 13px; font-weight: var(--fw-medium); margin-bottom: 6px; }
 .board-card-desc {
   font-size: 11px;
