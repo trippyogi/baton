@@ -6,6 +6,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- Airspace Map cards can now be dragged between columns to update task status in place.
 - Airspace Map cards now open an in-place task detail editor with title, description, status, priority, owner, tags, and read-only metadata.
 - `BATON_HOST`/`HOST` server bind configuration for private same-tailnet development while keeping localhost as the default.
 - Airspace Map columns now have inline add buttons so tasks can be created directly into a selected status without leaving the board.

@@ -4,6 +4,7 @@ import { escapeHtml, escapeAttr } from '../lib/html.js';
 const COLUMNS = ['inbox','ready','in_progress','waiting','review','done'];
 const EDIT_STATUSES = [...COLUMNS, 'backlog'];
 const COL_LABELS = { inbox:'Inbox', ready:'Ready to Pass', in_progress:'Airborne', waiting:'Needs Touch', review:'Review', done:'Landed', backlog:'Backlog' };
+let boardDrag = null;
 
 export async function renderBoard() {
   const el = document.getElementById('screen-board');
@@ -40,9 +41,17 @@ export async function renderBoard() {
       };
     });
 
+    wireBoardDragAndDrop(el);
+
     // Click to inspect/edit task without leaving Airspace Map
     el.querySelectorAll('.board-card').forEach(card => {
-      card.onclick = () => showTaskDetailModal(card.dataset.id, tasks);
+      card.onclick = () => {
+        if (card.dataset.dragSuppressClick === 'true') {
+          delete card.dataset.dragSuppressClick;
+          return;
+        }
+        showTaskDetailModal(card.dataset.id, tasks);
+      };
     });
   } catch(err) {
     el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${escapeHtml(err.message)}</div>`;
@@ -52,7 +61,7 @@ export async function renderBoard() {
 function boardCard(t) {
   const description = (t.description || '').trim();
   return `
-    <div class="board-card" data-id="${escapeAttr(t.id)}" data-status="${escapeAttr(t.status)}">
+    <div class="board-card" draggable="true" data-id="${escapeAttr(t.id)}" data-status="${escapeAttr(t.status)}" title="Click to edit, drag to move">
       <div class="board-card-title">${escapeHtml(t.title)}</div>
       ${description ? `<div class="board-card-desc">${escapeHtml(description.length > 110 ? `${description.slice(0, 107)}…` : description)}</div>` : ''}
       <div class="board-card-meta">
@@ -60,6 +69,61 @@ function boardCard(t) {
         <span style="font-size:11px;color:var(--text-secondary)">${escapeHtml(t.owner || 'operator')}</span>
       </div>
     </div>`;
+}
+
+function wireBoardDragAndDrop(el) {
+  el.querySelectorAll('.board-card').forEach(card => {
+    card.addEventListener('dragstart', event => {
+      boardDrag = { id: card.dataset.id, from: card.dataset.status };
+      card.classList.add('dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', card.dataset.id);
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      card.dataset.dragSuppressClick = 'true';
+      setTimeout(() => { delete card.dataset.dragSuppressClick; }, 0);
+      boardDrag = null;
+      clearDropTargets(el);
+    });
+  });
+
+  el.querySelectorAll('.board-col').forEach(col => {
+    col.addEventListener('dragenter', () => {
+      if (boardDrag) col.classList.add('drop-target');
+    });
+    col.addEventListener('dragover', event => {
+      if (!boardDrag) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      col.classList.add('drop-target');
+    });
+    col.addEventListener('dragleave', event => {
+      if (!col.contains(event.relatedTarget)) col.classList.remove('drop-target');
+    });
+    col.addEventListener('drop', async event => {
+      if (!boardDrag) return;
+      event.preventDefault();
+      const status = col.dataset.col;
+      const { id, from } = boardDrag;
+      clearDropTargets(el);
+      if (!id || !status || status === from) return;
+      col.classList.add('drop-saving');
+      try {
+        await patch(`/api/tasks/${id}`, { status });
+        renderBoard();
+      } catch (err) {
+        col.classList.remove('drop-saving');
+        alert(`Could not move task: ${err.message}`);
+      }
+    });
+  });
+}
+
+function clearDropTargets(el) {
+  el.querySelectorAll('.board-col.drop-target, .board-col.drop-saving').forEach(col => {
+    col.classList.remove('drop-target', 'drop-saving');
+  });
 }
 
 export function showBoardAddTaskModal(status = 'inbox') {
