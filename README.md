@@ -119,6 +119,10 @@ VMC_PORT=4420 npm start
 
 Redis is optional for local Flow development. Queue diagnostics gracefully return empty queue data when Redis is unavailable.
 
+### Private local use
+
+BATON is safe to run with your own tasks and agents locally. Keep private data in ignored `local/` files or the local SQLite DB, then use `npm run audit:private` before committing. See `docs/guides/private-local-use.md`.
+
 The Requests screen is optional and token-protected; set `SHARED_REQUESTS_TOKEN` in `.env` to enable it locally.
 
 BATON is pinned to Node 20 via `.nvmrc`; `package.json` supports Node `>=20 <21` because `better-sqlite3` is a native dependency.
@@ -151,7 +155,7 @@ Key defaults:
 - User-controlled UI output is escaped.
 - Touch actions are authorized by type.
 - Delegation/assignment only marks tasks airborne and agents running after configured dispatch ACKs. Unconfigured dispatch remains visible and honest.
-- `npm run audit` should pass before release tags.
+- `npm run audit` and `npm run audit:private` should pass before release tags.
 
 ## Checks
 
@@ -159,9 +163,10 @@ Key defaults:
 npm test
 npm run smoke:dispatch
 npm run audit
+npm run audit:private
 ```
 
-`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop.
+`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop. `npm run audit:private` checks that private local data and high-signal secrets are not tracked.
 
 ## API overview
 

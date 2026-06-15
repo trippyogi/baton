@@ -131,7 +131,7 @@ db.exec(schema);
     'spectre',
     'Spectre',
     'orchestrator',
-    JSON.stringify(['orchestration', 'metatravelers', 'strategy', 'research', 'coordination', 'revenue', 'launch']),
+    JSON.stringify(['orchestration', 'strategy', 'research', 'coordination', 'revenue', 'launch']),
     JSON.stringify(defaultAgentPermissions('spectre')),
     JSON.stringify(spectreDispatchConfig)
   );
@@ -175,12 +175,12 @@ if (taskCount === 0) {
   `);
 
   const seedTasks = db.transaction(() => {
-    insertTask.run({ id:id(), title:'Set up ATC retargeting campaign', description:'$15/day Dynamic Product Ads for L3 Assembly ATCs', status:'ready', priority:'high', owner:'jeremy', tags:'["meta","ads"]', impact:9, effort:2 });
-    insertTask.run({ id:id(), title:'MeldMaster carousel copy', description:'Write captions using lore from character-briefs/meldmaster-lore.md', status:'in_progress', priority:'high', owner:'vector', tags:'["content","carousel"]', impact:7, effort:3 });
-    insertTask.run({ id:id(), title:'Build 1% LAL campaign', description:'180d purchasers/ATC source, $20/day, target US', status:'ready', priority:'high', owner:'jeremy', tags:'["meta","ads"]', impact:8, effort:2 });
-    insertTask.run({ id:id(), title:'Fix Email 2 CTA in abandoned cart', description:'"View cart" → "Complete My Order"', status:'done', priority:'low', owner:'vector', tags:'["email"]', impact:4, effort:1 });
-    insertTask.run({ id:id(), title:'Fill 14 remaining character briefs', description:'From 4Horseman email threads', status:'backlog', priority:'medium', owner:'vector', tags:'["content"]', impact:6, effort:8 });
-    insertTask.run({ id:id(), title:'BATON Flow Ops Phase 1', description:'Flow, Tasks, Airspace, Runs, Alerts', status:'in_progress', priority:'critical', owner:'circuit', tags:'["engineering","flow"]', impact:10, effort:7 });
+    insertTask.run({ id:id(), title:'Review agent output packet', description:'Inspect a generic review packet and decide whether to accept, refine, or delegate follow-up.', status:'review', priority:'high', owner:'operator', tags:'["review","agent"]', impact:8, effort:2 });
+    insertTask.run({ id:id(), title:'Prioritize next product polish task', description:'Choose the highest leverage polish item for the next product iteration.', status:'ready', priority:'high', owner:'operator', tags:'["product","triage"]', impact:7, effort:3 });
+    insertTask.run({ id:id(), title:'Draft launch checklist follow-up', description:'Turn a launch checklist gap into a clear next human touch or agent assignment.', status:'ready', priority:'medium', owner:'operator', tags:'["launch","checklist"]', impact:6, effort:2 });
+    insertTask.run({ id:id(), title:'Triage stale waiting run', description:'Review a waiting run and decide whether to unblock, refine, snooze, or archive it.', status:'waiting', priority:'medium', owner:'operator', tags:'["ops","triage"]', impact:5, effort:2 });
+    insertTask.run({ id:id(), title:'Refine implementation spec for code agent', description:'Clarify acceptance criteria before assigning implementation work to a code agent.', status:'backlog', priority:'medium', owner:'operator', tags:'["engineering","spec"]', impact:7, effort:4 });
+    insertTask.run({ id:id(), title:'Validate private local use boundary', description:'Confirm local operator data stays outside tracked public repository files.', status:'in_progress', priority:'critical', owner:'operator', tags:'["security","privacy"]', impact:10, effort:5 });
   });
   seedTasks();
 
@@ -193,9 +193,9 @@ if (taskCount === 0) {
   seedRuns();
 
   const seedAlerts = db.transaction(() => {
-    insertAlert.run({ id:id(), type:'funnel', severity:'warning', message:'L3 Assembly: 54 ATCs → 5 purchases. Funnel leak at checkout.' });
-    insertAlert.run({ id:id(), type:'budget', severity:'info', message:'Ad spend on track. $627 last 14d across active campaigns.' });
-    insertAlert.run({ id:id(), type:'shipping', severity:'info', message:'Wave 1 figures ETA: warehouse mid-March. Influencer kits this week.' });
+    insertAlert.run({ id:id(), type:'flow', severity:'warning', message:'One review touch has been waiting long enough to deserve operator attention.' });
+    insertAlert.run({ id:id(), type:'budget', severity:'info', message:'Demo provider usage is within the configured local budget.' });
+    insertAlert.run({ id:id(), type:'privacy', severity:'info', message:'Keep real operator tasks in ignored local files or the local SQLite database.' });
   });
   seedAlerts();
 
@@ -203,7 +203,7 @@ if (taskCount === 0) {
   const seedUsage = db.transaction(() => {
     insertUsage.run({ provider:'anthropic', day:today, cost:0.102, tokens:31400, requests:8 });
     insertUsage.run({ provider:'gemini', day:today, cost:0.018, tokens:4200, requests:2 });
-    insertUsage.run({ provider:'meta', day:today, cost:44.71, tokens:0, requests:12 });
+    insertUsage.run({ provider:'demo-worker', day:today, cost:0.044, tokens:0, requests:12 });
     insertUsage.run({ provider:'hosting', day:today, cost:0.48, tokens:0, requests:0 });
   });
   seedUsage();

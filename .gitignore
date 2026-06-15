@@ -5,3 +5,12 @@ data/vmc.db-wal
 .env
 *.log
 .DS_Store
+
+# Private local operator state. Keep real tasks, agents, dispatch targets,
+# local profiles, and redacted bug-report exports out of the public repo.
+local/
+baton-private/
+*.local.json
+*.private.json
+exports/redacted-*.json
+exports/redacted-*.md

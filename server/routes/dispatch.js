@@ -15,7 +15,7 @@ router.post('/test', async (req, res) => {
     if (!agent) return res.status(404).json({ error: `unknown agent_id: ${agentId}` });
     const task = req.body.task_id
       ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.body.task_id)
-      : { id: 'dry_task', title: req.body.title || 'Evaluate MetaTravelers campaign launch sequence', description: req.body.description || '', priority: 'high', domain: 'revenue', project_key: 'metatravelers', risk_level: 'medium', autonomy_level: 3 };
+      : { id: 'dry_task', title: req.body.title || 'Evaluate example launch sequence', description: req.body.description || '', priority: 'high', domain: 'revenue', project_key: 'launch-demo', risk_level: 'medium', autonomy_level: 3 };
     const touch = req.body.touch_id
       ? db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(req.body.touch_id)
       : { id: 'dry_touch', title: task.title, description: task.description, domain: task.domain, project_key: task.project_key, risk_level: task.risk_level, autonomy_level: task.autonomy_level };

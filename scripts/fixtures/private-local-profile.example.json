@@ -1,0 +1,72 @@
+{
+  "schema_version": "baton.local_profile.v1",
+  "tasks": [
+    {
+      "title": "Review launch checklist",
+      "description": "Confirm the next required human decision and delegate the follow-up.",
+      "status": "ready",
+      "priority": "high",
+      "owner": "operator",
+      "tags": ["launch", "review"],
+      "domain": "product",
+      "impact_score": 8,
+      "effort_score": 2,
+      "autonomy_level": 2,
+      "risk_level": "medium",
+      "human_touch_minutes": 10,
+      "agent_hours_unlocked": 2
+    },
+    {
+      "title": "Review weekly priority stack",
+      "description": "Decide which waiting, ready, or review item should get the next operator touch.",
+      "status": "waiting",
+      "priority": "medium",
+      "owner": "operator",
+      "tags": ["ops", "triage"],
+      "domain": "maintenance",
+      "impact_score": 5,
+      "effort_score": 2,
+      "risk_level": "low"
+    }
+  ],
+  "agents": [
+    {
+      "id": "example-research-agent",
+      "name": "Example Research Agent",
+      "type": "research",
+      "status": "idle",
+      "skills": ["research", "synthesis"],
+      "permissions": {
+        "github": { "repos": [], "can_push_branch": false, "can_merge": false },
+        "spend": { "daily_limit_usd": 0 },
+        "external_messages": { "draft_only": true },
+        "public_posting": false,
+        "production_changes": false
+      },
+      "dispatch_enabled": false,
+      "dispatch_transport": "manual"
+    },
+    {
+      "id": "example-code-agent",
+      "name": "Example Code Agent",
+      "type": "code",
+      "status": "idle",
+      "skills": ["javascript", "sqlite", "testing"],
+      "permissions": {
+        "github": { "repos": [], "can_push_branch": true, "can_merge": false },
+        "spend": { "daily_limit_usd": 0 },
+        "external_messages": { "draft_only": true },
+        "public_posting": false,
+        "production_changes": false
+      },
+      "dispatch_enabled": true,
+      "dispatch_transport": "webhook",
+      "dispatch_target": "EXAMPLE_AGENT_WEBHOOK_URL",
+      "dispatch_config": {
+        "url_env": "EXAMPLE_AGENT_WEBHOOK_URL",
+        "token_env": "EXAMPLE_AGENT_DISPATCH_TOKEN",
+        "timeout_ms": 10000
+      }
+    }
+  ]
+}

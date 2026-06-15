@@ -1,4 +1,4 @@
-// requests.js — Shared Requests screen (Jeremy ↔ Marko)
+// requests.js — Shared Requests screen (Operator ↔ Collaborator)
 import { escapeHtml, escapeAttr, safeUrl } from '../lib/html.js';
 
 const TOKEN_KEY = 'shared_requests_token';
@@ -106,7 +106,7 @@ export async function renderRequests() {
     el.innerHTML = `
       <div class="screen-header">
         <div class="screen-title">Shared Requests</div>
-        <div class="screen-subtitle">Jeremy ↔ Marko async task queue</div>
+        <div class="screen-subtitle">Operator ↔ Collaborator async task queue</div>
       </div>
       ${tokenSetupBanner()}`;
 
@@ -128,7 +128,7 @@ export async function renderRequests() {
     el.innerHTML = `
       <div class="screen-header">
         <div class="screen-title">Shared Requests</div>
-        <div class="screen-subtitle">Jeremy ↔ Marko async task queue</div>
+        <div class="screen-subtitle">Operator ↔ Collaborator async task queue</div>
         <div style="display:flex;gap:8px;margin-top:12px">
           <button id="btn-new-req" style="padding:6px 14px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;font-size:13px">+ New Request</button>
           <button id="btn-reset-token" style="padding:6px 14px;border-radius:6px;border:1px solid #444;background:transparent;color:#aaa;cursor:pointer;font-size:12px">Reset Token</button>
@@ -220,7 +220,7 @@ export async function renderRequests() {
     el.innerHTML = `
       <div class="screen-header">
         <div class="screen-title">Shared Requests</div>
-        <div class="screen-subtitle">Jeremy ↔ Marko async task queue</div>
+        <div class="screen-subtitle">Operator ↔ Collaborator async task queue</div>
       </div>
       <div style="color:var(--color-red);padding:16px">Error: ${escapeHtml(err.message)}</div>
       <button id="btn-reset-token-err" style="margin:8px 16px;padding:6px 14px;border-radius:6px;border:1px solid #444;background:transparent;color:#aaa;cursor:pointer;font-size:12px">Reset Token</button>`;
