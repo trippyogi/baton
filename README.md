@@ -117,6 +117,14 @@ If port `4200` is already in use:
 VMC_PORT=4420 npm start
 ```
 
+For private same-tailnet development, bind to a specific private interface instead of all interfaces:
+
+```bash
+BATON_HOST=100.x.y.z VMC_PORT=4200 npm start
+```
+
+Keep the default `127.0.0.1` for ordinary local development. Do not bind BATON to `0.0.0.0` unless you have added appropriate network and write-auth controls.
+
 Redis is optional for local Flow development. Queue diagnostics gracefully return empty queue data when Redis is unavailable.
 
 ### Private local use
