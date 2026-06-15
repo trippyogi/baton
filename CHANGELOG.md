@@ -6,6 +6,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- `BATON_HOST`/`HOST` server bind configuration for private same-tailnet development while keeping localhost as the default.
 - Airspace Map columns now have inline add buttons so tasks can be created directly into a selected status without leaving the board.
 - Private local use boundary with ignored `local/`/`baton-private/` paths, local profile import, redacted export, and private-data audit scripts.
 - Generic `scripts/fixtures/private-local-profile.example.json` fixture for safe local task/agent imports.
