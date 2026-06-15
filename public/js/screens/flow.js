@@ -72,7 +72,7 @@ function flowMarkup(data) {
       <section class="flow-command card">
         <textarea id="flow-command-input" class="flow-command-input" rows="2" placeholder="Capture, delegate, review, decide, or ask BATON..."></textarea>
         <div class="flow-command-actions">
-          <span class="flow-hint">Try: capture idea · delegate task · review next · mode launch</span>
+          <span class="flow-hint">Try: strategy launch offer · capture idea · delegate task · review next · mode launch</span>
           <button id="flow-command-submit" class="btn btn-primary">Pass</button>
         </div>
         <div id="flow-command-result" class="flow-command-result"></div>

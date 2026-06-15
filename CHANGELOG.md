@@ -6,6 +6,8 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- Strategy Packet API (`/api/strategy-packets`) for turning high-level goals into ready, manual-dispatch task sets.
+- Flow command `strategy ...` now drafts a strategy packet and populates Airspace with ready tasks.
 - Airspace Map now auto-refreshes periodically while visible so API/other-client task moves show up without a manual browser refresh.
 - Airspace Map cards can now be dragged between columns to update task status in place.
 - Airspace Map cards now open an in-place task detail editor with title, description, status, priority, owner, tags, and read-only metadata.

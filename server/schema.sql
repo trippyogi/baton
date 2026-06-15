@@ -207,6 +207,18 @@ CREATE TABLE IF NOT EXISTS quality_policies (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS strategy_packets (
+  id TEXT PRIMARY KEY,
+  goal TEXT NOT NULL,
+  raw_input TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'drafted',
+  notes TEXT DEFAULT '',
+  created_by TEXT DEFAULT 'operator',
+  task_ids TEXT DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS agents (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
