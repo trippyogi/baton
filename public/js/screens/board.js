@@ -35,7 +35,7 @@ export async function renderBoard() {
     el.querySelectorAll('.board-col-add').forEach(btn => {
       btn.onclick = (event) => {
         event.stopPropagation();
-        showAddTaskModal(btn.dataset.status);
+        showBoardAddTaskModal(btn.dataset.status);
       };
     });
 
@@ -59,7 +59,7 @@ function boardCard(t) {
     </div>`;
 }
 
-function showAddTaskModal(status) {
+export function showBoardAddTaskModal(status = 'inbox') {
   const modal = document.createElement('div');
   modal.className = 'modal-backdrop';
   modal.innerHTML = `

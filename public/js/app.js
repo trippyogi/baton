@@ -3,7 +3,7 @@ import { renderTopbar }   from './components/topbar.js';
 import { renderOverview } from './screens/overview.js';
 import { renderFlow, destroyFlow } from './screens/flow.js';
 import { renderTasks }    from './screens/tasks.js';
-import { renderBoard }    from './screens/board.js';
+import { renderBoard, showBoardAddTaskModal } from './screens/board.js';
 import { renderRuns }     from './screens/runs.js';
 import { renderWorkshop }    from './screens/workshop.js';
 import { renderCosts }       from './screens/costs.js';
@@ -52,7 +52,12 @@ function navigate(route) {
   screen.render();
   // Wire create task button (if present after topbar render)
   const btn = document.getElementById('btn-create-task');
-  if (btn) btn.onclick = () => location.hash = '#/tasks';
+  if (btn) {
+    btn.onclick = () => {
+      if (route === 'board') showBoardAddTaskModal('inbox');
+      else location.hash = '#/tasks';
+    };
+  }
 }
 
 function init() {
