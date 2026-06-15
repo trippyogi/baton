@@ -5,10 +5,11 @@ const COLUMNS = ['inbox','ready','in_progress','waiting','review','done'];
 const EDIT_STATUSES = [...COLUMNS, 'backlog'];
 const COL_LABELS = { inbox:'Inbox', ready:'Ready to Pass', in_progress:'Airborne', waiting:'Needs Touch', review:'Review', done:'Landed', backlog:'Backlog' };
 let boardDrag = null;
+let boardPollTimer = null;
 
-export async function renderBoard() {
+export async function renderBoard(options = {}) {
   const el = document.getElementById('screen-board');
-  el.innerHTML = `<div class="loading">Loading board…</div>`;
+  if (!options.silent) el.innerHTML = `<div class="loading">Loading board…</div>`;
   try {
     const tasks = await get('/api/tasks');
     const byStatus = {};
@@ -42,6 +43,7 @@ export async function renderBoard() {
     });
 
     wireBoardDragAndDrop(el);
+    resetBoardPoll();
 
     // Click to inspect/edit task without leaving Airspace Map
     el.querySelectorAll('.board-card').forEach(card => {
@@ -56,6 +58,23 @@ export async function renderBoard() {
   } catch(err) {
     el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+export function destroyBoard() {
+  if (boardPollTimer) clearInterval(boardPollTimer);
+  boardPollTimer = null;
+  boardDrag = null;
+}
+
+function resetBoardPoll() {
+  if (boardPollTimer) clearInterval(boardPollTimer);
+  boardPollTimer = setInterval(() => {
+    const board = document.getElementById('screen-board');
+    const boardIsActive = board?.classList.contains('active');
+    const modalOpen = Boolean(document.querySelector('.modal-backdrop'));
+    if (!boardIsActive || modalOpen || boardDrag) return;
+    renderBoard({ silent: true });
+  }, 5000);
 }
 
 function boardCard(t) {

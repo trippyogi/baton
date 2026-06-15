@@ -3,7 +3,7 @@ import { renderTopbar }   from './components/topbar.js';
 import { renderOverview } from './screens/overview.js';
 import { renderFlow, destroyFlow } from './screens/flow.js';
 import { renderTasks }    from './screens/tasks.js';
-import { renderBoard, showBoardAddTaskModal } from './screens/board.js';
+import { renderBoard, showBoardAddTaskModal, destroyBoard } from './screens/board.js';
 import { renderRuns }     from './screens/runs.js';
 import { renderWorkshop }    from './screens/workshop.js';
 import { renderCosts }       from './screens/costs.js';
@@ -47,6 +47,7 @@ function navigate(route) {
   renderNav(route);
   // Render screen
   if (typeof destroyFlow === 'function' && route !== 'flow') destroyFlow();
+  if (typeof destroyBoard === 'function' && route !== 'board') destroyBoard();
   if (typeof destroyQueue === 'function' && route !== 'queue') destroyQueue();
   if (typeof destroyCreatives === 'function' && route !== 'creatives') destroyCreatives();
   screen.render();
