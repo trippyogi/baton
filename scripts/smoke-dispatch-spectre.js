@@ -137,9 +137,34 @@ async function failurePath() {
 }
 
 async function cleanup() {
-  if (baton) baton.kill('SIGTERM');
-  if (fake?.server) fake.server.close();
-  if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
+  const waits = [];
+  if (baton && !baton.killed) {
+    waits.push(new Promise(resolve => baton.once('close', resolve)));
+    baton.kill('SIGTERM');
+  }
+  if (fake?.server) {
+    waits.push(new Promise(resolve => fake.server.close(resolve)));
+  }
+  if (waits.length) await Promise.race([
+    Promise.allSettled(waits),
+    new Promise(resolve => setTimeout(resolve, 2000)),
+  ]);
+  if (tempDir) removeTempDirBestEffort(tempDir);
+}
+
+function removeTempDirBestEffort(dir) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+      return;
+    } catch (err) {
+      if (process.platform !== 'win32' || err.code !== 'EPERM') throw err;
+    }
+  }
+  if (process.platform === 'win32') {
+    console.warn(`[smoke-dispatch] warning: could not remove temporary directory, likely due to a transient SQLite file lock: ${dir}`);
+    return;
+  }
 }
 
 main().catch(err => {
