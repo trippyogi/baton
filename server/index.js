@@ -30,6 +30,7 @@ app.use('/api/flow',        require('./routes/flow'));
 app.use('/api/touches',     require('./routes/touches'));
 app.use('/api/agents',      require('./routes/agents'));
 app.use('/api/review-packets', require('./routes/review-packets'));
+app.use('/api/strategy-packets', require('./routes/strategy-packets'));
 app.use('/api/queue',       require('./routes/queue'));
 app.use('/api/dispatch',    require('./routes/dispatch'));
 app.use('/api/webhook/github',   require('./routes/webhook'));
