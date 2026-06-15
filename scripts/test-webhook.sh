@@ -10,7 +10,7 @@ if [[ -z "$SECRET" ]]; then
 fi
 
 # Compact JSON — must match byte-for-byte for HMAC to validate
-PAYLOAD=$(python3 -c "import json; print(json.dumps({'action':'completed','check_suite':{'conclusion':'failure','head_branch':'circuit/test-job-id','id':'test-check-suite-id'},'repository':{'full_name':'trippyogi/vector-mission-control'}}, separators=(',', ':')))")
+PAYLOAD=$(python3 -c "import json; print(json.dumps({'action':'completed','check_suite':{'conclusion':'failure','head_branch':'agent/test-job-id','id':'test-check-suite-id'},'repository':{'full_name':'example/baton-demo'}}, separators=(',', ':')))")
 
 SIG="sha256=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')"
 

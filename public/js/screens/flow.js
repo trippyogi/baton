@@ -129,7 +129,7 @@ function touchCard(touch, idx) {
 }
 
 function emptyState() {
-  return `<div class="card flow-empty">No touches need Jeremy right now. Capture an idea or delegate ready work to seed the queue.</div>`;
+  return `<div class="card flow-empty">No touches need the operator right now. Capture an idea or delegate ready work to seed the queue.</div>`;
 }
 
 function wireFlow(el) {

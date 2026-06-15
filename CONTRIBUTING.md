@@ -28,10 +28,12 @@ Redis is optional for local Flow development. Queue screens degrade when Redis i
 
 ```bash
 npm test
+npm run smoke:dispatch
 npm run audit
+npm run audit:private
 ```
 
-`npm test` runs syntax checks and a self-contained smoke test on an isolated temp database. Set `BATON_BASE_URL` only when you intentionally want to smoke-test an already-running server.
+`npm test` runs syntax checks and a self-contained smoke test on an isolated temp database. Set `BATON_BASE_URL` only when you intentionally want to smoke-test an already-running server. `npm run audit:private` checks that private local data, ignored DB state, and high-signal secrets are not tracked.
 
 ## Commit style
 
@@ -65,10 +67,14 @@ Never commit:
 
 - `.env`
 - SQLite DB files under `data/`
+- ignored `local/` or `baton-private/` files
+- generated redacted exports under `exports/`
 - logs with private data
 - API tokens
-- private `baton-internal` extension code
+- private extension code
 - webhook secrets or worker tokens
+
+If you want to use BATON with real personal or company tasks, keep them in ignored local files and follow `docs/guides/private-local-use.md`.
 
 If you find a security issue, follow `SECURITY.md` instead of opening a public issue.
 
@@ -83,3 +89,4 @@ If you find a security issue, follow `SECURITY.md` instead of opening a public i
 - [ ] `npm run check:js` passes.
 - [ ] `npm run smoke` passes against a running server.
 - [ ] `npm run audit` passes or exception is documented.
+- [ ] `npm run audit:private` passes.

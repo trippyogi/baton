@@ -6,6 +6,10 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- Private local use boundary with ignored `local/`/`baton-private/` paths, local profile import, redacted export, and private-data audit scripts.
+- Generic `scripts/fixtures/private-local-profile.example.json` fixture for safe local task/agent imports.
+- Private local use guide documenting safe local profiles, redacted exports, and pre-PR private-data checks.
+- GitHub Actions CI for `npm ci`, `npm test`, `npm run smoke:dispatch`, `npm run audit`, and `npm run audit:private`.
 - Spectre seeded as the first webhook-dispatchable orchestrator agent.
 - Transport-neutral `baton.dispatch.v1` envelope builder and webhook/manual dispatch adapters.
 - Run ACK/status callback endpoints with optional bearer-token protection.
@@ -20,6 +24,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Changed
 
+- Default empty-database demo seed data now uses generic BATON examples instead of private-looking campaign/content examples.
 - Configured delegate/assign/evaluator actions now create runs and dispatch to agents; unconfigured dispatch stays visible instead of faking motion.
 - Spectre review packet submission advances linked runs to `review_ready`; accepting review completes linked runs.
 
