@@ -7,7 +7,7 @@ const { randomUUID } = require('crypto');
 const router = express.Router();
 
 const VALID_STATUSES = ['pending', 'done', 'dismissed'];
-const VALID_USERS    = ['jeremy', 'marko'];
+const VALID_USERS    = ['operator', 'collaborator'];
 
 // All routes protected
 router.use(requireAuth);
