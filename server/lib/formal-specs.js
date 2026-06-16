@@ -26,13 +26,13 @@ function parseFormalSpec(markdown, input = {}) {
   const flagship = firstMatch(markdown, /^\*\*Flagship v0 mission pack:\*\*\s*(.+)$/mi) || '';
   const oneSentence = firstMatch(markdown, /^###\s+1\.1\s+One-sentence definition\s+\n+\*\*(.+?)\*\*/mis) || '';
   const roadmap = parseRoadmap(markdown);
-  const firstRoadmap = roadmap[0];
-  const items = firstRoadmap?.deliverables?.length
-    ? firstRoadmap.deliverables.map(deliverable => roadmapTask(deliverable, { project, targetRepository, phase: firstRoadmap }))
+  const selectedRoadmap = selectRoadmapPhases(roadmap, input);
+  const items = selectedRoadmap.some(phase => phase.deliverables?.length)
+    ? selectedRoadmap.flatMap(phase => phase.deliverables.map(deliverable => roadmapTask(deliverable, { project, targetRepository, phase })))
     : defaultTasks({ project, targetRepository, flagship });
 
   return {
-    goal: input.goal || `Build ${project}${firstRoadmap ? ` ${firstRoadmap.version}` : ''}: ${firstRoadmap?.title || flagship || oneSentence || 'formal spec implementation'}`,
+    goal: input.goal || formatGoal({ project, selectedRoadmap, flagship, oneSentence }),
     items,
     notes: [
       targetRepository ? `Target repository: ${targetRepository}` : null,
@@ -50,6 +50,24 @@ function parseFormalSpec(markdown, input = {}) {
       roadmap,
     },
   };
+}
+
+function selectRoadmapPhases(roadmap, input = {}) {
+  if (!roadmap.length) return [];
+  if (input.include_all_phases === true || input.phase === 'all') return roadmap;
+  if (input.phase) {
+    const requested = String(input.phase).toLowerCase();
+    const phase = roadmap.find(item => item.version.toLowerCase() === requested || item.title.toLowerCase() === requested);
+    if (!phase) throw new Error(`unknown roadmap phase: ${input.phase}`);
+    return [phase];
+  }
+  return [roadmap[0]];
+}
+
+function formatGoal({ project, selectedRoadmap, flagship, oneSentence }) {
+  if (selectedRoadmap.length > 1) return `Build ${project} roadmap: ${selectedRoadmap.map(phase => phase.version).join(', ')}`;
+  const phase = selectedRoadmap[0];
+  return `Build ${project}${phase ? ` ${phase.version}` : ''}: ${phase?.title || flagship || oneSentence || 'formal spec implementation'}`;
 }
 
 function parseRoadmap(markdown) {
@@ -135,4 +153,4 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '') || 'formal-spec';
 }
 
-module.exports = { createFormalSpecPacket, parseFormalSpec, parseRoadmap };
+module.exports = { createFormalSpecPacket, parseFormalSpec, parseRoadmap, selectRoadmapPhases };

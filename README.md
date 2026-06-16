@@ -17,7 +17,8 @@ Implemented phases:
 
 - **Formal Spec Intake MVP**
   - `POST /api/formal-specs/parse` extracts project metadata, target repository, one-sentence definition, and roadmap phases from a Markdown formal spec.
-  - `POST /api/formal-specs` converts the first roadmap phase deliverables into a BATON strategy packet plus ready tasks, preserving the target repo and acceptance criteria in task descriptions.
+  - `POST /api/formal-specs` converts roadmap deliverables into a BATON strategy packet plus ready tasks, preserving the target repo and acceptance criteria in task descriptions.
+  - Supports default first-phase intake, explicit `phase` selection, or `include_all_phases` for full-roadmap task generation.
 
 - **Next-Touch Engine stabilization pass**
   - Runs screen read endpoints and SSE stub.

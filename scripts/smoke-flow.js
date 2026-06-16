@@ -134,7 +134,7 @@ async function main() {
   assert.ok(strategyCommand.created?.strategy_packet_id, 'strategy command creates packet id');
   assert.equal(strategyCommand.tasks.length, 1, 'strategy command creates bullet task');
 
-  const formalSpecMarkdown = `# Crucible Formal Specification\n\n**Project:** Crucible\n**Target repository:** \`https://github.com/trippyogi/crucible.git\`\n**Spec version:** v0.1 Draft\n**Flagship v0 mission pack:** Public Internet Intel\n\n### 1.1 One-sentence definition\n\n**Crucible is a local-first durable mission runner.**\n\n## 29. Roadmap\n\n### v0.1 — Core daemon and mission loop\n\nDeliverables:\n\n- Rust workspace.\n- CLI.\n- Daemon.\n\nAcceptance:\n\n- Can run a fake mission with multiple steps.\n- Can crash/restart and resume.\n`;
+  const formalSpecMarkdown = `# Crucible Formal Specification\n\n**Project:** Crucible\n**Target repository:** \`https://github.com/trippyogi/crucible.git\`\n**Spec version:** v0.1 Draft\n**Flagship v0 mission pack:** Public Internet Intel\n\n### 1.1 One-sentence definition\n\n**Crucible is a local-first durable mission runner.**\n\n## 29. Roadmap\n\n### v0.1 — Core daemon and mission loop\n\nDeliverables:\n\n- Rust workspace.\n- CLI.\n- Daemon.\n\nAcceptance:\n\n- Can run a fake mission with multiple steps.\n- Can crash/restart and resume.\n\n### v0.2 — Model router and local worker\n\nDeliverables:\n\n- OpenAI-compatible provider adapter.\n- GPU status via \`nvidia-smi\`.\n\nAcceptance:\n\n- Can route one step to frontier and another to local model.\n`;
   const parsedFormalSpec = (await request('/api/formal-specs/parse', {
     method: 'POST',
     body: { markdown: formalSpecMarkdown },
@@ -142,6 +142,17 @@ async function main() {
   assert.equal(parsedFormalSpec.spec.project, 'Crucible', 'formal spec parser extracts project');
   assert.equal(parsedFormalSpec.spec.roadmap[0].version, 'v0.1', 'formal spec parser extracts roadmap version');
   assert.equal(parsedFormalSpec.items.length, 3, 'formal spec parser creates deliverable tasks');
+  const parsedFormalSpecAll = (await request('/api/formal-specs/parse', {
+    method: 'POST',
+    body: { markdown: formalSpecMarkdown, include_all_phases: true },
+  })).json;
+  assert.equal(parsedFormalSpecAll.items.length, 5, 'formal spec parser can include all roadmap phases');
+  const parsedFormalSpecPhase = (await request('/api/formal-specs/parse', {
+    method: 'POST',
+    body: { markdown: formalSpecMarkdown, phase: 'v0.2' },
+  })).json;
+  assert.ok(parsedFormalSpecPhase.goal.includes('v0.2'), 'formal spec parser can select a roadmap phase');
+  assert.equal(parsedFormalSpecPhase.items.length, 2, 'selected roadmap phase creates only phase tasks');
 
   const formalSpecPacket = (await request('/api/formal-specs', {
     method: 'POST',
