@@ -183,6 +183,20 @@ function prepareDispatch(task, body) {
     touch_id: touch?.id || null,
     agent_id: agent?.id || null,
   };
+  if (!body.force_new) {
+    const existing = findPreparedDispatch(task.id, touch?.id || null);
+    if (existing) {
+      return {
+        task: parse(db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id)),
+        touch: touch?.id ? latestTouchForTask(task.id) : null,
+        run: parseRun(existing),
+        envelope: parseJson(existing.dispatch_payload, {}),
+        reused: true,
+        message: 'Existing prepared dispatch reused. No agent was launched.',
+      };
+    }
+  }
+
   const envelope = buildDispatchEnvelope({
     run,
     task: parsedTask,
@@ -232,8 +246,26 @@ function prepareDispatch(task, body) {
     touch: touch?.id ? latestTouchForTask(task.id) : null,
     run: parseRun(savedRun),
     envelope,
+    reused: false,
     message: 'Dispatch prepared. No agent was launched.',
   };
+}
+
+function findPreparedDispatch(taskId, touchId) {
+  if (touchId) {
+    return db.prepare(`
+      SELECT * FROM runs
+      WHERE task_id = ? AND touch_id = ? AND status = 'pending_dispatch' AND dispatch_status = 'prepared'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(taskId, touchId);
+  }
+  return db.prepare(`
+    SELECT * FROM runs
+    WHERE task_id = ? AND touch_id IS NULL AND status = 'pending_dispatch' AND dispatch_status = 'prepared'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `).get(taskId);
 }
 
 function latestTouchForTask(taskId) {
