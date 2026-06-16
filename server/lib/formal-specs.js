@@ -1,22 +1,76 @@
 'use strict';
 
 const { createStrategyPacket } = require('./strategy-packets');
+const { id, stringifyJson, parseJson } = require('./flow/utils');
 
 function createFormalSpecPacket(db, input = {}) {
   const markdown = String(input.markdown || input.body || input.raw_input || '').trim();
   if (!markdown) throw new Error('markdown is required');
 
   const parsed = parseFormalSpec(markdown, input);
+  const result = createStrategyPacket(db, {
+    goal: parsed.goal,
+    items: parsed.items,
+    notes: parsed.notes,
+    created_by: input.created_by || 'formal-spec-intake',
+    project_key: parsed.projectKey,
+  });
+  const record = insertFormalSpecRecord(db, {
+    markdown,
+    parsed,
+    packetId: result.packet.id,
+    input,
+  });
   return {
+    formal_spec: record,
     spec: parsed.spec,
-    ...createStrategyPacket(db, {
-      goal: parsed.goal,
-      items: parsed.items,
-      notes: parsed.notes,
-      created_by: input.created_by || 'formal-spec-intake',
-      project_key: parsed.projectKey,
-    }),
+    ...result,
   };
+}
+
+function insertFormalSpecRecord(db, { markdown, parsed, packetId, input }) {
+  const specId = id('spec');
+  db.prepare(`
+    INSERT INTO formal_specs (
+      id, packet_id, project, target_repository, spec_version, selected_phase,
+      include_all_phases, markdown, parsed_json, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    specId,
+    packetId,
+    parsed.spec.project,
+    parsed.spec.target_repository || '',
+    parsed.spec.spec_version || '',
+    input.phase || '',
+    input.include_all_phases === true || input.phase === 'all' ? 1 : 0,
+    markdown,
+    stringifyJson(parsed.spec),
+    input.created_by || 'formal-spec-intake'
+  );
+  return getFormalSpec(db, specId);
+}
+
+function listFormalSpecs(db, limit = 25) {
+  return db.prepare(`
+    SELECT id, packet_id, project, target_repository, spec_version, selected_phase,
+           include_all_phases, created_by, created_at
+    FROM formal_specs
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).all(Number(limit || 25)).map(parseFormalSpecRecord);
+}
+
+function getFormalSpec(db, specId) {
+  const record = db.prepare('SELECT * FROM formal_specs WHERE id = ?').get(specId);
+  return parseFormalSpecRecord(record);
+}
+
+function parseFormalSpecRecord(record) {
+  return record ? {
+    ...record,
+    include_all_phases: Boolean(record.include_all_phases),
+    parsed: record.parsed_json ? parseJson(record.parsed_json, {}) : undefined,
+  } : null;
 }
 
 function parseFormalSpec(markdown, input = {}) {
@@ -153,4 +207,4 @@ function slugify(value) {
     .replace(/^-+|-+$/g, '') || 'formal-spec';
 }
 
-module.exports = { createFormalSpecPacket, parseFormalSpec, parseRoadmap, selectRoadmapPhases };
+module.exports = { createFormalSpecPacket, listFormalSpecs, getFormalSpec, parseFormalSpec, parseRoadmap, selectRoadmapPhases };

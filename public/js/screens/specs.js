@@ -1,4 +1,4 @@
-import { post } from '../api.js';
+import { get, post } from '../api.js';
 import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 let lastParsed = null;
@@ -38,10 +38,12 @@ export async function renderSpecs() {
     </div>
 
     <div id="spec-preview"></div>
+    <div id="spec-history" style="margin-top:var(--gap)"></div>
   `;
 
   document.getElementById('btn-parse-spec').onclick = () => parseSpec({ create: false });
   document.getElementById('btn-create-spec').onclick = () => parseSpec({ create: true });
+  loadSpecHistory();
 }
 
 async function parseSpec({ create }) {
@@ -67,9 +69,36 @@ async function parseSpec({ create }) {
       ? `Created strategy packet <code>${escapeHtml(result.packet?.id || '')}</code> with ${Number(result.tasks?.length || 0)} task${result.tasks?.length === 1 ? '' : 's'}.`
       : `Previewed ${Number(result.items?.length || 0)} task${result.items?.length === 1 ? '' : 's'}.`;
     preview.innerHTML = renderPreview(result, { created: create });
+    if (create) loadSpecHistory();
   } catch (err) {
     status.innerHTML = `<span style="color:var(--color-red)">${escapeHtml(err.message)}</span>`;
   }
+}
+
+async function loadSpecHistory() {
+  const el = document.getElementById('spec-history');
+  if (!el) return;
+  try {
+    const specs = await get('/api/formal-specs?limit=8');
+    el.innerHTML = `
+      <div class="card">
+        <div style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:8px">Recent Specs</div>
+        ${specs.length ? specs.map(specHistoryRow).join('') : `<div style="color:var(--text-secondary);font-size:13px">No formal specs imported yet.</div>`}
+      </div>
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="card" style="color:var(--color-red)">Could not load spec history: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function specHistoryRow(spec) {
+  return `<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border)">
+    <div>
+      <div style="font-weight:600">${escapeHtml(spec.project)}</div>
+      <div style="color:var(--text-secondary);font-size:12px">${escapeHtml(spec.target_repository || 'No target repo')} ${spec.selected_phase ? `• ${escapeHtml(spec.selected_phase)}` : spec.include_all_phases ? '• all phases' : ''}</div>
+    </div>
+    <div style="color:var(--text-secondary);font-size:12px;white-space:nowrap">${escapeHtml(spec.created_at || '')}</div>
+  </div>`;
 }
 
 function renderPreview(result, { created }) {

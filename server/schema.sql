@@ -219,6 +219,21 @@ CREATE TABLE IF NOT EXISTS strategy_packets (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS formal_specs (
+  id TEXT PRIMARY KEY,
+  packet_id TEXT,
+  project TEXT NOT NULL,
+  target_repository TEXT DEFAULT '',
+  spec_version TEXT DEFAULT '',
+  selected_phase TEXT DEFAULT '',
+  include_all_phases INTEGER NOT NULL DEFAULT 0,
+  markdown TEXT NOT NULL,
+  parsed_json TEXT NOT NULL DEFAULT '{}',
+  created_by TEXT DEFAULT 'operator',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY(packet_id) REFERENCES strategy_packets(id)
+);
+
 CREATE TABLE IF NOT EXISTS agents (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,

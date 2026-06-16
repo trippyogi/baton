@@ -1,9 +1,23 @@
 'use strict';
 const express = require('express');
 const db = require('../db');
-const { createFormalSpecPacket, parseFormalSpec } = require('../lib/formal-specs');
+const { createFormalSpecPacket, listFormalSpecs, getFormalSpec, parseFormalSpec } = require('../lib/formal-specs');
 
 const router = express.Router();
+
+router.get('/', (req, res) => {
+  try {
+    res.json(listFormalSpecs(db, req.query.limit || 25));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/:id', (req, res) => {
+  try {
+    const spec = getFormalSpec(db, req.params.id);
+    if (!spec) return res.status(404).json({ error: 'Not found' });
+    res.json(spec);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 router.post('/parse', (req, res) => {
   try {

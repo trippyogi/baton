@@ -159,8 +159,14 @@ async function main() {
     body: { markdown: formalSpecMarkdown, created_by: 'smoke-test' },
   })).json;
   assert.ok(formalSpecPacket.packet?.id, 'formal spec endpoint creates strategy packet');
+  assert.ok(formalSpecPacket.formal_spec?.id, 'formal spec endpoint persists an intake record');
   assert.equal(formalSpecPacket.spec.target_repository, 'https://github.com/trippyogi/crucible.git', 'formal spec endpoint preserves target repo');
   assert.equal(formalSpecPacket.tasks.length, 3, 'formal spec endpoint creates roadmap tasks');
+  const formalSpecRecord = (await request(`/api/formal-specs/${formalSpecPacket.formal_spec.id}`)).json;
+  assert.equal(formalSpecRecord.packet_id, formalSpecPacket.packet.id, 'formal spec record links to strategy packet');
+  assert.equal(formalSpecRecord.parsed.project, 'Crucible', 'formal spec record stores parsed metadata');
+  const formalSpecList = (await request('/api/formal-specs')).json;
+  assert.ok(formalSpecList.some(spec => spec.id === formalSpecPacket.formal_spec.id), 'formal specs list includes persisted record');
 
   const capture = (await request('/api/flow/command', {
     method: 'POST',
