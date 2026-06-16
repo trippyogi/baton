@@ -7,7 +7,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 function parseArgs(argv) {
-  const opts = { format: 'json', output: null, includeRuns: false, includeAgents: false };
+  const opts = { format: 'json', output: null, includeRuns: false, includeAgents: false, allowOutsideRoot: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--format') opts.format = argv[++i] || '';
@@ -16,16 +16,35 @@ function parseArgs(argv) {
     else if (arg.startsWith('--output=')) opts.output = arg.slice('--output='.length);
     else if (arg === '--include-runs') opts.includeRuns = true;
     else if (arg === '--include-agents') opts.includeAgents = true;
+    else if (arg === '--allow-outside-root') opts.allowOutsideRoot = true;
     else throw new Error(`unknown argument: ${arg}`);
   }
   if (!['json', 'markdown'].includes(opts.format)) throw new Error('format must be json or markdown');
-  if (!opts.output) {
-    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
-    opts.output = path.join(ROOT, 'exports', `redacted-${stamp}.${opts.format === 'json' ? 'json' : 'md'}`);
-  } else {
-    opts.output = path.resolve(ROOT, opts.output);
-  }
+  opts.output = resolveOutput(opts.output, opts.format, opts.allowOutsideRoot);
   return opts;
+}
+
+function resolveOutput(rawOutput, format, allowOutsideRoot = false) {
+  if (!rawOutput) {
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '-');
+    return path.join(ROOT, 'exports', `redacted-${stamp}.${format === 'json' ? 'json' : 'md'}`);
+  }
+
+  if (path.isAbsolute(rawOutput) && !allowOutsideRoot) {
+    throw new Error('absolute --output paths require --allow-outside-root');
+  }
+
+  const output = path.resolve(ROOT, rawOutput);
+  if (allowOutsideRoot) return output;
+
+  const exportsDir = path.join(ROOT, 'exports');
+  const relativeToExports = path.relative(exportsDir, output);
+  const isUnderExports = relativeToExports && !relativeToExports.startsWith('..') && !path.isAbsolute(relativeToExports);
+  const basename = path.basename(output);
+  if (!isUnderExports || !/^redacted-[^/]+\.(?:json|md)$/.test(basename)) {
+    throw new Error('custom --output must be under exports/ with filename redacted-*.json or redacted-*.md');
+  }
+  return output;
 }
 
 function parseJson(value, fallback) {
@@ -215,7 +234,8 @@ function main() {
     if (findings.length) throw new Error(`redacted export still contains secret-looking content: ${findings.join(', ')}`);
     fs.mkdirSync(path.dirname(opts.output), { recursive: true });
     fs.writeFileSync(opts.output, content);
-    console.log(`BATON redacted export written: ${path.relative(ROOT, opts.output)}`);
+    const shownOutput = path.relative(ROOT, opts.output).startsWith('..') ? opts.output : path.relative(ROOT, opts.output);
+    console.log(`BATON redacted export written: ${shownOutput}`);
     console.log(`tasks: ${tasks.length}, touches: ${touches.length}, agents: ${agents.length}, runs: ${runs.length}`);
   } catch (err) {
     console.error(`export-redacted failed: ${err.message}`);
