@@ -117,13 +117,13 @@ If port `4200` is already in use:
 VMC_PORT=4420 npm start
 ```
 
-For private same-tailnet development, bind to a specific private interface instead of all interfaces:
+For private same-tailnet development, bind to a specific private interface instead of all interfaces and set an API bearer token:
 
 ```bash
-BATON_HOST=100.x.y.z VMC_PORT=4200 npm start
+BATON_HOST=100.x.y.z VMC_PORT=4200 BATON_API_TOKEN=replace-with-a-long-random-token npm start
 ```
 
-Keep the default `127.0.0.1` for ordinary local development. Do not bind BATON to `0.0.0.0` unless you have added appropriate network and write-auth controls.
+Keep the default `127.0.0.1` for ordinary local development. Non-localhost API routes require `BATON_API_TOKEN` and expect `Authorization: Bearer <token>`; `/api/health` remains open for readiness checks. Do not bind BATON to `0.0.0.0` unless you also have strict network restrictions.
 
 Redis is optional for local Flow development. Queue diagnostics gracefully return empty queue data when Redis is unavailable.
 

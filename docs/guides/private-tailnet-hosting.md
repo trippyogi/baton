@@ -17,6 +17,7 @@ Use environment variables:
 BATON_HOST=100.x.y.z
 VMC_PORT=4200
 BATON_PUBLIC_BASE_URL=http://100.x.y.z:4200
+BATON_API_TOKEN=replace-with-a-long-random-token
 ```
 
 Notes:
@@ -24,8 +25,10 @@ Notes:
 - `BATON_HOST` controls the interface Express listens on.
 - `VMC_PORT` controls the port.
 - `BATON_PUBLIC_BASE_URL` is used by dispatch/callback flows when agents need a reachable base URL.
+- `BATON_API_TOKEN` is required for `/api/*` routes whenever BATON binds outside localhost. Send it as `Authorization: Bearer <token>`.
+- `/api/health` remains unauthenticated for readiness checks.
 - Keep ordinary local development on the default `127.0.0.1`.
-- Do **not** bind to `0.0.0.0` unless you have added appropriate network restrictions and write-auth controls.
+- Do **not** bind to `0.0.0.0` unless you also have strict network restrictions; bearer auth is a guardrail, not a public-internet hardening claim.
 
 ## Example systemd user service
 
@@ -36,6 +39,7 @@ Create a private environment file outside the repository:
 BATON_HOST=100.x.y.z
 VMC_PORT=4200
 BATON_PUBLIC_BASE_URL=http://100.x.y.z:4200
+BATON_API_TOKEN=replace-with-a-long-random-token
 NODE_ENV=development
 PATH=/path/to/node/bin:/usr/local/bin:/usr/bin:/bin
 ```
@@ -83,7 +87,7 @@ Recommended guardrails:
 - bind to a specific private IP, not `0.0.0.0`
 - keep `.env`, local DBs, and service env files out of Git
 - use `npm run audit:private` before commits
-- add API write auth before exposing BATON to untrusted networks or autonomous agents
+- set `BATON_API_TOKEN` for any non-localhost bind and keep it in your private environment file
 - prefer redacted exports for bug reports
 
 ## Troubleshooting
@@ -98,6 +102,7 @@ Check health:
 
 ```bash
 curl http://100.x.y.z:4200/api/health
+curl -H "Authorization: Bearer $BATON_API_TOKEN" http://100.x.y.z:4200/api/flow
 ```
 
 View logs:
