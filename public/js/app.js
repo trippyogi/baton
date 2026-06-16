@@ -6,6 +6,7 @@ import { renderTasks }    from './screens/tasks.js';
 import { renderBoard, showBoardAddTaskModal, destroyBoard } from './screens/board.js';
 import { renderRuns }     from './screens/runs.js';
 import { renderWorkshop }    from './screens/workshop.js';
+import { renderSpecs }       from './screens/specs.js';
 import { renderCosts }       from './screens/costs.js';
 import { renderPerformance } from './screens/performance.js';
 import { renderMemory }      from './screens/memory.js';
@@ -21,6 +22,7 @@ const SCREENS = {
   board:       { el: 'screen-board',       render: renderBoard },
   runs:        { el: 'screen-runs',        render: renderRuns },
   workshop:    { el: 'screen-workshop',    render: renderWorkshop },
+  specs:       { el: 'screen-specs',       render: renderSpecs },
   costs:       { el: 'screen-costs',       render: renderCosts },
   performance: { el: 'screen-performance', render: renderPerformance },
   memory:      { el: 'screen-memory',      render: renderMemory },

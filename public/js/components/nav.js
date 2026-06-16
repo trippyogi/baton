@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { id: 'board',        icon: '⊞', label: 'Board' },
   { id: 'runs',         icon: '▶', label: 'Runs' },
   { id: 'workshop',     icon: '⚗', label: 'Workshop' },
+  { id: 'specs',        icon: '※', label: 'Specs' },
   { id: 'costs',        icon: '◇', label: 'Costs' },
   { id: 'performance',  icon: '◎', label: 'Performance' },
   { id: 'queue',        icon: '⧖', label: 'Queue' },
