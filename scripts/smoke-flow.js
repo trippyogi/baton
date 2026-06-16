@@ -110,6 +110,30 @@ async function main() {
   const queueStatus = (await request('/api/queue/stream-status')).json;
   assert.ok(queueStatus.circuit && queueStatus.vector, 'queue stream-status responds without Redis');
 
+  const strategyPacket = (await request('/api/strategy-packets', {
+    method: 'POST',
+    body: {
+      goal: `smoke strategy endpoint ${stamp}`,
+      items: [
+        { title: `Smoke endpoint task A ${stamp}`, owner: 'ops-agent' },
+        { title: `Smoke endpoint task B ${stamp}`, owner: 'strategy-agent' },
+      ],
+      created_by: 'smoke-test',
+    },
+  })).json;
+  assert.ok(strategyPacket.packet?.id, 'strategy packet endpoint creates packet');
+  assert.equal(strategyPacket.tasks.length, 2, 'strategy packet endpoint creates supplied tasks');
+  const fetchedStrategyPacket = (await request(`/api/strategy-packets/${strategyPacket.packet.id}`)).json;
+  assert.equal(fetchedStrategyPacket.tasks.length, 2, 'strategy packet detail returns tasks');
+
+  const strategyCommand = (await request('/api/flow/command', {
+    method: 'POST',
+    body: { input: `strategy smoke command ${stamp}\n- Verify smoke command path ${stamp}` },
+  })).json;
+  assert.equal(strategyCommand.interpreted_as, 'strategy_packet', 'strategy command routes to packet creation');
+  assert.ok(strategyCommand.created?.strategy_packet_id, 'strategy command creates packet id');
+  assert.equal(strategyCommand.tasks.length, 1, 'strategy command creates bullet task');
+
   const capture = (await request('/api/flow/command', {
     method: 'POST',
     body: { input: `capture xss <b>test</b> ${stamp}` },
@@ -167,8 +191,11 @@ async function main() {
   const afterPrepare = (await request('/api/flow')).json;
   assert.ok(afterPrepare.next_touches.some(t => t.id === delegate.created.touch_id), 'unconfigured touch stays in next touches');
 
-  const snoozeTarget = flow.next_touches.find(t => t.id !== delegate.created.touch_id) || afterPrepare.next_touches[0];
-  assert.ok(snoozeTarget?.id, 'touch available for snooze test');
+  const freshForSnooze = (await request('/api/flow')).json;
+  const snoozeTarget = freshForSnooze.next_touches.find(t => (
+    t.id !== delegate.created.touch_id && ['active', 'pending'].includes(t.status)
+  ));
+  assert.ok(snoozeTarget?.id, 'active or pending touch available for snooze test');
   const snooze = (await request(`/api/touches/${snoozeTarget.id}/action`, {
     method: 'PATCH',
     body: { action: 'snooze', until: '2000-01-01 00:00:00' },
