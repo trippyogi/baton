@@ -76,7 +76,7 @@ async function main() {
   assert.equal(spectre.id, 'spectre', 'Spectre agent exists');
   assert.equal(spectre.dispatch_enabled, true, 'Spectre dispatch enabled');
 
-  const command = (await request('/api/flow/command', { method: 'POST', body: { input: 'delegate Spectre review MetaTravelers launch plan' } })).json;
+  const command = (await request('/api/flow/command', { method: 'POST', body: { input: 'delegate Spectre review sample launch plan' } })).json;
   assert.equal(command.interpreted_as, 'delegate_spectre', 'Spectre command parsed');
 
   const flow = (await request('/api/flow')).json;

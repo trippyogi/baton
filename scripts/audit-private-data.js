@@ -29,10 +29,23 @@ const highSignalSecretPatterns = [
   { name: 'assigned secret-looking value', regex: /(?:api[_-]?key|token|secret|password|private[_-]?key|webhook[_-]?url)\s*[:=]\s*["'](?![A-Z0-9_]+(?:_ENV|_URL|_TOKEN|_SECRET)?["'])[A-Za-z0-9._:\/+=-]{16,}["']/i },
 ];
 
-const fixtureSpecificityPatterns = [
+const privateTermPatterns = [
   { name: 'Jeremy-specific name', regex: /\bJeremy\b/i },
   { name: 'private username/repo marker', regex: /\btrippyogi\b/i },
   { name: 'private project marker', regex: /\bmetatravelers\b/i },
+];
+
+const privateTermAllowlist = [
+  /^LICENSE$/,
+  /^package(-lock)?\.json$/,
+  /^README\.md$/,
+  /^CONTRIBUTING\.md$/,
+  /^docs\/specs\/private-local-use-boundary\.md$/,
+  /^scripts\/audit-private-data\.js$/,
+];
+
+const fixtureSpecificityPatterns = [
+  ...privateTermPatterns,
   { name: 'Windows absolute path', regex: /[A-Za-z]:\\Users\\/ },
   { name: 'Unix private absolute path', regex: /\/srv\/agentlab\/|\/home\/[^\s/]+\// },
   { name: 'raw external webhook URL', regex: /https?:\/\/(?!127\.0\.0\.1|localhost)[^\s"']+/i },
@@ -77,6 +90,22 @@ function scanSecrets(files) {
   return findings;
 }
 
+function scanPrivateTerms(files) {
+  const findings = [];
+  for (const file of files) {
+    if (!isProbablyText(file)) continue;
+    if (file.startsWith('node_modules/')) continue;
+    if (privateTermAllowlist.some(pattern => pattern.test(file))) continue;
+    let content;
+    try { content = read(file); }
+    catch (_) { continue; }
+    for (const { name, regex } of privateTermPatterns) {
+      if (regex.test(content)) findings.push({ file, reason: name });
+    }
+  }
+  return findings;
+}
+
 function scanFixtures() {
   const findings = [];
   const fixtureDir = path.join(ROOT, 'scripts', 'fixtures');
@@ -113,6 +142,7 @@ function main() {
   const blockedTracked = tracked.filter(isBlockedTrackedPath).map(file => ({ file, reason: 'blocked private path is tracked' }));
   const blockedStaged = staged.filter(isBlockedTrackedPath).map(file => ({ file, reason: 'blocked private path is staged' }));
   const secretFindings = scanSecrets(tracked);
+  const privateTermFindings = scanPrivateTerms(tracked);
   const fixtureFindings = scanFixtures();
   const missingDocs = checkRequiredDocs();
 
@@ -120,6 +150,7 @@ function main() {
     tracked_blocked_paths: blockedTracked,
     staged_private_paths: blockedStaged,
     secret_patterns: secretFindings,
+    private_terms: privateTermFindings,
     public_fixture_specificity: fixtureFindings,
     required_docs: missingDocs,
   };

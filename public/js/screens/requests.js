@@ -121,8 +121,8 @@ export async function renderRequests() {
 
   try {
     const [inbox, outbox] = await Promise.all([
-      apiReq('GET', '/api/shared-requests?to=jeremy'),
-      apiReq('GET', '/api/shared-requests?from=jeremy'),
+      apiReq('GET', '/api/shared-requests?to=operator'),
+      apiReq('GET', '/api/shared-requests?from=operator'),
     ]);
 
     el.innerHTML = `
@@ -186,7 +186,7 @@ export async function renderRequests() {
       if (!text) { errEl.textContent = 'Request text is required.'; return; }
       errEl.textContent = '';
       try {
-        await apiReq('POST', '/api/shared-requests', { from: 'jeremy', to: 'marko', request: text, artifact_url: url });
+        await apiReq('POST', '/api/shared-requests', { from: 'operator', to: 'collaborator', request: text, artifact_url: url });
         form.style.display = 'none';
         document.getElementById('req-text').value = '';
         document.getElementById('req-url').value = '';

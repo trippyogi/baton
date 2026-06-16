@@ -158,7 +158,7 @@ db.exec(schema);
 
 function defaultAgentPermissions(agentId) {
   return {
-    github: { repos: ['trippyogi/baton'], can_push_branch: true, can_merge: false },
+    github: { repos: ['owner/baton'], can_push_branch: true, can_merge: false },
     spend: { daily_limit_usd: 0 },
     external_messages: { draft_only: true },
     public_posting: false,
