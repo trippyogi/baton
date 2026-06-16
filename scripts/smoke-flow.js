@@ -119,6 +119,30 @@ async function main() {
   const capturedTask = (await request(`/api/tasks/${capture.created.task_id}`)).json;
   assert.ok(capturedTask.title.includes('<b>test</b>'), 'HTML payload preserved as text in API');
 
+  const dispatchTask = (await request('/api/flow/command', {
+    method: 'POST',
+    body: { input: `delegate smoke dispatch prep ${stamp}` },
+  })).json;
+  assert.ok(dispatchTask.created?.task_id, 'dispatch prep delegate created task');
+  assert.ok(dispatchTask.created?.touch_id, 'dispatch prep delegate created touch');
+
+  const dispatchPrep = (await request(`/api/tasks/${dispatchTask.created.task_id}/dispatch/prepare`, {
+    method: 'POST',
+    body: { instructions: 'Smoke-test prepared dispatch envelope.' },
+  })).json;
+  assert.ok(dispatchPrep.run?.id, 'dispatch prepare creates run');
+  assert.equal(dispatchPrep.reused, false, 'first dispatch prepare is not reused');
+  assert.equal(dispatchPrep.run.dispatch_status, 'prepared', 'dispatch prepare status is prepared');
+  assert.equal(dispatchPrep.run.status, 'pending_dispatch', 'dispatch prepare does not launch a run');
+  assert.equal(dispatchPrep.envelope?.schema, 'baton.dispatch.v1', 'dispatch prepare returns envelope');
+
+  const dispatchPrepAgain = (await request(`/api/tasks/${dispatchTask.created.task_id}/dispatch/prepare`, {
+    method: 'POST',
+    body: { instructions: 'Smoke-test prepared dispatch envelope.' },
+  })).json;
+  assert.equal(dispatchPrepAgain.reused, true, 'second dispatch prepare reuses existing run');
+  assert.equal(dispatchPrepAgain.run.id, dispatchPrep.run.id, 'idempotent dispatch prepare keeps run id');
+
   const delegate = (await request('/api/flow/command', {
     method: 'POST',
     body: { input: `delegate smoke task ${stamp}` },
