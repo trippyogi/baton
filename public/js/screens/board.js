@@ -257,9 +257,9 @@ function showTaskDetailModal(id, tasks) {
         <div class="board-dispatch-header">
           <div>
             <div class="board-dispatch-title">Dispatch prep</div>
-            <div class="board-dispatch-subtitle">Prepare a run envelope without launching an agent.</div>
+            <div class="board-dispatch-subtitle">Prepare or reuse a run envelope without launching an agent.</div>
           </div>
-          <button class="btn btn-ghost btn-sm" id="board-dispatch-prepare">Prepare</button>
+          <button class="btn btn-ghost btn-sm" id="board-dispatch-prepare">Prepare / reuse</button>
         </div>
         <div id="board-dispatch-result" class="board-dispatch-result" hidden></div>
       </div>
@@ -305,6 +305,7 @@ async function prepareDispatchFromModal(id) {
         <div><span>Run</span><code>${escapeHtml(result.run?.id || 'unknown')}</code></div>
         <div><span>Agent</span><code>${escapeHtml(envelope.agent_id || result.run?.agent_name || 'manual')}</code></div>
         <div><span>Status</span><code>${escapeHtml(result.run?.dispatch_status || 'prepared')}</code></div>
+        <div><span>Envelope</span><code>${result.reused ? 'reused existing' : 'created new'}</code></div>
       </div>
       <label class="form-label" for="board-dispatch-envelope">Envelope</label>
       <textarea class="form-textarea board-dispatch-envelope" id="board-dispatch-envelope" readonly>${escapeHtml(JSON.stringify(envelope, null, 2))}</textarea>
@@ -319,6 +320,6 @@ async function prepareDispatchFromModal(id) {
     resultEl.textContent = `Could not prepare dispatch: ${err.message}`;
   } finally {
     button.disabled = false;
-    button.textContent = 'Prepare';
+    button.textContent = 'Prepare / reuse';
   }
 }
