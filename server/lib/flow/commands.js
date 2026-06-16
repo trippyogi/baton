@@ -9,7 +9,7 @@ function createTask(db, {
   description = '',
   status = 'inbox',
   priority = 'medium',
-  owner = 'jeremy',
+  owner = 'operator',
   tags = [],
   domain = 'product',
   project_key = null,
