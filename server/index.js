@@ -5,6 +5,7 @@ const express = require('express');
 const path    = require('path');
 const db      = require('./db');
 const { rebuildTouches } = require('./lib/flow/rebuild');
+const { apiAuthMiddleware, shouldRequireApiToken } = require('./middleware/api-auth');
 
 const app  = express();
 const PORT = process.env.VMC_PORT || process.env.PORT || 4200;
@@ -14,6 +15,7 @@ app.use(express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use('/api', apiAuthMiddleware(HOST));
 
 // Routes
 app.use('/api/health',   require('./routes/health'));
@@ -30,6 +32,7 @@ app.use('/api/flow',        require('./routes/flow'));
 app.use('/api/touches',     require('./routes/touches'));
 app.use('/api/agents',      require('./routes/agents'));
 app.use('/api/review-packets', require('./routes/review-packets'));
+app.use('/api/strategy-packets', require('./routes/strategy-packets'));
 app.use('/api/queue',       require('./routes/queue'));
 app.use('/api/dispatch',    require('./routes/dispatch'));
 app.use('/api/webhook/github',   require('./routes/webhook'));
@@ -59,6 +62,11 @@ app.get('*', (_req, res) => {
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`BATON running at http://${HOST}:${PORT}`);
+  if (shouldRequireApiToken(HOST)) {
+    console.log(process.env.BATON_API_TOKEN
+      ? '[baton] API bearer auth enabled.'
+      : '[baton] WARNING: non-localhost bind requires BATON_API_TOKEN for API routes.');
+  }
   if (process.env.BATON_SSH_HINT) console.log(process.env.BATON_SSH_HINT);
 });
 

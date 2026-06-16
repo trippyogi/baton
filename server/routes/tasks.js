@@ -3,7 +3,10 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 const { randomUUID } = require('crypto');
-const { rebuildTouches } = require('../lib/flow/rebuild');
+const { rebuildTouches, loadSettings, parseTouch } = require('../lib/flow/rebuild');
+const { stringifyJson, parseJson } = require('../lib/flow/utils');
+const { buildDispatchEnvelope } = require('../lib/dispatch/envelope');
+const { publicBaseUrl } = require('../lib/dispatch');
 
 const VALID_STATUSES  = ['inbox','ready','in_progress','waiting','review','done','backlog','archived'];
 const VALID_PRIORITIES = ['low','medium','high','critical'];
@@ -45,6 +48,15 @@ router.get('/:id', (req, res) => {
     const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
     if (!task) return res.status(404).json({ error: 'Not found' });
     res.json(parse(task));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/:id/dispatch/prepare', (req, res) => {
+  try {
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    if (!task) return res.status(404).json({ error: 'Not found' });
+    const result = prepareDispatch(task, req.body || {});
+    res.status(201).json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -157,6 +169,142 @@ function sqlValue(value) {
 
 function parse(t) {
   return { ...t, tags: safeJsonArray(t.tags), linked_run_ids: safeJsonArray(t.linked_run_ids) };
+}
+
+function prepareDispatch(task, body) {
+  const agent = resolveAgent(task, body);
+  const touch = latestTouchForTask(task.id);
+  const runId = `run_${randomUUID()}`;
+  const parsedTask = parse(task);
+  const instructions = normalizeInstructions(body.instructions);
+  const run = {
+    id: runId,
+    task_id: task.id,
+    touch_id: touch?.id || null,
+    agent_id: agent?.id || null,
+  };
+  if (!body.force_new) {
+    const existing = findPreparedDispatch(task.id, touch?.id || null);
+    if (existing) {
+      return {
+        task: parse(db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id)),
+        touch: touch?.id ? latestTouchForTask(task.id) : null,
+        run: parseRun(existing),
+        envelope: parseJson(existing.dispatch_payload, {}),
+        reused: true,
+        message: 'Existing prepared dispatch reused. No agent was launched.',
+      };
+    }
+  }
+
+  const envelope = buildDispatchEnvelope({
+    run,
+    task: parsedTask,
+    touch,
+    agent,
+    settings: loadSettings(db),
+    baseUrl: publicBaseUrl(),
+    instructions,
+    intent: body.intent || 'orchestrate',
+  });
+
+  db.prepare(`
+    INSERT INTO runs (
+      id, agent_name, worker_type, status, task_id, touch_id, agent_id,
+      dispatch_status, dispatch_transport, dispatch_target, dispatch_payload, steps, logs, created_at
+    ) VALUES (?, ?, ?, 'pending_dispatch', ?, ?, ?, 'prepared', ?, ?, ?, '[]', '[]', datetime('now'))
+  `).run(
+    runId,
+    agent?.name || body.agent_name || parsedTask.owner || 'manual',
+    agent?.type || null,
+    task.id,
+    touch?.id || null,
+    agent?.id || null,
+    agent?.dispatch_transport || 'manual',
+    agent?.dispatch_target || null,
+    stringifyJson(envelope)
+  );
+
+  if (touch?.id) {
+    db.prepare(`
+      UPDATE baton_touches
+      SET status = 'prepared', run_id = ?, updated_at = datetime('now')
+      WHERE id = ?
+    `).run(runId, touch.id);
+  }
+
+  const linked = safeJsonArray(task.linked_run_ids);
+  if (!linked.includes(runId)) {
+    linked.push(runId);
+    db.prepare(`UPDATE tasks SET linked_run_ids = ?, updated_at = datetime('now') WHERE id = ?`).run(stringifyJson(linked), task.id);
+  }
+
+  const savedRun = db.prepare('SELECT * FROM runs WHERE id = ?').get(runId);
+  rebuildTouches(db);
+  return {
+    task: parse(db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id)),
+    touch: touch?.id ? latestTouchForTask(task.id) : null,
+    run: parseRun(savedRun),
+    envelope,
+    reused: false,
+    message: 'Dispatch prepared. No agent was launched.',
+  };
+}
+
+function findPreparedDispatch(taskId, touchId) {
+  if (touchId) {
+    return db.prepare(`
+      SELECT * FROM runs
+      WHERE task_id = ? AND touch_id = ? AND status = 'pending_dispatch' AND dispatch_status = 'prepared'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(taskId, touchId);
+  }
+  return db.prepare(`
+    SELECT * FROM runs
+    WHERE task_id = ? AND touch_id IS NULL AND status = 'pending_dispatch' AND dispatch_status = 'prepared'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `).get(taskId);
+}
+
+function latestTouchForTask(taskId) {
+  const row = db.prepare(`
+    SELECT * FROM baton_touches
+    WHERE task_id = ? AND status NOT IN ('archived', 'resolved')
+    ORDER BY CASE status WHEN 'active' THEN 0 WHEN 'pending' THEN 1 WHEN 'prepared' THEN 2 ELSE 3 END, created_at DESC
+    LIMIT 1
+  `).get(taskId);
+  return row ? parseTouch(row) : null;
+}
+
+function resolveAgent(task, body) {
+  const ids = [body.agent_id, task.owner, 'strategy-agent', 'ops-agent'].filter(Boolean);
+  for (const agentId of ids) {
+    const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
+    if (agent) return parseAgent(agent);
+  }
+  const idle = db.prepare(`SELECT * FROM agents WHERE status = 'idle' ORDER BY name LIMIT 1`).get();
+  return idle ? parseAgent(idle) : null;
+}
+
+function parseAgent(agent) {
+  return {
+    ...agent,
+    skills: parseJson(agent.skills, []),
+    permissions: parseJson(agent.permissions, {}),
+    dispatch_config: parseJson(agent.dispatch_config, {}),
+  };
+}
+
+function normalizeInstructions(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  return String(value).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+}
+
+function parseRun(row) {
+  return row ? { ...row, steps: parseJson(row.steps, []), logs: parseJson(row.logs, []), dispatch_payload: parseJson(row.dispatch_payload, {}) } : null;
 }
 
 function safeJsonArray(value) {

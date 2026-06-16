@@ -65,6 +65,20 @@ db.exec(schema);
   if (!packetCols.includes('sections'))       db.exec("ALTER TABLE review_packets ADD COLUMN sections TEXT DEFAULT '[]'");
   if (!packetCols.includes('artifacts'))      db.exec("ALTER TABLE review_packets ADD COLUMN artifacts TEXT DEFAULT '[]'");
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS strategy_packets (
+      id TEXT PRIMARY KEY,
+      goal TEXT NOT NULL,
+      raw_input TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'drafted',
+      notes TEXT DEFAULT '',
+      created_by TEXT DEFAULT 'operator',
+      task_ids TEXT DEFAULT '[]',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
   // Migration: shared_requests table (2026-02-27)
   db.exec(`
     CREATE TABLE IF NOT EXISTS shared_requests (
@@ -144,7 +158,7 @@ db.exec(schema);
 
 function defaultAgentPermissions(agentId) {
   return {
-    github: { repos: ['trippyogi/baton'], can_push_branch: true, can_merge: false },
+    github: { repos: ['owner/baton'], can_push_branch: true, can_merge: false },
     spend: { daily_limit_usd: 0 },
     external_messages: { draft_only: true },
     public_posting: false,

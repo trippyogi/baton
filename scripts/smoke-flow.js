@@ -110,6 +110,30 @@ async function main() {
   const queueStatus = (await request('/api/queue/stream-status')).json;
   assert.ok(queueStatus.circuit && queueStatus.vector, 'queue stream-status responds without Redis');
 
+  const strategyPacket = (await request('/api/strategy-packets', {
+    method: 'POST',
+    body: {
+      goal: `smoke strategy endpoint ${stamp}`,
+      items: [
+        { title: `Smoke endpoint task A ${stamp}`, owner: 'ops-agent' },
+        { title: `Smoke endpoint task B ${stamp}`, owner: 'strategy-agent' },
+      ],
+      created_by: 'smoke-test',
+    },
+  })).json;
+  assert.ok(strategyPacket.packet?.id, 'strategy packet endpoint creates packet');
+  assert.equal(strategyPacket.tasks.length, 2, 'strategy packet endpoint creates supplied tasks');
+  const fetchedStrategyPacket = (await request(`/api/strategy-packets/${strategyPacket.packet.id}`)).json;
+  assert.equal(fetchedStrategyPacket.tasks.length, 2, 'strategy packet detail returns tasks');
+
+  const strategyCommand = (await request('/api/flow/command', {
+    method: 'POST',
+    body: { input: `strategy smoke command ${stamp}\n- Verify smoke command path ${stamp}` },
+  })).json;
+  assert.equal(strategyCommand.interpreted_as, 'strategy_packet', 'strategy command routes to packet creation');
+  assert.ok(strategyCommand.created?.strategy_packet_id, 'strategy command creates packet id');
+  assert.equal(strategyCommand.tasks.length, 1, 'strategy command creates bullet task');
+
   const capture = (await request('/api/flow/command', {
     method: 'POST',
     body: { input: `capture xss <b>test</b> ${stamp}` },
@@ -118,6 +142,30 @@ async function main() {
   assert.ok(capture.created?.touch_id, 'capture created touch');
   const capturedTask = (await request(`/api/tasks/${capture.created.task_id}`)).json;
   assert.ok(capturedTask.title.includes('<b>test</b>'), 'HTML payload preserved as text in API');
+
+  const dispatchTask = (await request('/api/flow/command', {
+    method: 'POST',
+    body: { input: `delegate smoke dispatch prep ${stamp}` },
+  })).json;
+  assert.ok(dispatchTask.created?.task_id, 'dispatch prep delegate created task');
+  assert.ok(dispatchTask.created?.touch_id, 'dispatch prep delegate created touch');
+
+  const dispatchPrep = (await request(`/api/tasks/${dispatchTask.created.task_id}/dispatch/prepare`, {
+    method: 'POST',
+    body: { instructions: 'Smoke-test prepared dispatch envelope.' },
+  })).json;
+  assert.ok(dispatchPrep.run?.id, 'dispatch prepare creates run');
+  assert.equal(dispatchPrep.reused, false, 'first dispatch prepare is not reused');
+  assert.equal(dispatchPrep.run.dispatch_status, 'prepared', 'dispatch prepare status is prepared');
+  assert.equal(dispatchPrep.run.status, 'pending_dispatch', 'dispatch prepare does not launch a run');
+  assert.equal(dispatchPrep.envelope?.schema, 'baton.dispatch.v1', 'dispatch prepare returns envelope');
+
+  const dispatchPrepAgain = (await request(`/api/tasks/${dispatchTask.created.task_id}/dispatch/prepare`, {
+    method: 'POST',
+    body: { instructions: 'Smoke-test prepared dispatch envelope.' },
+  })).json;
+  assert.equal(dispatchPrepAgain.reused, true, 'second dispatch prepare reuses existing run');
+  assert.equal(dispatchPrepAgain.run.id, dispatchPrep.run.id, 'idempotent dispatch prepare keeps run id');
 
   const delegate = (await request('/api/flow/command', {
     method: 'POST',
@@ -143,8 +191,11 @@ async function main() {
   const afterPrepare = (await request('/api/flow')).json;
   assert.ok(afterPrepare.next_touches.some(t => t.id === delegate.created.touch_id), 'unconfigured touch stays in next touches');
 
-  const snoozeTarget = flow.next_touches.find(t => t.id !== delegate.created.touch_id) || afterPrepare.next_touches[0];
-  assert.ok(snoozeTarget?.id, 'touch available for snooze test');
+  const freshForSnooze = (await request('/api/flow')).json;
+  const snoozeTarget = freshForSnooze.next_touches.find(t => (
+    t.id !== delegate.created.touch_id && ['active', 'pending'].includes(t.status)
+  ));
+  assert.ok(snoozeTarget?.id, 'active or pending touch available for snooze test');
   const snooze = (await request(`/api/touches/${snoozeTarget.id}/action`, {
     method: 'PATCH',
     body: { action: 'snooze', until: '2000-01-01 00:00:00' },

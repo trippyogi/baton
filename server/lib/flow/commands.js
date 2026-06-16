@@ -2,13 +2,14 @@
 const { id, stringifyJson, parseJson } = require('./utils');
 const { normalizeMode, VALID_MODES } = require('./modes');
 const { rebuildTouches, listOpenTouches } = require('./rebuild');
+const { createStrategyPacket } = require('../strategy-packets');
 
 function createTask(db, {
   title,
   description = '',
   status = 'inbox',
   priority = 'medium',
-  owner = 'jeremy',
+  owner = 'operator',
   tags = [],
   domain = 'product',
   project_key = null,
@@ -66,6 +67,17 @@ function executeCommand(db, input) {
       .map(agent => ({ ...agent, skills: parseJson(agent.skills, []), permissions: parseJson(agent.permissions, {}) }));
     const touches = listOpenTouches(db, 50).filter(t => t.type === 'idle_agent');
     return { interpreted_as: 'idle_agents', agents, touches, message: `${agents.length} idle agents. ${touches.length} assignment candidates ready.` };
+  }
+
+  if (lower.startsWith('strategy ')) {
+    const result = createStrategyPacket(db, { raw_input: raw, created_by: 'flow-command' });
+    return {
+      interpreted_as: 'strategy_packet',
+      created: { strategy_packet_id: result.packet.id, task_ids: result.tasks.map(task => task.id) },
+      packet: result.packet,
+      tasks: result.tasks,
+      message: result.message,
+    };
   }
 
   const spectreMatch = raw.match(/^(?:delegate|assign)\s+spectre\s+(.+)$/i) || raw.match(/^spectre\s+(.+)$/i);

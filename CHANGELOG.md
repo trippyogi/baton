@@ -6,6 +6,15 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- API routes now support global bearer-token protection and require `BATON_API_TOKEN` when BATON is bound outside localhost.
+- Private-boundary audit now catches private terms in tracked code outside allowlisted public metadata/spec files.
+- Task detail modals now include Dispatch Prep for creating/reusing a manual, non-launching dispatch envelope.
+- Task API can prepare dispatch runs via `POST /api/tasks/:id/dispatch/prepare` without sending work to an agent.
+- Strategy Packet API (`/api/strategy-packets`) for turning high-level goals into ready, manual-dispatch task sets.
+- Flow command `strategy ...` now drafts a strategy packet and populates Airspace with ready tasks.
+- Airspace Map now auto-refreshes periodically while visible so API/other-client task moves show up without a manual browser refresh.
+- Airspace Map cards can now be dragged between columns to update task status in place.
+- Airspace Map cards now open an in-place task detail editor with title, description, status, priority, owner, tags, and read-only metadata.
 - `BATON_HOST`/`HOST` server bind configuration for private same-tailnet development while keeping localhost as the default.
 - Airspace Map columns now have inline add buttons so tasks can be created directly into a selected status without leaving the board.
 - Private local use boundary with ignored `local/`/`baton-private/` paths, local profile import, redacted export, and private-data audit scripts.
@@ -20,13 +29,15 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 - `SHARED_REQUESTS_TOKEN` is documented in `.env.example` for optional shared requests.
 - Self-contained smoke test harness that starts BATON on a temporary database when `BATON_BASE_URL` is not set.
+- Smoke coverage for strategy packet creation and task dispatch preparation idempotency.
 - `/api/health` endpoint for local checks and smoke-test readiness polling.
 - `BATON_DB_PATH` override for isolated test databases.
 - Node runtime pin via `.nvmrc` and package engines.
 
 ### Changed
 
-- Default empty-database demo seed data now uses generic BATON examples instead of private-looking campaign/content examples.
+- Default empty-database demo seed data and seeded permissions now use generic BATON examples instead of private-looking campaign/content examples.
+- Prepared task dispatch runs are reused by default to avoid duplicate pending envelopes from repeated clicks.
 - Configured delegate/assign/evaluator actions now create runs and dispatch to agents; unconfigured dispatch stays visible instead of faking motion.
 - Spectre review packet submission advances linked runs to `review_ready`; accepting review completes linked runs.
 
@@ -48,6 +59,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 - Review packet creation is transactional for packet/task writes and accepts agent field aliases.
 - Task JSON fields validate array shape and malformed stored JSON no longer breaks reads.
 - Legacy visible screens escape user/agent text and protocol-validate rendered URLs.
+- Redacted export custom output paths now fail closed unless they stay under ignored `exports/redacted-*` paths or explicitly use `--allow-outside-root`.
 - Removed stale placeholder route code.
 
 ## [0.1.0] - 2026-06-13
