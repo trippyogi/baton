@@ -1,4 +1,4 @@
-import { get, post } from '../api.js';
+import { get, post, patch } from '../api.js';
 import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 const STATUS_HEALTH = {
@@ -48,7 +48,13 @@ export async function renderTeam() {
 
 </div>`;
 
-    document.getElementById('btn-new-agent').onclick = showNewAgentModal;
+    document.getElementById('btn-new-agent').onclick = () => showAgentModal();
+    el.querySelectorAll('.agent-edit').forEach(btn => {
+      btn.onclick = () => {
+        const agent = agents.find(item => item.id === btn.dataset.id);
+        if (agent) showAgentModal(agent);
+      };
+    });
   } catch (err) {
     el.innerHTML = `<div class="canvas-inner">
       <div class="screen-header" style="padding-top:8px;margin-bottom:24px">
@@ -62,28 +68,28 @@ export async function renderTeam() {
   }
 }
 
-function showNewAgentModal() {
+function showAgentModal(agent = null) {
   const modal = document.createElement('div');
   modal.className = 'modal-backdrop';
   modal.innerHTML = `
     <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-title">New local agent</div>
+      <div class="modal-title">${agent ? 'Edit local agent' : 'New local agent'}</div>
       <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">
         Create a local registry entry. Webhook dispatch targets must be env var names, not raw URLs or tokens.
       </div>
-      ${field('agent-id', 'Agent ID', 'example-research-agent')}
-      ${field('agent-name', 'Name', 'Example Research Agent')}
-      ${field('agent-type', 'Type', 'research')}
-      ${field('agent-skills', 'Skills', 'research, synthesis')}
+      ${field('agent-id', 'Agent ID', 'example-research-agent', agent?.id || '', Boolean(agent))}
+      ${field('agent-name', 'Name', 'Example Research Agent', agent?.name || '')}
+      ${field('agent-type', 'Type', 'research', agent?.type || '')}
+      ${field('agent-skills', 'Skills', 'research, synthesis', Array.isArray(agent?.skills) ? agent.skills.join(', ') : '')}
       <label class="form-label" style="display:flex;gap:8px;align-items:center;margin:10px 0 12px">
-        <input id="agent-dispatch-enabled" type="checkbox">
+        <input id="agent-dispatch-enabled" type="checkbox"${agent?.dispatch_enabled ? ' checked' : ''}>
         Enable webhook dispatch
       </label>
-      ${field('agent-dispatch-target', 'Webhook URL env var', 'MY_AGENT_WEBHOOK_URL')}
+      ${field('agent-dispatch-target', 'Webhook URL env var', 'MY_AGENT_WEBHOOK_URL', agent?.dispatch_target || agent?.dispatch_config?.url_env || '')}
       <div id="agent-create-error" style="font-size:12px;color:var(--color-red);margin-top:10px" hidden></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
         <button class="btn btn-ghost" id="agent-cancel" type="button">Cancel</button>
-        <button class="btn btn-primary" id="agent-create" type="button">Create agent</button>
+        <button class="btn btn-primary" id="agent-create" type="button">${agent ? 'Save agent' : 'Create agent'}</button>
       </div>
     </div>`;
   modal.onclick = () => modal.remove();
@@ -93,7 +99,7 @@ function showNewAgentModal() {
   const dispatchTarget = document.getElementById('agent-dispatch-target');
   const errorEl = document.getElementById('agent-create-error');
   const createBtn = document.getElementById('agent-create');
-  dispatchTarget.disabled = true;
+  dispatchTarget.disabled = !dispatchEnabled.checked;
   dispatchEnabled.onchange = () => { dispatchTarget.disabled = !dispatchEnabled.checked; };
   document.getElementById('agent-cancel').onclick = () => modal.remove();
   document.getElementById('agent-id').focus();
@@ -106,18 +112,24 @@ function showNewAgentModal() {
       const id = value('agent-id');
       const target = value('agent-dispatch-target');
       const body = {
-        id,
         name: value('agent-name'),
         type: value('agent-type') || 'general',
         skills: value('agent-skills').split(',').map(skill => skill.trim()).filter(Boolean),
       };
+      if (!agent) body.id = id;
       if (dispatchEnabled.checked) {
         body.dispatch_enabled = true;
         body.dispatch_transport = 'webhook';
         body.dispatch_target = target;
         body.dispatch_config = { url_env: target };
+      } else {
+        body.dispatch_enabled = false;
+        body.dispatch_transport = 'manual';
+        body.dispatch_target = null;
+        body.dispatch_config = {};
       }
-      await post('/api/agents', body);
+      if (agent) await patch(`/api/agents/${agent.id}`, body);
+      else await post('/api/agents', body);
       modal.remove();
       await renderTeam();
     } catch (err) {
@@ -125,7 +137,7 @@ function showNewAgentModal() {
       errorEl.hidden = false;
     } finally {
       createBtn.disabled = false;
-      createBtn.textContent = 'Create agent';
+      createBtn.textContent = agent ? 'Save agent' : 'Create agent';
     }
   };
 }
@@ -175,9 +187,11 @@ function agentCard(agent) {
     <div>${escapeHtml(dispatch.detail)}</div>
   </div>
 
-  <div style="display:flex;gap:6px;flex-wrap:wrap">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
     ${skills.length ? skills.map(skill => `<span class="badge badge-medium" style="font-size:10px">${escapeHtml(skill)}</span>`).join('') : '<span style="font-size:12px;color:var(--text-secondary)">No skills listed</span>'}
   </div>
+
+  <button class="btn btn-ghost btn-sm agent-edit" type="button" data-id="${escapeAttr(agent.id)}">Edit safe config</button>
 
 </div>`;
 }
@@ -228,9 +242,9 @@ function metaField(label, value) {
   </div>`;
 }
 
-function field(id, label, placeholder) {
+function field(id, label, placeholder, current = '', disabled = false) {
   return `<label class="form-label" for="${escapeAttr(id)}">${escapeHtml(label)}</label>
-    <input class="form-input" id="${escapeAttr(id)}" placeholder="${escapeAttr(placeholder)}">`;
+    <input class="form-input" id="${escapeAttr(id)}" placeholder="${escapeAttr(placeholder)}" value="${escapeAttr(current)}"${disabled ? ' disabled' : ''}>`;
 }
 
 function value(id) {
