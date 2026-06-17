@@ -128,6 +128,38 @@ Open Airspace Map, click a task, choose a target agent in **Dispatch prep**, the
 
 BATON creates or reuses a `baton.dispatch.v1` envelope for that task/agent without launching anything. This is useful for checking private context and handoff shape before live dispatch.
 
+## Local Nectar bridge
+
+For a local Nectar handoff smoke test, start the local bridge:
+
+```bash
+NECTAR_DISPATCH_TOKEN=change-me npm run bridge:nectar
+```
+
+Then configure a private/local Nectar agent with:
+
+```json
+{
+  "id": "nectar",
+  "name": "Nectar",
+  "dispatch_enabled": true,
+  "dispatch_transport": "webhook",
+  "dispatch_target": "NECTAR_WEBHOOK_URL",
+  "dispatch_config": {
+    "url_env": "NECTAR_WEBHOOK_URL",
+    "token_env": "NECTAR_DISPATCH_TOKEN"
+  }
+}
+```
+
+The bridge accepts `baton.dispatch.v1`, writes an ignored local inbox record under `local/nectar-dispatch-inbox/`, and returns an ACK. It does not execute external actions by itself.
+
+Run the bridge smoke test with:
+
+```bash
+npm run smoke:nectar
+```
+
 ## Start BATON
 
 ```bash

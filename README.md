@@ -35,7 +35,7 @@ Implemented phases:
   - `idle agents` uses the real agent registry and assignment candidates avoid duplicate ready-task matches.
   - Tasks API accepts ranking/autonomy fields.
   - Webhook signature/payload handling is hardened.
-  - `npm run check:js`, `npm run smoke`, `npm run smoke:dispatch`, `npm run audit`, and `npm test` scripts are available.
+  - `npm run check:js`, `npm run smoke`, `npm run smoke:dispatch`, `npm run smoke:nectar`, `npm run audit`, and `npm test` scripts are available.
 
 - **Phase 0 — Local app stabilization**
   - Declared missing `dotenv` and `ioredis` dependencies.
@@ -176,11 +176,12 @@ Key defaults:
 ```bash
 npm test
 npm run smoke:dispatch
+npm run smoke:nectar
 npm run audit
 npm run audit:private
 ```
 
-`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop. `npm run audit:private` checks that private local data and high-signal secrets are not tracked.
+`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop. `npm run smoke:nectar` verifies Baton can hand a `baton.dispatch.v1` envelope to the local Nectar bridge and write an ignored inbox record. `npm run audit:private` checks that private local data and high-signal secrets are not tracked.
 
 ## API overview
 
