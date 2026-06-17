@@ -110,6 +110,36 @@ async function main() {
   const queueStatus = (await request('/api/queue/stream-status')).json;
   assert.ok(queueStatus.circuit && queueStatus.vector, 'queue stream-status responds without Redis');
 
+  const localAgent = (await request('/api/agents', {
+    method: 'POST',
+    body: {
+      id: `smoke-local-agent-${stamp}`,
+      name: 'Smoke Local Agent',
+      type: 'research',
+      skills: ['research', 'summary'],
+      dispatch_enabled: true,
+      dispatch_transport: 'webhook',
+      dispatch_target: 'SMOKE_AGENT_WEBHOOK_URL',
+      dispatch_config: { url_env: 'SMOKE_AGENT_WEBHOOK_URL', token_env: 'SMOKE_AGENT_TOKEN' },
+    },
+  })).json;
+  assert.equal(localAgent.dispatch_enabled, true, 'agent create preserves dispatch enabled');
+  assert.equal(localAgent.dispatch_config.url_env, 'SMOKE_AGENT_WEBHOOK_URL', 'agent create stores env dispatch config');
+  const fetchedLocalAgent = (await request(`/api/agents/${localAgent.id}`)).json;
+  assert.equal(fetchedLocalAgent.name, 'Smoke Local Agent', 'agent detail returns created local agent');
+  const unsafeAgent = await request('/api/agents', {
+    method: 'POST',
+    body: {
+      id: `unsafe-agent-${stamp}`,
+      name: 'Unsafe Agent',
+      dispatch_enabled: true,
+      dispatch_transport: 'webhook',
+      dispatch_target: 'https://hooks.example.com/raw-secret-target',
+    },
+    ok: false,
+  });
+  assert.equal(unsafeAgent.res.status, 400, 'agent create rejects non-local raw webhook targets');
+
   const strategyPacket = (await request('/api/strategy-packets', {
     method: 'POST',
     body: {
