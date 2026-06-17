@@ -40,8 +40,13 @@ async function waitFor(fn, label, timeoutMs = 10000) {
   throw new Error(`Timed out waiting for ${label}`);
 }
 
+function randomBatonPort() {
+  // Keep smoke tests away from Fetch's restricted port list, especially 6000.
+  return String(6200 + Math.floor(Math.random() * 400));
+}
+
 async function startBaton(extraEnv = {}) {
-  const port = String(5600 + Math.floor(Math.random() * 500));
+  const port = randomBatonPort();
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-dispatch-'));
   BASE = `http://127.0.0.1:${port}`;
   baton = spawn(process.execPath, ['server/index.js'], {
