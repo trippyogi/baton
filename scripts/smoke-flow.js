@@ -134,7 +134,7 @@ async function main() {
   assert.ok(strategyCommand.created?.strategy_packet_id, 'strategy command creates packet id');
   assert.equal(strategyCommand.tasks.length, 1, 'strategy command creates bullet task');
 
-  const formalSpecMarkdown = `# Crucible Formal Specification\n\n**Project:** Crucible\n**Target repository:** \`https://github.com/trippyogi/crucible.git\`\n**Spec version:** v0.1 Draft\n**Flagship v0 mission pack:** Public Internet Intel\n\n### 1.1 One-sentence definition\n\n**Crucible is a local-first durable mission runner.**\n\n## 29. Roadmap\n\n### v0.1 — Core daemon and mission loop\n\nDeliverables:\n\n- Rust workspace.\n- CLI.\n- Daemon.\n\nAcceptance:\n\n- Can run a fake mission with multiple steps.\n- Can crash/restart and resume.\n\n### v0.2 — Model router and local worker\n\nDeliverables:\n\n- OpenAI-compatible provider adapter.\n- GPU status via \`nvidia-smi\`.\n\nAcceptance:\n\n- Can route one step to frontier and another to local model.\n`;
+  const formalSpecMarkdown = `# Crucible Formal Specification\n\n**Project:** Crucible\n**Target repository:** \`https://github.com/example/crucible.git\`\n**Spec version:** v0.1 Draft\n**Flagship v0 mission pack:** Public Internet Intel\n\n### 1.1 One-sentence definition\n\n**Crucible is a local-first durable mission runner.**\n\n## 29. Roadmap\n\n### v0.1 — Core daemon and mission loop\n\nDeliverables:\n\n- Rust workspace.\n- CLI.\n- Daemon.\n\nAcceptance:\n\n- Can run a fake mission with multiple steps.\n- Can crash/restart and resume.\n\n### v0.2 — Model router and local worker\n\nDeliverables:\n\n- OpenAI-compatible provider adapter.\n- GPU status via \`nvidia-smi\`.\n\nAcceptance:\n\n- Can route one step to frontier and another to local model.\n`;
   const parsedFormalSpec = (await request('/api/formal-specs/parse', {
     method: 'POST',
     body: { markdown: formalSpecMarkdown },
@@ -160,7 +160,7 @@ async function main() {
   })).json;
   assert.ok(formalSpecPacket.packet?.id, 'formal spec endpoint creates strategy packet');
   assert.ok(formalSpecPacket.formal_spec?.id, 'formal spec endpoint persists an intake record');
-  assert.equal(formalSpecPacket.spec.target_repository, 'https://github.com/trippyogi/crucible.git', 'formal spec endpoint preserves target repo');
+  assert.equal(formalSpecPacket.spec.target_repository, 'https://github.com/example/crucible.git', 'formal spec endpoint preserves target repo');
   assert.equal(formalSpecPacket.tasks.length, 3, 'formal spec endpoint creates roadmap tasks');
   const formalSpecRecord = (await request(`/api/formal-specs/${formalSpecPacket.formal_spec.id}`)).json;
   assert.equal(formalSpecRecord.packet_id, formalSpecPacket.packet.id, 'formal spec record links to strategy packet');
