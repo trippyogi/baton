@@ -116,11 +116,17 @@ npm run import:local -- local/profile.json --mode upsert
 
 ## Create local agents in the UI
 
-After starting BATON, open Team and use **New local agent** for quick safe registry entries.
+After starting BATON, open Team and use **New local agent** for quick safe registry entries. Use **Edit safe config** on an agent card to update name, type, skills, and dispatch status later.
 
 For webhook dispatch, enter an environment variable name such as `MY_AGENT_WEBHOOK_URL`. Do not paste raw webhook URLs or tokens into the UI. Store real values in `.env` or your private runtime environment.
 
 The Team screen reads `/api/agents`, so imported private agents and UI-created local agents appear in the same registry.
+
+## Prepare a task for a specific agent
+
+Open Airspace Map, click a task, choose a target agent in **Dispatch prep**, then click **Prepare / reuse**.
+
+BATON creates or reuses a `baton.dispatch.v1` envelope for that task/agent without launching anything. This is useful for checking private context and handoff shape before live dispatch.
 
 ## Start BATON
 

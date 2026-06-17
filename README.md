@@ -204,8 +204,15 @@ Agents:
 
 ```text
 GET   /api/agents
+POST  /api/agents
 GET   /api/agents/:id
 PATCH /api/agents/:id
+```
+
+Task dispatch prep:
+
+```text
+POST /api/tasks/:id/dispatch/prepare
 ```
 
 Review packets:
@@ -228,10 +235,10 @@ Existing routes remain available for tasks, runs, overview, queue, costs, perfor
 ## Command box examples
 
 ```text
-capture improve onboarding copy for MetaTravelers
+capture improve onboarding copy for the demo launch
 idea make review packets mandatory before human review
 delegate audit checkout funnel copy
-delegate Spectre review MetaTravelers launch plan
+delegate Spectre review the demo launch plan
 mode launch
 mode review
 review next
