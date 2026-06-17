@@ -216,12 +216,14 @@ async function main() {
 
   const dispatchPrep = (await request(`/api/tasks/${dispatchTask.created.task_id}/dispatch/prepare`, {
     method: 'POST',
-    body: { instructions: 'Smoke-test prepared dispatch envelope.' },
+    body: { instructions: 'Smoke-test prepared dispatch envelope.', agent_id: localAgent.id },
   })).json;
   assert.ok(dispatchPrep.run?.id, 'dispatch prepare creates run');
   assert.equal(dispatchPrep.reused, false, 'first dispatch prepare is not reused');
   assert.equal(dispatchPrep.run.dispatch_status, 'prepared', 'dispatch prepare status is prepared');
   assert.equal(dispatchPrep.run.status, 'pending_dispatch', 'dispatch prepare does not launch a run');
+  assert.equal(dispatchPrep.run.agent_id, localAgent.id, 'dispatch prepare honors explicit agent id');
+  assert.equal(dispatchPrep.envelope?.agent_id, localAgent.id, 'dispatch envelope uses explicit agent id');
   assert.equal(dispatchPrep.envelope?.schema, 'baton.dispatch.v1', 'dispatch prepare returns envelope');
 
   const dispatchPrepAgain = (await request(`/api/tasks/${dispatchTask.created.task_id}/dispatch/prepare`, {

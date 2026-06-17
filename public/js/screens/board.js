@@ -201,9 +201,12 @@ export function showBoardAddTaskModal(status = 'inbox') {
   };
 }
 
-function showTaskDetailModal(id, tasks) {
+async function showTaskDetailModal(id, tasks) {
   const task = tasks.find(t => t.id === id);
   if (!task) return;
+  let agents = [];
+  try { agents = await get('/api/agents'); } catch (_) { agents = []; }
+  const agentOptions = agentSelectOptions(agents, task.owner);
   const modal = document.createElement('div');
   modal.className = 'modal-backdrop';
   modal.innerHTML = `
@@ -257,9 +260,15 @@ function showTaskDetailModal(id, tasks) {
         <div class="board-dispatch-header">
           <div>
             <div class="board-dispatch-title">Dispatch prep</div>
-            <div class="board-dispatch-subtitle">Prepare or reuse a run envelope without launching an agent.</div>
+            <div class="board-dispatch-subtitle">Choose the target agent, then prepare or reuse a run envelope without launching.</div>
           </div>
           <button class="btn btn-ghost btn-sm" id="board-dispatch-prepare">Prepare / reuse</button>
+        </div>
+        <div class="form-field" style="margin-top:12px">
+          <label class="form-label">Target agent</label>
+          <select class="form-select" id="board-dispatch-agent">
+            ${agentOptions}
+          </select>
         </div>
         <div id="board-dispatch-result" class="board-dispatch-result" hidden></div>
       </div>
@@ -289,6 +298,15 @@ function showTaskDetailModal(id, tasks) {
   };
 }
 
+function agentSelectOptions(agents, owner) {
+  const options = ['<option value="">Auto-resolve from owner / idle agents</option>'];
+  for (const agent of agents) {
+    const label = `${agent.name || agent.id} · ${agent.status || 'unknown'}${agent.dispatch_enabled ? ' · dispatch-ready' : ''}`;
+    options.push(`<option value="${escapeAttr(agent.id)}"${agent.id === owner ? ' selected' : ''}>${escapeHtml(label)}</option>`);
+  }
+  return options.join('');
+}
+
 async function prepareDispatchFromModal(id) {
   const button = document.getElementById('board-dispatch-prepare');
   const resultEl = document.getElementById('board-dispatch-result');
@@ -298,7 +316,8 @@ async function prepareDispatchFromModal(id) {
   resultEl.hidden = false;
   resultEl.textContent = 'Preparing dispatch envelope…';
   try {
-    const result = await post(`/api/tasks/${id}/dispatch/prepare`, {});
+    const agentId = document.getElementById('board-dispatch-agent')?.value || '';
+    const result = await post(`/api/tasks/${id}/dispatch/prepare`, agentId ? { agent_id: agentId } : {});
     const envelope = result.envelope || {};
     resultEl.innerHTML = `
       <div class="board-dispatch-summary">
