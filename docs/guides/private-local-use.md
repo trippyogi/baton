@@ -136,20 +136,17 @@ For a local Nectar handoff smoke test, start the local bridge:
 NECTAR_DISPATCH_TOKEN=change-me npm run bridge:nectar
 ```
 
-Then configure a private/local Nectar agent with:
+Then import the public-safe Nectar fixture:
 
-```json
-{
-  "id": "nectar",
-  "name": "Nectar",
-  "dispatch_enabled": true,
-  "dispatch_transport": "webhook",
-  "dispatch_target": "NECTAR_WEBHOOK_URL",
-  "dispatch_config": {
-    "url_env": "NECTAR_WEBHOOK_URL",
-    "token_env": "NECTAR_DISPATCH_TOKEN"
-  }
-}
+```bash
+npm run import:local -- scripts/fixtures/nectar-local-agent.example.json --mode upsert
+```
+
+The fixture stores only env var names. Put real values in `.env` or your private runtime environment:
+
+```bash
+NECTAR_WEBHOOK_URL=http://127.0.0.1:4310/baton/dispatch
+NECTAR_DISPATCH_TOKEN=change-me
 ```
 
 The bridge accepts `baton.dispatch.v1`, writes an ignored local inbox record under `local/nectar-dispatch-inbox/`, and returns an ACK. It does not execute external actions by itself.

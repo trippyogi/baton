@@ -50,7 +50,7 @@ async function startBaton() {
   BASE = `http://127.0.0.1:${port}`;
   bridge = await startNectarDispatchBridge({
     port: randomPort(4600),
-    token: 'nectar-smoke-token',
+    token: 'test',
     inboxDir: path.join(tempDir, 'nectar-inbox'),
   });
   baton = spawn(process.execPath, ['server/index.js'], {
@@ -62,7 +62,7 @@ async function startBaton() {
       BATON_DB_PATH: path.join(tempDir, 'dispatch.db'),
       REDIS_URL: 'redis://127.0.0.1:0',
       NECTAR_WEBHOOK_URL: bridge.url,
-      NECTAR_DISPATCH_TOKEN: 'nectar-smoke-token',
+      NECTAR_DISPATCH_TOKEN: 'test',
       BATON_CALLBACK_TOKEN: 'callback-token',
     },
     stdio: ['ignore', 'pipe', 'pipe'],

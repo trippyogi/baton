@@ -1,0 +1,30 @@
+{
+  "schema_version": "baton.local_profile.v1",
+  "tasks": [],
+  "agents": [
+    {
+      "id": "nectar",
+      "name": "Nectar",
+      "type": "personal-ai-agent",
+      "status": "idle",
+      "skills": ["planning", "research", "coding", "memory", "dispatch-review", "operator-support"],
+      "permissions": {
+        "github": { "repos": ["owner/baton"], "can_push_branch": true, "can_merge": false },
+        "spend": { "daily_limit_usd": 0 },
+        "external_messages": { "draft_only": true },
+        "public_posting": false,
+        "production_changes": false
+      },
+      "dispatch_enabled": true,
+      "dispatch_transport": "webhook",
+      "dispatch_target": "NECTAR_WEBHOOK_URL",
+      "dispatch_config": {
+        "url_env": "NECTAR_WEBHOOK_URL",
+        "token_env": "NECTAR_DISPATCH_TOKEN",
+        "timeout_ms": 10000
+      },
+      "quality_score": 0.8,
+      "reliability_score": 0.8
+    }
+  ]
+}
