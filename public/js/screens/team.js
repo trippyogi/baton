@@ -1,5 +1,5 @@
-import { get } from '../api.js';
-import { escapeHtml } from '../lib/html.js';
+import { get, post } from '../api.js';
+import { escapeHtml, escapeAttr } from '../lib/html.js';
 
 const STATUS_HEALTH = {
   idle: 'healthy',
@@ -27,17 +27,18 @@ export async function renderTeam() {
       <div class="screen-title" style="font-size:28px;font-weight:600;letter-spacing:-0.02em">Team</div>
       <div class="screen-subtitle" style="margin-top:8px">Real agent registry for local/private BATON work</div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:stretch">
       ${summaryPill('Agents', agents.length)}
       ${summaryPill('Idle', counts.idle)}
       ${summaryPill('Running', counts.running)}
       ${summaryPill('Dispatch-ready', counts.dispatchReady)}
+      <button class="btn btn-primary" id="btn-new-agent" type="button">+ New local agent</button>
     </div>
   </div>
 
   <div class="card" style="margin-bottom:18px">
     <div style="font-size:13px;color:var(--text-secondary);line-height:1.6">
-      Import private agents with <code>npm run import:local -- local/profile.json</code>. This screen reads the local registry and only shows safe dispatch status — not webhook URLs or tokens.
+      Import private agents with <code>npm run import:local -- local/profile.json</code>, or create a safe local registry entry here. For webhook dispatch, enter an environment variable name such as <code>MY_AGENT_WEBHOOK_URL</code>; do not paste raw URLs or tokens.
     </div>
   </div>
 
@@ -47,6 +48,7 @@ export async function renderTeam() {
 
 </div>`;
 
+    document.getElementById('btn-new-agent').onclick = showNewAgentModal;
   } catch (err) {
     el.innerHTML = `<div class="canvas-inner">
       <div class="screen-header" style="padding-top:8px;margin-bottom:24px">
@@ -58,6 +60,74 @@ export async function renderTeam() {
       </div>
     </div>`;
   }
+}
+
+function showNewAgentModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-backdrop';
+  modal.innerHTML = `
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">New local agent</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px">
+        Create a local registry entry. Webhook dispatch targets must be env var names, not raw URLs or tokens.
+      </div>
+      ${field('agent-id', 'Agent ID', 'example-research-agent')}
+      ${field('agent-name', 'Name', 'Example Research Agent')}
+      ${field('agent-type', 'Type', 'research')}
+      ${field('agent-skills', 'Skills', 'research, synthesis')}
+      <label class="form-label" style="display:flex;gap:8px;align-items:center;margin:10px 0 12px">
+        <input id="agent-dispatch-enabled" type="checkbox">
+        Enable webhook dispatch
+      </label>
+      ${field('agent-dispatch-target', 'Webhook URL env var', 'MY_AGENT_WEBHOOK_URL')}
+      <div id="agent-create-error" style="font-size:12px;color:var(--color-red);margin-top:10px" hidden></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+        <button class="btn btn-ghost" id="agent-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="agent-create" type="button">Create agent</button>
+      </div>
+    </div>`;
+  modal.onclick = () => modal.remove();
+  document.body.appendChild(modal);
+
+  const dispatchEnabled = document.getElementById('agent-dispatch-enabled');
+  const dispatchTarget = document.getElementById('agent-dispatch-target');
+  const errorEl = document.getElementById('agent-create-error');
+  const createBtn = document.getElementById('agent-create');
+  dispatchTarget.disabled = true;
+  dispatchEnabled.onchange = () => { dispatchTarget.disabled = !dispatchEnabled.checked; };
+  document.getElementById('agent-cancel').onclick = () => modal.remove();
+  document.getElementById('agent-id').focus();
+
+  createBtn.onclick = async () => {
+    errorEl.hidden = true;
+    createBtn.disabled = true;
+    createBtn.textContent = 'Creating…';
+    try {
+      const id = value('agent-id');
+      const target = value('agent-dispatch-target');
+      const body = {
+        id,
+        name: value('agent-name'),
+        type: value('agent-type') || 'general',
+        skills: value('agent-skills').split(',').map(skill => skill.trim()).filter(Boolean),
+      };
+      if (dispatchEnabled.checked) {
+        body.dispatch_enabled = true;
+        body.dispatch_transport = 'webhook';
+        body.dispatch_target = target;
+        body.dispatch_config = { url_env: target };
+      }
+      await post('/api/agents', body);
+      modal.remove();
+      await renderTeam();
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.hidden = false;
+    } finally {
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create agent';
+    }
+  };
 }
 
 function summarizeAgents(agents) {
@@ -156,6 +226,15 @@ function metaField(label, value) {
     <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-secondary);margin-bottom:4px">${escapeHtml(label)}</div>
     <div style="font-size:13px;color:var(--text-primary);word-break:break-word">${escapeHtml(value)}</div>
   </div>`;
+}
+
+function field(id, label, placeholder) {
+  return `<label class="form-label" for="${escapeAttr(id)}">${escapeHtml(label)}</label>
+    <input class="form-input" id="${escapeAttr(id)}" placeholder="${escapeAttr(placeholder)}">`;
+}
+
+function value(id) {
+  return document.getElementById(id).value.trim();
 }
 
 function emptyState() {
