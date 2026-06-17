@@ -114,6 +114,14 @@ By default, import mode is `insert`: duplicate task titles or duplicate IDs fail
 npm run import:local -- local/profile.json --mode upsert
 ```
 
+## Create local agents in the UI
+
+After starting BATON, open Team and use **New local agent** for quick safe registry entries.
+
+For webhook dispatch, enter an environment variable name such as `MY_AGENT_WEBHOOK_URL`. Do not paste raw webhook URLs or tokens into the UI. Store real values in `.env` or your private runtime environment.
+
+The Team screen reads `/api/agents`, so imported private agents and UI-created local agents appear in the same registry.
+
 ## Start BATON
 
 ```bash
