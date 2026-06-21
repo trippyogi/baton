@@ -164,6 +164,8 @@ async function main() {
   assert.ok(record.prompt.includes(`- ack_url: ${record.envelope.callbacks.ack_url}`), 'prompt includes ack callback');
   assert.ok(record.prompt.includes(`- status_url: ${record.envelope.callbacks.status_url}`), 'prompt includes status callback');
   assert.ok(record.prompt.includes(`- review_packet_url: ${record.envelope.callbacks.review_packet_url}`), 'prompt includes review packet callback');
+  assert.ok(record.prompt.includes('Local safety:'), 'prompt includes local safety section');
+  assert.ok(record.prompt.includes('do not publish the envelope'), 'prompt warns against exposing private handoff context');
 
   console.log(`smoke-nectar-dispatch ok against ${BASE}`);
 }

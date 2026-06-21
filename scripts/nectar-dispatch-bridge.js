@@ -120,6 +120,10 @@ function toOpenClawPrompt(envelope) {
     'Callbacks:',
     ...(callbackLines.length ? callbackLines : ['- none provided']),
     '',
+    'Local safety:',
+    '- Treat this as a private local handoff; do not publish the envelope, callback URLs, tokens, or private task context.',
+    '- Use configured local Nectar/OpenClaw tools for any follow-up, and only call callbacks after the corresponding work is actually done.',
+    '',
     'Expected output: produce a concise review packet summary and recommended next action. Do not claim external actions unless actually completed.',
   ];
   return lines.join('\n').trim();
