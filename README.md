@@ -18,11 +18,11 @@ Orchestrator → Queue → Executor → Dashboard
 
 ## Features
 
-- Task management and job queue visualization
-- Agent run history and cost tracking
-- Build log viewer
-- Memory and context management
-- Team overview
+- Task management and queue visualization
+- Agent run history, logs, fix attempts, output previews, token/cost tracking, and build log viewer
+- Shared Requests handoff queue for Jeremy ↔ Marko async requests
+- Creatives screen backed by the configured creative log
+- Costs, performance, memory, team, workshop, alerts, and GitHub webhook routes
 - Extension system for private business logic
 
 ## Getting Started
