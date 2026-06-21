@@ -16,6 +16,7 @@ function startNectarDispatchBridge({
   host = process.env.NECTAR_BRIDGE_HOST || '127.0.0.1',
 } = {}) {
   const received = [];
+  const startedAt = new Date();
   fs.mkdirSync(inboxDir, { recursive: true });
 
   const server = http.createServer(async (req, res) => {
@@ -24,6 +25,8 @@ function startNectarDispatchBridge({
       return json(res, 200, {
         ok: true,
         service: 'nectar-dispatch-bridge',
+        started_at: startedAt.toISOString(),
+        uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,
         last_received_at: lastReceived ? lastReceived.received_at : null,
         max_body_bytes: MAX_BODY_BYTES,
