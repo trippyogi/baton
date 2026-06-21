@@ -12,8 +12,8 @@ const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-adversarial-'));
 const port = 7300 + Math.floor(Math.random() * 200);
 const fakePort = 7500 + Math.floor(Math.random() * 200);
 const BASE = `http://127.0.0.1:${port}`;
-const OPERATOR_TOKEN = 'operator-test-token';
-const CALLBACK_TOKEN = 'callback-test-token';
+const OPERATOR_TOKEN = 'op-test';
+const CALLBACK_TOKEN = 'cb-test';
 const received = [];
 
 const fake = http.createServer(async (req, res) => {

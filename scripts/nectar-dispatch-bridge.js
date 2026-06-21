@@ -30,6 +30,7 @@ function startNectarDispatchBridge({
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,
         inbox_record_count: inboxRecordCount,
+        inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
         max_body_bytes: MAX_BODY_BYTES,
       });
@@ -151,6 +152,15 @@ function countInboxRecords(inboxDir) {
   }
 }
 
+function isInboxWritable(inboxDir) {
+  try {
+    fs.accessSync(inboxDir, fs.constants.W_OK);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 if (require.main === module) {
   startNectarDispatchBridge().catch(err => {
     console.error(err);
@@ -158,4 +168,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };

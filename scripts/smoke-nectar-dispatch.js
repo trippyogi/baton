@@ -103,6 +103,7 @@ async function main() {
   assert.ok(initialHealthJson.uptime_seconds >= 0, 'Nectar bridge uptime is non-negative');
   assert.equal(initialHealthJson.received_count, 0, 'Nectar bridge health exposes received count before dispatch');
   assert.equal(initialHealthJson.inbox_record_count, 0, 'Nectar bridge health exposes inbox record count before dispatch');
+  assert.equal(initialHealthJson.inbox_writable, true, 'Nectar bridge health exposes writable inbox state');
   assert.equal(initialHealthJson.last_received_at, null, 'Nectar bridge health has no last received timestamp before dispatch');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
 
@@ -150,6 +151,7 @@ async function main() {
   const finalHealthJson = await finalHealth.json();
   assert.equal(finalHealthJson.received_count, 1, 'Nectar bridge health updates received count after dispatch');
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
+  assert.equal(finalHealthJson.inbox_writable, true, 'Nectar bridge inbox remains writable after dispatch');
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));
