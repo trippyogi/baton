@@ -33,11 +33,34 @@ db.exec(schema);
   if (!cols.includes('last_status_at'))     db.exec('ALTER TABLE runs ADD COLUMN last_status_at TEXT');
   if (!cols.includes('review_packet_id'))   db.exec('ALTER TABLE runs ADD COLUMN review_packet_id TEXT');
   if (!cols.includes('error'))              db.exec('ALTER TABLE runs ADD COLUMN error TEXT');
+  if (!cols.includes('idempotency_key'))    db.exec('ALTER TABLE runs ADD COLUMN idempotency_key TEXT');
+  if (!cols.includes('state_version'))      db.exec('ALTER TABLE runs ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0');
 
   const touchCols = db.prepare('PRAGMA table_info(baton_touches)').all().map(c => c.name);
   if (!touchCols.includes('manual_priority_boost')) db.exec('ALTER TABLE baton_touches ADD COLUMN manual_priority_boost REAL DEFAULT 0');
   if (!touchCols.includes('pinned'))                db.exec('ALTER TABLE baton_touches ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0');
   if (!touchCols.includes('manual_override_until')) db.exec('ALTER TABLE baton_touches ADD COLUMN manual_override_until TEXT');
+  if (!touchCols.includes('state_version'))         db.exec('ALTER TABLE baton_touches ADD COLUMN state_version INTEGER NOT NULL DEFAULT 0');
+
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_idempotency_key
+    ON runs(idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_runs_touch_status ON runs(touch_id, status);
+    CREATE INDEX IF NOT EXISTS idx_runs_agent_status ON runs(agent_id, status);
+
+    CREATE TABLE IF NOT EXISTS run_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      run_id TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      from_status TEXT,
+      to_status TEXT,
+      actor TEXT DEFAULT 'system',
+      payload TEXT DEFAULT '{}',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
 
   const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map(c => c.name);
   if (!taskCols.includes('domain'))                 db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'product'");

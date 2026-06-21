@@ -5,6 +5,7 @@ const { randomUUID } = require('crypto');
 const { parseJson, stringifyJson } = require('../lib/flow/utils');
 const { rebuildTouches } = require('../lib/flow/rebuild');
 const { applyAccepted, applyFailed } = require('../lib/dispatch');
+const { transitionRun } = require('../lib/runs/state-machine');
 
 const router = express.Router();
 
@@ -71,6 +72,9 @@ router.post('/:id/ack', (req, res) => {
   try {
     const run = db.prepare('SELECT * FROM runs WHERE id = ?').get(req.params.id);
     if (!run) return res.status(404).json({ error: 'Not found' });
+    if (['completed', 'failed', 'cancelled'].includes(run.status)) {
+      return res.status(409).json(parseRun(run));
+    }
     const ok = req.body.ok !== false && ['accepted', 'running', undefined, null].includes(req.body.status);
     if (ok) {
       applyAccepted(db, { runId: run.id, taskId: run.task_id, touchId: run.touch_id, agentId: run.agent_id, externalRunId: req.body.external_run_id || null });
@@ -88,16 +92,26 @@ router.post('/:id/status', (req, res) => {
     const run = db.prepare('SELECT * FROM runs WHERE id = ?').get(req.params.id);
     if (!run) return res.status(404).json({ error: 'Not found' });
     const status = String(req.body.status || 'running');
+    if (!['running', 'blocked', 'review_ready', 'failed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: `Unknown run status: ${status}` });
+    }
+    if (['completed', 'failed', 'cancelled'].includes(run.status)) {
+      return res.status(409).json(parseRun(run));
+    }
     const logs = appendLogs(parseJson(run.logs, []), req.body);
 
     if (status === 'failed') {
       applyFailed(db, { runId: run.id, taskId: run.task_id, touchId: run.touch_id, agentId: run.agent_id, dispatchStatus: 'failed', error: req.body.message || 'Agent reported failure.' });
       db.prepare(`UPDATE runs SET logs = ? WHERE id = ?`).run(stringifyJson(logs), run.id);
     } else if (status === 'cancelled') {
-      db.prepare(`UPDATE runs SET status = 'cancelled', logs = ?, last_status_at = datetime('now') WHERE id = ?`).run(stringifyJson(logs), run.id);
-      if (run.agent_id) db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE id = ?`).run(run.agent_id);
+      const transitioned = transitionRun({ db, runId: run.id, event: 'cancelled', toStatus: 'cancelled', actor: 'agent', payload: req.body });
+      if (!transitioned.ok) return res.status(transitioned.status || 409).json({ error: transitioned.error || transitioned.code });
+      db.prepare(`UPDATE runs SET logs = ?, last_status_at = datetime('now') WHERE id = ?`).run(stringifyJson(logs), run.id);
+      if (run.agent_id) db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE id = ? AND current_run_id = ?`).run(run.agent_id, run.id);
     } else {
-      db.prepare(`UPDATE runs SET status = 'running', logs = ?, last_status_at = datetime('now'), error = NULL WHERE id = ?`).run(stringifyJson(logs), run.id);
+      const transitioned = transitionRun({ db, runId: run.id, event: 'status', toStatus: status, actor: 'agent', payload: req.body });
+      if (!transitioned.ok && transitioned.code !== 'terminal_state') return res.status(transitioned.status || 409).json({ error: transitioned.error || transitioned.code });
+      db.prepare(`UPDATE runs SET logs = ?, last_status_at = datetime('now'), error = NULL WHERE id = ?`).run(stringifyJson(logs), run.id);
     }
     rebuildTouches(db);
     res.json(parseRun(db.prepare('SELECT * FROM runs WHERE id = ?').get(run.id)));

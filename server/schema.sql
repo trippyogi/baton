@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS runs (
   last_status_at TEXT,
   review_packet_id TEXT,
   error TEXT,
+  idempotency_key TEXT,
+  state_version INTEGER NOT NULL DEFAULT 0,
   steps TEXT DEFAULT '[]',
   logs TEXT DEFAULT '[]',
   cost REAL DEFAULT 0,
@@ -144,6 +146,7 @@ CREATE TABLE IF NOT EXISTS baton_touches (
   manual_priority_boost REAL DEFAULT 0,
   pinned INTEGER NOT NULL DEFAULT 0,
   manual_override_until TEXT,
+  state_version INTEGER NOT NULL DEFAULT 0,
   source TEXT DEFAULT 'generated',
   generated_at TEXT DEFAULT (datetime('now')),
   last_touched_at TEXT,
@@ -163,6 +166,24 @@ CREATE TABLE IF NOT EXISTS touch_events (
   created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY(touch_id) REFERENCES baton_touches(id)
 );
+
+CREATE TABLE IF NOT EXISTS run_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  from_status TEXT,
+  to_status TEXT,
+  actor TEXT DEFAULT 'system',
+  payload TEXT DEFAULT '{}',
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_idempotency_key
+ON runs(idempotency_key)
+WHERE idempotency_key IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_runs_touch_status ON runs(touch_id, status);
+CREATE INDEX IF NOT EXISTS idx_runs_agent_status ON runs(agent_id, status);
 
 INSERT OR IGNORE INTO flow_settings (id, current_mode)
 VALUES ('default', 'triage');

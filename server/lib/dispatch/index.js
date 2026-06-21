@@ -4,6 +4,7 @@ const { loadSettings, rebuildTouches } = require('../flow/rebuild');
 const { buildDispatchEnvelope } = require('./envelope');
 const { sendWebhook } = require('./transports/webhook');
 const { sendManual } = require('./transports/manual');
+const { transitionRun, isActive, isTerminal } = require('../runs/state-machine');
 
 function publicBaseUrl() {
   return process.env.BATON_PUBLIC_BASE_URL || `http://127.0.0.1:${process.env.VMC_PORT || process.env.PORT || 4200}`;
@@ -39,6 +40,12 @@ function resolveDispatch(agent) {
 async function dispatchRun({ db, runId, intent = 'orchestrate', instructions = [] }) {
   const run = db.prepare('SELECT * FROM runs WHERE id = ?').get(runId);
   if (!run) throw new Error(`Unknown run: ${runId}`);
+  if (['dispatched', 'running', 'blocked', 'review_ready'].includes(run.status)) {
+    return { ok: true, dispatch_status: run.dispatch_status || 'accepted', run: loadRun(db, runId), envelope: parseJson(run.dispatch_payload, {}), message: 'Run already dispatched.' };
+  }
+  if (isTerminal(run.status)) {
+    return { ok: false, dispatch_status: run.dispatch_status || run.status, run: loadRun(db, runId), envelope: parseJson(run.dispatch_payload, {}), message: `Run is already terminal: ${run.status}.` };
+  }
   const task = run.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(run.task_id) : null;
   const touch = run.touch_id ? db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(run.touch_id) : null;
   const rawAgent = run.agent_id ? db.prepare('SELECT * FROM agents WHERE id = ?').get(run.agent_id) : null;
@@ -58,7 +65,9 @@ async function dispatchRun({ db, runId, intent = 'orchestrate', instructions = [
     return { ok: false, dispatch_status: 'not_configured', run: loadRun(db, runId), envelope, message: 'Prepared for delegation. No dispatch transport configured.' };
   }
 
-  db.prepare(`UPDATE runs SET status = 'dispatched', dispatch_status = 'sent', last_status_at = datetime('now') WHERE id = ?`).run(runId);
+  const dispatched = transitionRun({ db, runId, event: 'dispatch_sent', toStatus: 'dispatched', actor: 'baton', payload: { transport: dispatch.transport } });
+  if (!dispatched.ok) return { ok: false, dispatch_status: 'failed', run: loadRun(db, runId), envelope, error: dispatched.error || dispatched.code, message: dispatched.error || 'Dispatch transition rejected.' };
+  db.prepare(`UPDATE runs SET dispatch_status = 'sent', last_status_at = datetime('now') WHERE id = ?`).run(runId);
   const result = dispatch.transport === 'webhook'
     ? await sendWebhook({ url: dispatch.url, token: dispatch.token, envelope, timeoutMs: dispatch.timeoutMs })
     : await sendManual();
@@ -83,22 +92,35 @@ async function dispatchRun({ db, runId, intent = 'orchestrate', instructions = [
 
 function applyAccepted(db, { runId, taskId, touchId, agentId, externalRunId }) {
   const tx = db.transaction(() => {
+    const transition = transitionRun({ db, runId, event: 'accepted', toStatus: 'running', actor: 'agent', payload: { external_run_id: externalRunId || null } });
+    if (!transition.ok && transition.code === 'terminal_state') return;
+    if (!transition.ok) throw new Error(transition.error || transition.code || 'Run transition failed.');
     db.prepare(`
       UPDATE runs
-      SET status = 'running', dispatch_status = 'accepted', external_run_id = COALESCE(?, external_run_id),
+      SET dispatch_status = 'accepted', external_run_id = COALESCE(?, external_run_id),
           acknowledged_at = datetime('now'), last_status_at = datetime('now'), started_at = COALESCE(started_at, datetime('now')), error = NULL
       WHERE id = ?
     `).run(externalRunId, runId);
     if (taskId) db.prepare(`UPDATE tasks SET status = 'in_progress', updated_at = datetime('now') WHERE id = ?`).run(taskId);
     if (touchId) db.prepare(`UPDATE baton_touches SET status = 'passed', run_id = ?, updated_at = datetime('now') WHERE id = ?`).run(runId, touchId);
-    if (agentId) db.prepare(`UPDATE agents SET status = 'running', current_task_id = ?, current_run_id = ?, last_activity_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`).run(taskId, runId, agentId);
+    if (agentId) {
+      const claimed = db.prepare(`
+        UPDATE agents
+        SET status = 'running', current_task_id = ?, current_run_id = ?, last_activity_at = datetime('now'), updated_at = datetime('now')
+        WHERE id = ? AND (current_run_id IS NULL OR current_run_id = ? OR status = 'idle')
+      `).run(taskId, runId, agentId, runId);
+      if (claimed.changes === 0) throw new Error(`Agent ${agentId} is already claimed by another run.`);
+    }
   });
   tx();
 }
 
 function applyFailed(db, { runId, taskId, touchId, agentId, dispatchStatus, error }) {
   const tx = db.transaction(() => {
-    db.prepare(`UPDATE runs SET status = 'failed', dispatch_status = ?, error = ?, last_status_at = datetime('now') WHERE id = ?`).run(dispatchStatus, error, runId);
+    const transition = transitionRun({ db, runId, event: 'failed', toStatus: 'failed', actor: 'agent', payload: { dispatch_status: dispatchStatus, error } });
+    if (!transition.ok && transition.code === 'terminal_state') return;
+    if (!transition.ok) throw new Error(transition.error || transition.code || 'Run transition failed.');
+    db.prepare(`UPDATE runs SET dispatch_status = ?, error = ?, last_status_at = datetime('now') WHERE id = ?`).run(dispatchStatus, error, runId);
     if (taskId) db.prepare(`UPDATE tasks SET status = 'ready', updated_at = datetime('now') WHERE id = ?`).run(taskId);
     if (touchId) db.prepare(`UPDATE baton_touches SET status = 'active', updated_at = datetime('now') WHERE id = ?`).run(touchId);
     if (agentId) db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE id = ? AND current_run_id = ?`).run(agentId, runId);
@@ -111,4 +133,4 @@ function loadRun(db, runId) {
   return row ? { ...row, dispatch_payload: parseJson(row.dispatch_payload, {}) } : null;
 }
 
-module.exports = { dispatchRun, applyAccepted, applyFailed, resolveDispatch, publicBaseUrl };
+module.exports = { dispatchRun, applyAccepted, applyFailed, resolveDispatch, publicBaseUrl, isActive, isTerminal };

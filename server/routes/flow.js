@@ -57,20 +57,25 @@ function countTask(status) {
 
 function getAirspace() {
   const stale = db.prepare(`
-    SELECT COUNT(*) AS n FROM tasks
-    WHERE status = 'in_progress'
-      AND updated_at <= datetime('now', '-30 minutes')
+    SELECT COUNT(*) AS n FROM runs
+    WHERE status IN ('running', 'blocked')
+      AND COALESCE(last_status_at, started_at, created_at) <= datetime('now', '-30 minutes')
   `).get().n;
   const failed = db.prepare(`SELECT COUNT(*) AS n FROM runs WHERE status IN ('failed', 'error')`).get().n;
   return {
-    running: countTask('in_progress'),
+    running: db.prepare(`SELECT COUNT(*) AS n FROM runs WHERE status IN ('running', 'blocked') AND acknowledged_at IS NOT NULL`).get().n,
     needs_touch: countTask('waiting'),
-    review: countTask('review'),
-    idle: db.prepare("SELECT COUNT(*) AS n FROM agents WHERE status = 'idle'").get().n,
+    review: db.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM tasks WHERE status = 'review') +
+        (SELECT COUNT(*) FROM runs WHERE status = 'review_ready')
+      AS n
+    `).get().n,
+    idle: db.prepare("SELECT COUNT(*) AS n FROM agents WHERE status = 'idle' AND current_run_id IS NULL").get().n,
     stale,
     failed,
     ready_to_pass: countTask('ready'),
-    prepared: db.prepare("SELECT COUNT(*) AS n FROM baton_touches WHERE status = 'prepared'").get().n,
+    prepared: db.prepare("SELECT COUNT(*) AS n FROM runs WHERE status IN ('pending_dispatch', 'dispatched')").get().n,
     inbox: countTask('inbox'),
   };
 }

@@ -16,6 +16,8 @@ function apiAuthMiddleware(host) {
 
   return (req, res, next) => {
     if (req.path === '/health') return next();
+    if (/^\/runs\/[^/]+\/(ack|status)$/.test(req.path)) return next();
+    if (req.path === '/review-packets' && req.method === 'POST' && req.get('x-baton-callback') === '1') return next();
     const token = process.env.BATON_API_TOKEN;
     if (!token) {
       return res.status(503).json({

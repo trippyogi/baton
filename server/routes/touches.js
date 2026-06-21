@@ -1,5 +1,6 @@
 'use strict';
 const express = require('express');
+const crypto = require('crypto');
 const db = require('../db');
 const { id, stringifyJson } = require('../lib/flow/utils');
 const { sqliteDateTimeAfterMs, toSqliteDateTime } = require('../lib/flow/time');
@@ -7,6 +8,7 @@ const { isActionAllowed } = require('../lib/flow/actions');
 const { rebuildTouches, parseTouch, rankOpenTouches } = require('../lib/flow/rebuild');
 const { markDomainTouched } = require('../lib/flow/portfolio');
 const { dispatchRun } = require('../lib/dispatch');
+const { transitionRun } = require('../lib/runs/state-machine');
 
 const router = express.Router();
 
@@ -134,17 +136,39 @@ function createDispatchRun(touch, body, action) {
   const task = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
   const agent = resolveAgent(touch, body, action);
   const runId = id('run');
+  const existing = db.prepare(`
+    SELECT * FROM runs
+    WHERE touch_id = ? AND status IN ('pending_dispatch', 'dispatched', 'running', 'blocked', 'review_ready')
+    ORDER BY created_at DESC LIMIT 1
+  `).get(touch.id);
+  if (existing) return existing.id;
   const agentName = agent?.name || body.agent_name || 'manual';
   const workerType = agent?.type || null;
   const transport = agent?.dispatch_transport || 'manual';
   const target = agent?.dispatch_target || null;
+  const stateVersion = Number(touch.state_version || 0) + 1;
+  const idempotencyKey = crypto.createHash('sha256').update([touch.id, stateVersion, action, agent?.id || 'manual'].join(':')).digest('hex');
   const tx = db.transaction(() => {
+    const claimed = db.prepare(`
+      UPDATE baton_touches
+      SET status = 'dispatching', state_version = state_version + 1, updated_at = datetime('now')
+      WHERE id = ? AND status IN ('pending', 'active')
+    `).run(touch.id);
+    if (claimed.changes !== 1) {
+      const activeRun = db.prepare(`
+        SELECT id FROM runs
+        WHERE touch_id = ? AND status IN ('pending_dispatch', 'dispatched', 'running', 'blocked', 'review_ready')
+        ORDER BY created_at DESC LIMIT 1
+      `).get(touch.id);
+      if (activeRun) return activeRun.id;
+      throw new Error(`Touch ${touch.id} is not dispatchable from status ${touch.status}.`);
+    }
     db.prepare(`
       INSERT INTO runs (
         id, agent_name, worker_type, status, task_id, touch_id, agent_id,
-        dispatch_status, dispatch_transport, dispatch_target, steps, logs, created_at
-      ) VALUES (?, ?, ?, 'pending_dispatch', ?, ?, ?, 'queued', ?, ?, '[]', '[]', datetime('now'))
-    `).run(runId, agentName, workerType, task?.id || null, touch.id, agent?.id || null, transport, target);
+        dispatch_status, dispatch_transport, dispatch_target, idempotency_key, steps, logs, created_at
+      ) VALUES (?, ?, ?, 'pending_dispatch', ?, ?, ?, 'queued', ?, ?, ?, '[]', '[]', datetime('now'))
+    `).run(runId, agentName, workerType, task?.id || null, touch.id, agent?.id || null, transport, target, idempotencyKey);
     db.prepare(`INSERT INTO touch_events (id, touch_id, event_type, actor, payload) VALUES (?, ?, ?, 'human', ?)`).run(
       id('event'),
       touch.id,
@@ -152,9 +176,9 @@ function createDispatchRun(touch, body, action) {
       stringifyJson({ action, run_id: runId, agent_id: agent?.id || null, instructions: body.instructions || body.feedback || '' })
     );
     markDomainTouched(db, touch.domain);
+    return runId;
   });
-  tx();
-  return runId;
+  return tx();
 }
 
 function resolveAgent(touch, body, action) {
@@ -186,9 +210,10 @@ function completeLinkedRun(touch) {
   }
   if (!runId) return;
   const run = db.prepare('SELECT agent_id FROM runs WHERE id = ?').get(runId);
-  db.prepare(`UPDATE runs SET status = 'completed', ended_at = datetime('now'), last_status_at = datetime('now') WHERE id = ?`).run(runId);
+  const transitioned = transitionRun({ db, runId, event: 'completed', toStatus: 'completed', actor: 'operator', payload: { touch_id: touch.id } });
+  if (!transitioned.ok && transitioned.code !== 'terminal_state') throw new Error(transitioned.error || transitioned.code || 'Run transition failed.');
   if (run?.agent_id) {
-    db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE id = ?`).run(run.agent_id);
+    db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE id = ? AND current_run_id = ?`).run(run.agent_id, runId);
   }
 }
 
