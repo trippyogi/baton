@@ -92,11 +92,21 @@ function validateEnvelope(body) {
 }
 
 function toOpenClawPrompt(envelope) {
+  const callbacks = envelope.callbacks || {};
+  const callbackLines = Object.entries({
+    ack_url: callbacks.ack_url,
+    status_url: callbacks.status_url,
+    review_packet_url: callbacks.review_packet_url,
+  })
+    .filter(([, value]) => value)
+    .map(([key, value]) => `- ${key}: ${value}`);
   const lines = [
     'BATON dispatch received for Nectar.',
     '',
+    `Dispatch: ${envelope.dispatch_id}`,
     `Run: ${envelope.run_id}`,
     `Task: ${envelope.task_id}`,
+    `Touch: ${envelope.touch_id}`,
     `Title: ${envelope.title || 'BATON dispatch'}`,
     `Priority: ${envelope.priority || 'medium'}`,
     `Intent: ${envelope.intent || 'orchestrate'}`,
@@ -106,6 +116,9 @@ function toOpenClawPrompt(envelope) {
     '',
     'Instructions:',
     ...(Array.isArray(envelope.instructions) ? envelope.instructions.map(item => `- ${item}`) : []),
+    '',
+    'Callbacks:',
+    ...(callbackLines.length ? callbackLines : ['- none provided']),
     '',
     'Expected output: produce a concise review packet summary and recommended next action. Do not claim external actions unless actually completed.',
   ];

@@ -159,6 +159,11 @@ async function main() {
   const record = JSON.parse(fs.readFileSync(path.join(bridge.inboxDir, files[0]), 'utf8'));
   assert.equal(record.envelope.agent_id, 'nectar', 'inbox record stores Nectar envelope');
   assert.ok(record.prompt.includes('BATON dispatch received for Nectar'), 'inbox record includes OpenClaw-ready prompt');
+  assert.ok(record.prompt.includes(`Dispatch: ${record.envelope.dispatch_id}`), 'prompt includes dispatch id for traceability');
+  assert.ok(record.prompt.includes(`Touch: ${record.envelope.touch_id}`), 'prompt includes touch id for traceability');
+  assert.ok(record.prompt.includes(`- ack_url: ${record.envelope.callbacks.ack_url}`), 'prompt includes ack callback');
+  assert.ok(record.prompt.includes(`- status_url: ${record.envelope.callbacks.status_url}`), 'prompt includes status callback');
+  assert.ok(record.prompt.includes(`- review_packet_url: ${record.envelope.callbacks.review_packet_url}`), 'prompt includes review packet callback');
 
   console.log(`smoke-nectar-dispatch ok against ${BASE}`);
 }
