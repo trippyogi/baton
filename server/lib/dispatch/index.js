@@ -52,7 +52,7 @@ async function dispatchRun({ db, runId, intent = 'orchestrate', instructions = [
   const agent = rawAgent ? parseAgent(rawAgent) : null;
   const settings = loadSettings(db);
   const dispatch = agent ? resolveDispatch(agent) : { enabled: false, transport: 'manual' };
-  const envelope = buildDispatchEnvelope({ run, task, touch, agent, settings, baseUrl: publicBaseUrl(), instructions, intent });
+  const envelope = buildDispatchEnvelope({ db, run, task, touch, agent, settings, baseUrl: publicBaseUrl(), instructions, intent });
 
   db.prepare(`
     UPDATE runs
@@ -109,7 +109,9 @@ function applyAccepted(db, { runId, taskId, touchId, agentId, externalRunId }) {
         SET status = 'running', current_task_id = ?, current_run_id = ?, last_activity_at = datetime('now'), updated_at = datetime('now')
         WHERE id = ? AND (current_run_id IS NULL OR current_run_id = ? OR status = 'idle')
       `).run(taskId, runId, agentId, runId);
-      if (claimed.changes === 0) throw new Error(`Agent ${agentId} is already claimed by another run.`);
+      if (claimed.changes === 0) {
+        db.prepare(`UPDATE runs SET error = COALESCE(error, 'Agent already had an active run when this dispatch was ACKed.') WHERE id = ?`).run(runId);
+      }
     }
   });
   tx();

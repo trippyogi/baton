@@ -2,8 +2,9 @@
 const express = require('express');
 const db = require('../db');
 const { id, stringifyJson, parseJson } = require('../lib/flow/utils');
-const { validateReviewPacket, normalizeList } = require('../lib/flow/quality');
+const { validateReviewPacket, normalizeList, normalizeSections, normalizeArtifacts, normalizeScore } = require('../lib/flow/quality');
 const { rebuildTouches } = require('../lib/flow/rebuild');
+const { transitionRun } = require('../lib/runs/state-machine');
 
 const router = express.Router();
 
@@ -38,13 +39,13 @@ router.post('/', (req, res) => {
       open_questions: normalizeList(req.body.open_questions),
       suggested_next_action: req.body.suggested_next_action || req.body.recommended_next_action || '',
       schema_version: req.body.schema_version || req.body.schema || 'baton.review_packet.v1',
-      sections: normalizeList(req.body.sections),
-      artifacts: normalizeList(req.body.artifacts),
-      confidence_score: req.body.confidence_score,
-      quality_score: req.body.quality_score,
+      sections: normalizeSections(req.body.sections),
+      artifacts: normalizeArtifacts(req.body.artifacts),
+      confidence_score: normalizeScore(req.body.confidence_score),
+      quality_score: normalizeScore(req.body.quality_score),
     };
 
-    if (!packet.evidence.length && packet.artifacts.length) packet.evidence = packet.artifacts.map(a => a.url || a.name || a.type || 'artifact');
+    if (!packet.evidence.length && packet.artifacts.length) packet.evidence = packet.artifacts.map(a => a.url || a.path || a.name || a.type || 'artifact');
     if (!packet.evidence.length && packet.sections.length) packet.evidence = packet.sections.map(s => s.title || s.type || 'section');
 
     if (!packet.task_id && packet.run_id) {
@@ -84,15 +85,17 @@ router.post('/', (req, res) => {
         open_questions: stringifyJson(packet.open_questions),
         sections: stringifyJson(packet.sections),
         artifacts: stringifyJson(packet.artifacts),
-        confidence_score: Number(packet.confidence_score ?? 0.7),
-        quality_score: Number(packet.quality_score ?? 0.7),
+        confidence_score: packet.confidence_score,
+        quality_score: packet.quality_score,
         packet_status: validation.packet_status,
         validator_notes: validation.validator_notes,
       });
 
       if (packet.task_id) db.prepare(`UPDATE tasks SET status = 'review', updated_at = datetime('now') WHERE id = ?`).run(packet.task_id);
       if (packet.run_id) {
-        db.prepare(`UPDATE runs SET status = 'review_ready', review_packet_id = ?, last_status_at = datetime('now') WHERE id = ?`).run(packet.id, packet.run_id);
+        const transitioned = transitionRun({ db, runId: packet.run_id, event: 'review_packet_submitted', toStatus: 'review_ready', actor: 'agent', payload: { packet_id: packet.id, valid: validation.valid } });
+        if (!transitioned.ok && transitioned.code !== 'terminal_state') throw new Error(transitioned.error || transitioned.code || 'Run transition failed.');
+        db.prepare(`UPDATE runs SET review_packet_id = ?, last_status_at = datetime('now') WHERE id = ?`).run(packet.id, packet.run_id);
         db.prepare(`UPDATE agents SET status = 'idle', current_task_id = NULL, current_run_id = NULL, updated_at = datetime('now') WHERE current_run_id = ?`).run(packet.run_id);
       }
     });

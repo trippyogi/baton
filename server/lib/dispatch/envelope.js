@@ -1,7 +1,8 @@
 'use strict';
 const { id, parseJson } = require('../flow/utils');
+const { compileDispatchContext } = require('../context/compiler');
 
-function buildDispatchEnvelope({ run, task, touch, agent, settings, baseUrl, instructions = [], intent = 'orchestrate' }) {
+function buildDispatchEnvelope({ db, run, task, touch, agent, settings, baseUrl, instructions = [], intent = 'orchestrate' }) {
   const safeBase = String(baseUrl || 'http://127.0.0.1:4200').replace(/\/$/, '');
   const dispatchId = id('dispatch');
   const objective = task?.description || touch?.description || `Work on: ${task?.title || touch?.title || run?.id}`;
@@ -23,7 +24,7 @@ function buildDispatchEnvelope({ run, task, touch, agent, settings, baseUrl, ins
       'Return a review packet with recommended next action.',
       'Do not claim external actions were completed unless actually done.',
     ],
-    context: {
+    context: db ? compileDispatchContext({ db, task, touch, run, agent, intent }) : {
       summary: compactSummary(task, touch),
       domain: touch?.domain || task?.domain || 'product',
       project_key: task?.project_key || touch?.project_key || null,

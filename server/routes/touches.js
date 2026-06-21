@@ -191,9 +191,14 @@ function resolveAgent(touch, body, action) {
   ids.push('spectre');
   for (const agentId of ids) {
     const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId);
+    if (action === 'send_to_evaluator' && agent && !isDispatchCapable(agent)) continue;
     if (agent) return agent;
   }
   return db.prepare(`SELECT * FROM agents WHERE status = 'idle' AND dispatch_enabled = 1 ORDER BY name LIMIT 1`).get() || null;
+}
+
+function isDispatchCapable(agent) {
+  return Number(agent.dispatch_enabled || 0) === 1 && agent.dispatch_transport && agent.dispatch_transport !== 'manual';
 }
 
 function instructionsFromBody(body) {
