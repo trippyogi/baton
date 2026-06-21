@@ -186,9 +186,10 @@ npm run smoke:dispatch
 npm run smoke:nectar
 npm run audit
 npm run audit:private
+npm run check:private
 ```
 
-`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop. `npm run smoke:nectar` verifies Baton can hand a `baton.dispatch.v1` envelope to the local Nectar bridge and write an ignored inbox record. `npm run audit:private` checks that private local data and high-signal secrets are not tracked.
+`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop. `npm run smoke:nectar` verifies Baton can hand a `baton.dispatch.v1` envelope to the local Nectar bridge and write an ignored inbox record. `npm run audit:private` checks that private local data and high-signal secrets are not tracked. `npm run check:private` combines that audit with dry-runs of the public-safe local profile fixtures for the private/local agent workflow.
 
 ## API overview
 

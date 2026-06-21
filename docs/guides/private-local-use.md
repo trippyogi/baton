@@ -189,9 +189,15 @@ Redacted exports preserve statuses, priorities, domains, risk levels, counts, ra
 
 Generated redacted exports are ignored by Git. Inspect before sharing anyway.
 
-## Run the private-data audit
+## Run the private workflow checks
 
-Before committing or opening a PR, run:
+Before committing or opening a PR, run the combined private/local safety gate:
+
+```bash
+npm run check:private
+```
+
+This runs the private-data audit and dry-runs both public-safe local profile fixtures, including the Nectar bridge agent fixture. Use the narrower audit directly when you only need the repository privacy scan:
 
 ```bash
 npm run audit:private
