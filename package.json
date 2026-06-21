@@ -16,7 +16,8 @@
     "fake:spectre": "node scripts/fake-spectre.js",
     "bridge:nectar": "node scripts/nectar-dispatch-bridge.js",
     "smoke:dispatch": "node scripts/smoke-dispatch-spectre.js",
-    "smoke:nectar": "node scripts/smoke-nectar-dispatch.js"
+    "smoke:nectar": "node scripts/smoke-nectar-dispatch.js",
+    "adversarial:loop": "node scripts/adversarial/loop-integrity.js"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
