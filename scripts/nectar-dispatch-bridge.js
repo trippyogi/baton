@@ -29,6 +29,9 @@ function startNectarDispatchBridge({
     }
 
     const body = await readJson(req);
+    if (body && body.__invalid_json) {
+      return json(res, 400, { ok: false, status: 'rejected', errors: ['invalid json'] });
+    }
     const errors = validateEnvelope(body);
     if (errors.length) return json(res, 400, { ok: false, status: 'rejected', errors });
 
@@ -98,7 +101,7 @@ function readJson(req) {
     req.on('data', chunk => { data += chunk; });
     req.on('end', () => {
       try { resolve(JSON.parse(data || '{}')); }
-      catch (_) { resolve({}); }
+      catch (_) { resolve({ __invalid_json: true }); }
     });
   });
 }

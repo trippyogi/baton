@@ -78,6 +78,15 @@ async function startBaton() {
 async function main() {
   await startBaton();
 
+  const malformed = await fetch(bridge.url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
+    body: '{not-json',
+  });
+  const malformedJson = await malformed.json();
+  assert.equal(malformed.status, 400, 'Nectar bridge rejects malformed JSON');
+  assert.deepEqual(malformedJson.errors, ['invalid json'], 'malformed JSON has explicit rejection reason');
+
   const nectar = (await request('/api/agents', {
     method: 'POST',
     body: {
