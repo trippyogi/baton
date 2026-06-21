@@ -96,6 +96,11 @@ async function main() {
   assert.equal(oversized.status, 413, 'Nectar bridge rejects oversized bodies');
   assert.deepEqual(oversizedJson.errors, ['body too large'], 'oversized body has explicit rejection reason');
 
+  const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
+  const initialHealthJson = await initialHealth.json();
+  assert.equal(initialHealthJson.received_count, 0, 'Nectar bridge health exposes received count before dispatch');
+  assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
+
   const nectar = (await request('/api/agents', {
     method: 'POST',
     body: {
@@ -135,6 +140,10 @@ async function main() {
   })).json;
   assert.equal(live.dispatch_status, 'accepted', 'Nectar bridge accepted live dispatch');
   assert.equal(bridge.received.length, 1, 'Nectar bridge received one envelope');
+
+  const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
+  const finalHealthJson = await finalHealth.json();
+  assert.equal(finalHealthJson.received_count, 1, 'Nectar bridge health updates received count after dispatch');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));
   assert.equal(files.length, 1, 'Nectar bridge wrote one inbox record');

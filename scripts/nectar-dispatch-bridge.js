@@ -20,7 +20,12 @@ function startNectarDispatchBridge({
 
   const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
-      return json(res, 200, { ok: true, service: 'nectar-dispatch-bridge' });
+      return json(res, 200, {
+        ok: true,
+        service: 'nectar-dispatch-bridge',
+        received_count: received.length,
+        max_body_bytes: MAX_BODY_BYTES,
+      });
     }
     if (req.method !== 'POST' || req.url !== '/baton/dispatch') {
       return json(res, 404, { ok: false, error: 'not found' });
