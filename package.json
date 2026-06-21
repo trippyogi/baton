@@ -11,7 +11,7 @@
     "audit:private": "node scripts/audit-private-data.js",
     "import:local": "node scripts/import-local-profile.js",
     "export:redacted": "node scripts/export-redacted.js",
-    "test": "npm run check:js && npm run smoke",
+    "test": "npm run check:js && npm run smoke && npm run adversarial:loop",
     "preinstall": "node -e \"const major=process.versions.node.split('.')[0]; if(major !== '20'){ console.error('BATON requires Node 20. Run: nvm use'); process.exit(1); }\"",
     "fake:spectre": "node scripts/fake-spectre.js",
     "bridge:nectar": "node scripts/nectar-dispatch-bridge.js",
