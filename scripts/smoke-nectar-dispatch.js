@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
-const { startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
+const { MAX_BODY_BYTES, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
 
 let baton = null;
 let bridge = null;
@@ -86,6 +86,15 @@ async function main() {
   const malformedJson = await malformed.json();
   assert.equal(malformed.status, 400, 'Nectar bridge rejects malformed JSON');
   assert.deepEqual(malformedJson.errors, ['invalid json'], 'malformed JSON has explicit rejection reason');
+
+  const oversized = await fetch(bridge.url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schema: 'baton.dispatch.v1', padding: 'x'.repeat(MAX_BODY_BYTES + 1) }),
+  });
+  const oversizedJson = await oversized.json();
+  assert.equal(oversized.status, 413, 'Nectar bridge rejects oversized bodies');
+  assert.deepEqual(oversizedJson.errors, ['body too large'], 'oversized body has explicit rejection reason');
 
   const nectar = (await request('/api/agents', {
     method: 'POST',

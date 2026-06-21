@@ -7,6 +7,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_INBOX = path.join(ROOT, 'local', 'nectar-dispatch-inbox');
+const MAX_BODY_BYTES = Number(process.env.NECTAR_BRIDGE_MAX_BODY_BYTES || 64 * 1024);
 
 function startNectarDispatchBridge({
   port = Number(process.env.NECTAR_BRIDGE_PORT || 4310),
@@ -29,6 +30,9 @@ function startNectarDispatchBridge({
     }
 
     const body = await readJson(req);
+    if (body && body.__body_too_large) {
+      return json(res, 413, { ok: false, status: 'rejected', errors: ['body too large'] });
+    }
     if (body && body.__invalid_json) {
       return json(res, 400, { ok: false, status: 'rejected', errors: ['invalid json'] });
     }
@@ -98,10 +102,22 @@ function toOpenClawPrompt(envelope) {
 function readJson(req) {
   return new Promise(resolve => {
     let data = '';
-    req.on('data', chunk => { data += chunk; });
+    let tooLarge = false;
+    req.on('data', chunk => {
+      if (tooLarge) return;
+      data += chunk;
+      if (Buffer.byteLength(data, 'utf8') > MAX_BODY_BYTES) {
+        tooLarge = true;
+        data = '';
+      }
+    });
     req.on('end', () => {
+      if (tooLarge) return resolve({ __body_too_large: true });
       try { resolve(JSON.parse(data || '{}')); }
       catch (_) { resolve({ __invalid_json: true }); }
+    });
+    req.on('close', () => {
+      if (tooLarge) resolve({ __body_too_large: true });
     });
   });
 }
@@ -122,4 +138,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };
