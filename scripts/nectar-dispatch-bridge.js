@@ -22,12 +22,14 @@ function startNectarDispatchBridge({
   const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
       const lastReceived = received.length ? received[received.length - 1] : null;
+      const inboxRecordCount = countInboxRecords(inboxDir);
       return json(res, 200, {
         ok: true,
         service: 'nectar-dispatch-bridge',
         started_at: startedAt.toISOString(),
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,
+        inbox_record_count: inboxRecordCount,
         last_received_at: lastReceived ? lastReceived.received_at : null,
         max_body_bytes: MAX_BODY_BYTES,
       });
@@ -141,6 +143,14 @@ function safeName(value) {
   return String(value || 'unknown').replace(/[^A-Za-z0-9_.-]+/g, '_').slice(0, 80);
 }
 
+function countInboxRecords(inboxDir) {
+  try {
+    return fs.readdirSync(inboxDir).filter(file => file.endsWith('.json')).length;
+  } catch (_) {
+    return 0;
+  }
+}
+
 if (require.main === module) {
   startNectarDispatchBridge().catch(err => {
     console.error(err);
@@ -148,4 +158,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };

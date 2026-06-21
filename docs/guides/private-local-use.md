@@ -149,7 +149,7 @@ NECTAR_WEBHOOK_URL=http://127.0.0.1:4310/baton/dispatch
 NECTAR_DISPATCH_TOKEN=change-me
 ```
 
-The bridge accepts `baton.dispatch.v1`, writes an ignored local inbox record under `local/nectar-dispatch-inbox/`, and returns an ACK. It rejects malformed JSON and oversized request bodies before writing inbox records; set `NECTAR_BRIDGE_MAX_BODY_BYTES` only if a larger local envelope limit is explicitly needed. Its local `/health` response includes `started_at`, `uptime_seconds`, `received_count`, `last_received_at`, and `max_body_bytes` for quick smoke/debug checks. It does not execute external actions by itself.
+The bridge accepts `baton.dispatch.v1`, writes an ignored local inbox record under `local/nectar-dispatch-inbox/`, and returns an ACK. It rejects malformed JSON and oversized request bodies before writing inbox records; set `NECTAR_BRIDGE_MAX_BODY_BYTES` only if a larger local envelope limit is explicitly needed. Its local `/health` response includes `started_at`, `uptime_seconds`, `received_count`, `inbox_record_count`, `last_received_at`, and `max_body_bytes` for quick smoke/debug checks. It does not execute external actions by itself.
 
 Run the bridge smoke test with:
 
