@@ -1,19 +1,13 @@
-# baton
+# Baton Core
 
-The ops layer for two-agent AI systems. Pass the baton.
+Reusable core for a two-agent operations dashboard: plan, queue, execute, inspect, and keep a human in the loop.
 
-## What is Baton?
-
-A lightweight mission control dashboard for running a two-agent AI system — one orchestrator that plans, one executor that builds, a job queue between them, and a human in the loop.
-
-Built for indie operators running AI-augmented businesses. Not an observability tool — an operations layer.
-
-## The Pattern
+## Pattern
 
 ```
-Orchestrator → Queue → Executor → Dashboard
-      ↑                                ↓
-      └──────────── Human ─────────────┘
+Orchestrator -> Queue -> Executor -> Dashboard
+      ^                                |
+      |----------- Human --------------|
 ```
 
 ## Features
@@ -23,33 +17,37 @@ Orchestrator → Queue → Executor → Dashboard
 - Shared Requests handoff queue for Jeremy ↔ Marko async requests
 - Creatives screen backed by the configured creative log
 - Costs, performance, memory, team, workshop, alerts, and GitHub webhook routes
+- Memory/context management
 - Extension system for private business logic
 
-## Getting Started
+## Getting started
+
+From the parent `vector-mission-control` repo:
 
 ```bash
-git clone https://github.com/trippyogi/baton
-cd baton
 npm install
 cp .env.example .env
-node server/index.js
+npm start
 ```
+
+The parent app loads `baton-core` plus optional internal extensions.
 
 ## Extending Baton
 
-Create `baton-internal/extension.js` alongside your baton directory:
+Create `baton-internal/extension.js` alongside `baton-core`:
 
 ```js
 module.exports = {
   register(app, db) {
-    // Add your private routes and logic here
-    app.get('/api/my-route', (req, res) => { ... });
+    app.get('/api/my-route', (req, res) => {
+      res.json({ ok: true })
+    })
   }
-};
+}
 ```
 
-Baton detects and loads it at startup. Falls back gracefully if absent.
+Baton detects and loads the extension at startup. It falls back gracefully when absent.
 
 ## License
 
-MIT
+MIT, unless overridden by the parent repo.
