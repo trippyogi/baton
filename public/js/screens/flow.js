@@ -4,17 +4,24 @@ import { escapeHtml, escapeAttr } from '../lib/html.js';
 const MODES = ['deep_build','triage','review','strategy_creative','launch','admin','cleanup','recovery'];
 let pollTimer = null;
 let selectedIndex = 0;
+let selectedTouchId = null;
 let currentData = null;
+const feedbackDrafts = new Map();
+let commandResult = '';
 
 export async function renderFlow(options = {}) {
   const force = options.force === true;
   const el = document.getElementById('screen-flow');
   if (!el) return;
-  if (!force && document.activeElement?.id === 'flow-command-input') return;
+  if (!force && isFlowInputActive()) return;
+  saveDrafts(el);
   el.innerHTML = `<div class="loading">Loading Flow…</div>`;
   try {
     currentData = await get('/api/flow');
-    selectedIndex = Math.min(selectedIndex, Math.max((currentData.next_touches || []).length - 1, 0));
+    const touches = currentData.next_touches || [];
+    if (selectedTouchId) selectedIndex = Math.max(0, touches.findIndex(t => t.id === selectedTouchId));
+    selectedIndex = Math.min(selectedIndex, Math.max(touches.length - 1, 0));
+    selectedTouchId = touches[selectedIndex]?.id || null;
     el.innerHTML = flowMarkup(currentData);
     wireFlow(el);
     resetPoll();
@@ -32,7 +39,7 @@ export function destroyFlow() {
 function resetPoll() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(() => {
-    if (document.activeElement?.id !== 'flow-command-input') renderFlow();
+    if (!isFlowInputActive()) renderFlow();
   }, 30000);
   document.removeEventListener('keydown', handleKeys);
   document.addEventListener('keydown', handleKeys);
@@ -75,7 +82,7 @@ function flowMarkup(data) {
           <span class="flow-hint">Try: strategy launch offer · capture idea · delegate task · review next · mode launch</span>
           <button id="flow-command-submit" class="btn btn-primary">Pass</button>
         </div>
-        <div id="flow-command-result" class="flow-command-result"></div>
+        <div id="flow-command-result" class="flow-command-result">${escapeHtml(commandResult)}</div>
       </section>
 
       <section class="flow-next">
@@ -95,7 +102,9 @@ function airspaceItem(label, value) {
 }
 
 function touchCard(touch, idx) {
-  const active = idx === selectedIndex ? ' touch-card-active' : '';
+  const active = touch.id === selectedTouchId || (!selectedTouchId && idx === selectedIndex) ? ' touch-card-active' : '';
+  const review = reviewPacketMarkup(touch.review_packet);
+  const draft = feedbackDrafts.get(touch.id) || '';
   return `
     <article class="touch-card${active}" data-touch-id="${escapeAttr(touch.id)}" data-index="${escapeAttr(idx)}">
       <div class="touch-rank">#${touch.rank || idx + 1}</div>
@@ -112,8 +121,9 @@ function touchCard(touch, idx) {
         <div class="touch-why">${escapeHtml(touch.why_now || 'Ranks well for current mode.')}</div>
         <div class="touch-detail" hidden>
           <div><strong>Summary</strong><br>${escapeHtml(touch.description || 'No extra context yet.')}</div>
+          ${review}
           ${touch.agent_id ? `<div><strong>Dispatch</strong><br>Agent: ${escapeHtml(touch.agent_id)} · Action: Prepare</div>` : ''}
-          <textarea class="touch-feedback" rows="3" placeholder="Feedback, answer, refinement, or delegation instructions..."></textarea>
+          <textarea class="touch-feedback" rows="3" placeholder="Feedback, answer, refinement, or delegation instructions...">${escapeHtml(draft)}</textarea>
           <div class="touch-detail-actions">
             <button class="btn btn-primary touch-submit-feedback">Send feedback</button>
             ${allows(touch, 'accept') ? '<button class="btn btn-ghost touch-accept">Accept</button>' : ''}
@@ -153,6 +163,7 @@ function wireFlow(el) {
     card.onclick = (event) => {
       if (event.target.closest('button') || event.target.closest('textarea')) return;
       selectedIndex = Number(card.dataset.index || 0);
+      selectedTouchId = card.dataset.touchId;
       openSelected();
     };
     card.querySelector('.touch-primary').onclick = () => primaryAction(card.dataset.touchId);
@@ -162,6 +173,7 @@ function wireFlow(el) {
     card.querySelector('.touch-submit-feedback').onclick = () => {
       const touch = currentData.next_touches[Number(card.dataset.index || 0)];
       const feedback = card.querySelector('.touch-feedback').value;
+      feedbackDrafts.set(card.dataset.touchId, feedback);
       const action = ['delegate', 'assign', 'answer', 'process', 'send_to_evaluator'].includes(touch.primary_action) ? touch.primary_action : 'refine';
       runAction(card.dataset.touchId, action, { feedback, instructions: feedback });
     };
@@ -176,7 +188,8 @@ async function submitCommand(el) {
   resultEl.textContent = 'Passing…';
   const result = await post('/api/flow/command', { input: value });
   input.value = '';
-  resultEl.textContent = result.message || 'Done.';
+  commandResult = result.message || 'Done.';
+  resultEl.textContent = commandResult;
   await renderFlow({ force: true });
 }
 
@@ -196,9 +209,11 @@ async function runAction(id, action, extra = {}) {
   const touch = (currentData?.next_touches || []).find(t => t.id === id);
   if (touch && !allows(touch, action)) return;
   const result = await patch(`/api/touches/${id}/action`, { action, ...extra });
+  feedbackDrafts.delete(id);
   await renderFlow({ force: true });
   const resultEl = document.getElementById('flow-command-result');
-  if (resultEl) resultEl.textContent = result.message || 'Done.';
+  commandResult = result.message || 'Done.';
+  if (resultEl) resultEl.textContent = commandResult;
 }
 
 function handleKeys(event) {
@@ -237,6 +252,7 @@ function refreshSelection() {
   document.querySelectorAll('.touch-card').forEach((card, idx) => {
     card.classList.toggle('touch-card-active', idx === selectedIndex);
   });
+  selectedTouchId = currentData?.next_touches?.[selectedIndex]?.id || selectedTouchId;
 }
 
 function openSelected() {
@@ -256,8 +272,38 @@ function labelAction(action) {
 
 function primaryLabel(touch) {
   if (touch.type === 'review' && touch.primary_action === 'inspect') return 'Review';
-  if (['delegate', 'assign'].includes(touch.primary_action)) return 'Prepare';
+  if (['delegate', 'assign'].includes(touch.primary_action)) return touch.agent_id ? `Pass to ${touch.agent_id}` : 'Assign';
   return labelAction(touch.primary_action);
+}
+
+function reviewPacketMarkup(packet) {
+  if (!packet) return '';
+  const sections = (packet.sections || []).slice(0, 4).map(section => `<li>${escapeHtml(section.title || section.type || 'section')}: ${escapeHtml(section.body || (section.items || []).join(', ') || '')}</li>`).join('');
+  const artifacts = (packet.artifacts || []).slice(0, 4).map(artifact => `<li>${escapeHtml(artifact.name || artifact.url || artifact.path || artifact.type || 'artifact')}</li>`).join('');
+  return `<div class="touch-review-packet">
+    <strong>Review packet</strong><br>
+    <div>${escapeHtml(packet.summary || 'No summary.')}</div>
+    <div>Next: ${escapeHtml(packet.suggested_next_action || 'n/a')} · Confidence: ${escapeHtml(packet.confidence_score ?? 'n/a')} · Quality: ${escapeHtml(packet.quality_score ?? 'n/a')}</div>
+    ${(packet.evidence || []).length ? `<div>Evidence: ${escapeHtml((packet.evidence || []).join(', '))}</div>` : ''}
+    ${(packet.risks || []).length ? `<div>Risks: ${escapeHtml((packet.risks || []).join(', '))}</div>` : ''}
+    ${(packet.open_questions || []).length ? `<div>Questions: ${escapeHtml((packet.open_questions || []).join(', '))}</div>` : ''}
+    ${sections ? `<ul>${sections}</ul>` : ''}
+    ${artifacts ? `<ul>${artifacts}</ul>` : ''}
+  </div>`;
+}
+
+function saveDrafts(root) {
+  root.querySelectorAll?.('.touch-card').forEach(card => {
+    const id = card.dataset.touchId;
+    const value = card.querySelector('.touch-feedback')?.value;
+    if (id && value) feedbackDrafts.set(id, value);
+  });
+}
+
+function isFlowInputActive() {
+  const active = document.activeElement;
+  if (!active) return false;
+  return Boolean(active.closest?.('#screen-flow') && ['input', 'textarea', 'select'].includes(active.tagName.toLowerCase()));
 }
 
 function actionsFor(touch) {

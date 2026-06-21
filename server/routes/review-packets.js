@@ -21,6 +21,14 @@ router.get('/', (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.get('/:id', (req, res) => {
+  try {
+    const packet = db.prepare('SELECT * FROM review_packets WHERE id = ?').get(req.params.id);
+    if (!packet) return res.status(404).json({ error: 'Not found' });
+    res.json(parsePacket(packet));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.post('/', (req, res) => {
   try {
     const packet = {

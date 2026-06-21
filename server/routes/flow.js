@@ -4,6 +4,7 @@ const db = require('../db');
 const { VALID_MODES, normalizeMode } = require('../lib/flow/modes');
 const { loadSettings, rebuildTouches, listOpenTouches, rankOpenTouches } = require('../lib/flow/rebuild');
 const { executeCommand } = require('../lib/flow/commands');
+const { parseJson } = require('../lib/flow/utils');
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ router.get('/', (req, res) => {
         active_project_key: settings.active_project_key,
       },
       airspace: getAirspace(),
-      next_touches: listOpenTouches(db, limit),
+      next_touches: hydrateTouches(listOpenTouches(db, limit)),
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -53,6 +54,26 @@ router.post('/command', (req, res) => {
 
 function countTask(status) {
   return db.prepare('SELECT COUNT(*) AS n FROM tasks WHERE status = ?').get(status).n;
+}
+
+function hydrateTouches(touches) {
+  return touches.map(touch => {
+    if (!touch.review_packet_id) return touch;
+    const packet = db.prepare('SELECT * FROM review_packets WHERE id = ?').get(touch.review_packet_id);
+    if (!packet) return touch;
+    return { ...touch, review_packet: parsePacket(packet) };
+  });
+}
+
+function parsePacket(row) {
+  return {
+    ...row,
+    evidence: parseJson(row.evidence, []),
+    risks: parseJson(row.risks, []),
+    open_questions: parseJson(row.open_questions, []),
+    sections: parseJson(row.sections, []),
+    artifacts: parseJson(row.artifacts, []),
+  };
 }
 
 function getAirspace() {
