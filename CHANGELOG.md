@@ -7,6 +7,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 ### Added
 
 - API routes now support global bearer-token protection and require `BATON_API_TOKEN` when BATON is bound outside localhost.
+- Private-boundary audit now fails if a tracked `.npmrc` or npm auth token is introduced.
 - Private-boundary audit now catches private terms in tracked code outside allowlisted public metadata/spec files.
 - Task detail modals now include Dispatch Prep for creating/reusing a manual, non-launching dispatch envelope.
 - Task API can prepare dispatch runs via `POST /api/tasks/:id/dispatch/prepare` without sending work to an agent.

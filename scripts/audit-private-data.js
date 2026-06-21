@@ -11,6 +11,7 @@ const json = args.has('--json');
 
 const blockedPathPatterns = [
   /^\.env$/,
+  /^\.npmrc$/,
   /^data\/.+\.(db|sqlite)(-.+)?$/,
   /^local\//,
   /^baton-private\//,
@@ -20,6 +21,7 @@ const blockedPathPatterns = [
 
 const highSignalSecretPatterns = [
   { name: 'openai-style secret key', regex: /sk-[A-Za-z0-9_-]{20,}/ },
+  { name: 'npm token', regex: /(?:^|\s|=)_authToken\s*=\s*npm_[A-Za-z0-9]{20,}/ },
   { name: 'GitHub classic token', regex: /ghp_[A-Za-z0-9_]{20,}/ },
   { name: 'GitHub fine-grained token', regex: /github_pat_[A-Za-z0-9_]{20,}/ },
   { name: 'Slack token', regex: /xox[baprs]-[A-Za-z0-9-]{20,}/ },
