@@ -71,6 +71,13 @@ Implemented phases:
   - Spectre review packets advance runs to `review_ready`; accepting the review completes the task and run.
   - `npm run fake:spectre` and `npm run smoke:dispatch` exercise the full local loop.
 
+- **Local Nectar dispatch bridge**
+  - `npm run bridge:nectar` starts a private local bridge at `/baton/dispatch` for `baton.dispatch.v1` handoffs to Nectar.
+  - The bridge ACKs and writes ignored inbox records under `local/nectar-dispatch-inbox/`; it does not execute external actions by itself.
+  - It rejects malformed JSON and oversized bodies before inbox writes, with `NECTAR_BRIDGE_MAX_BODY_BYTES` available only for explicit local overrides.
+  - `/health` exposes `started_at`, `uptime_seconds`, `received_count`, `inbox_record_count`, `last_received_at`, and `max_body_bytes` for smoke/debug checks.
+  - `npm run smoke:nectar` exercises the bridge and public-safe Nectar fixture.
+
 ## Product model
 
 BATON treats the true unit of work as a **human touch**: a brief moment where human judgment, taste, context, approval, prioritization, or feedback unlocks more valuable agent motion.
