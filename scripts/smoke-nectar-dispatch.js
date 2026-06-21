@@ -99,6 +99,7 @@ async function main() {
   const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const initialHealthJson = await initialHealth.json();
   assert.equal(initialHealthJson.received_count, 0, 'Nectar bridge health exposes received count before dispatch');
+  assert.equal(initialHealthJson.last_received_at, null, 'Nectar bridge health has no last received timestamp before dispatch');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
 
   const nectar = (await request('/api/agents', {
@@ -144,6 +145,7 @@ async function main() {
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const finalHealthJson = await finalHealth.json();
   assert.equal(finalHealthJson.received_count, 1, 'Nectar bridge health updates received count after dispatch');
+  assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));
   assert.equal(files.length, 1, 'Nectar bridge wrote one inbox record');

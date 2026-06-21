@@ -20,10 +20,12 @@ function startNectarDispatchBridge({
 
   const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
+      const lastReceived = received.length ? received[received.length - 1] : null;
       return json(res, 200, {
         ok: true,
         service: 'nectar-dispatch-bridge',
         received_count: received.length,
+        last_received_at: lastReceived ? lastReceived.received_at : null,
         max_body_bytes: MAX_BODY_BYTES,
       });
     }
@@ -51,7 +53,7 @@ function startNectarDispatchBridge({
     };
     const file = path.join(inboxDir, `${safeName(body.run_id)}-${safeName(body.dispatch_id)}.json`);
     fs.writeFileSync(file, JSON.stringify(record, null, 2));
-    received.push({ file, envelope: body });
+    received.push({ file, envelope: body, received_at: record.received_at });
 
     return json(res, 200, {
       ok: true,
