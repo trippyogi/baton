@@ -132,6 +132,23 @@ async function main() {
   assert.equal(badCallback.status, 400, 'Nectar bridge rejects malformed callback URLs');
   assert.ok(badCallbackJson.errors.includes('ack_url must be a valid URL'), 'malformed callback URL has explicit rejection reason');
 
+  const credentialCallback = await fetch(bridge.url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      schema: 'baton.dispatch.v1',
+      dispatch_id: 'disp_credential_callback',
+      run_id: 'run_credential_callback',
+      task_id: 'task_credential_callback',
+      touch_id: 'touch_credential_callback',
+      agent_id: 'nectar',
+      callbacks: { ack_url: 'https://user:pass@example.invalid/callback' },
+    }),
+  });
+  const credentialCallbackJson = await credentialCallback.json();
+  assert.equal(credentialCallback.status, 400, 'Nectar bridge rejects callback URLs with embedded credentials');
+  assert.ok(credentialCallbackJson.errors.includes('ack_url must not include credentials'), 'credential callback URL has explicit rejection reason');
+
   const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const initialHealthJson = await initialHealth.json();
   const initialHealthHead = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`, { method: 'HEAD' });
@@ -140,13 +157,13 @@ async function main() {
   assert.equal(typeof initialHealthJson.uptime_seconds, 'number', 'Nectar bridge health exposes uptime seconds');
   assert.ok(initialHealthJson.uptime_seconds >= 0, 'Nectar bridge uptime is non-negative');
   assert.equal(initialHealthJson.received_count, 0, 'Nectar bridge health exposes received count before dispatch');
-  assert.equal(initialHealthJson.rejected_count, 5, 'Nectar bridge health exposes rejection count before dispatch');
+  assert.equal(initialHealthJson.rejected_count, 6, 'Nectar bridge health exposes rejection count before dispatch');
   assert.equal(initialHealthJson.inbox_record_count, 0, 'Nectar bridge health exposes inbox record count before dispatch');
   assert.equal(initialHealthJson.inbox_writable, true, 'Nectar bridge health exposes writable inbox state');
   assert.equal(initialHealthJson.last_received_at, null, 'Nectar bridge health has no last received timestamp before dispatch');
   assert.equal(initialHealthJson.last_inbox_path, null, 'Nectar bridge health has no last inbox path before dispatch');
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
-  assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must be a valid URL'), 'Nectar bridge health exposes last rejection reason');
+  assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
 
   const nectar = (await request('/api/agents', {
@@ -192,7 +209,7 @@ async function main() {
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const finalHealthJson = await finalHealth.json();
   assert.equal(finalHealthJson.received_count, 1, 'Nectar bridge health updates received count after dispatch');
-  assert.equal(finalHealthJson.rejected_count, 5, 'Nectar bridge health preserves rejection count after dispatch');
+  assert.equal(finalHealthJson.rejected_count, 6, 'Nectar bridge health preserves rejection count after dispatch');
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
   assert.equal(finalHealthJson.inbox_writable, true, 'Nectar bridge inbox remains writable after dispatch');
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');

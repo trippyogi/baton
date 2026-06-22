@@ -126,6 +126,7 @@ function validateCallbackUrls(callbacks = {}) {
     try {
       const parsed = new URL(value);
       if (!['http:', 'https:'].includes(parsed.protocol)) errors.push(`${key} must be http(s)`);
+      if (parsed.username || parsed.password) errors.push(`${key} must not include credentials`);
     } catch (_) {
       errors.push(`${key} must be a valid URL`);
     }
