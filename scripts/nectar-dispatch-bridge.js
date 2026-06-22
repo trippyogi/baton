@@ -42,6 +42,12 @@ function startNectarDispatchBridge({
       return json(res, 401, { ok: false, status: 'rejected', message: 'bad token' });
     }
 
+    const contentLength = Number(req.headers['content-length'] || 0);
+    if (contentLength > MAX_BODY_BYTES) {
+      req.resume();
+      return json(res, 413, { ok: false, status: 'rejected', errors: ['body too large'] });
+    }
+
     const body = await readJson(req);
     if (body && body.__body_too_large) {
       return json(res, 413, { ok: false, status: 'rejected', errors: ['body too large'] });
