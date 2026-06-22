@@ -46,6 +46,8 @@ function startNectarDispatchBridge({
       const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
+        bind_host: host,
+        dispatch_path: '/baton/dispatch',
         started_at: startedAt.toISOString(),
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,
