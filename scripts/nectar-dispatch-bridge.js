@@ -16,8 +16,15 @@ function startNectarDispatchBridge({
   host = process.env.NECTAR_BRIDGE_HOST || '127.0.0.1',
 } = {}) {
   const received = [];
+  const rejected = [];
   const startedAt = new Date();
   fs.mkdirSync(inboxDir, { recursive: true });
+
+  const reject = (res, status, errors, extra = {}) => {
+    const reason = Array.isArray(errors) ? errors.join('; ') : String(errors);
+    rejected.push({ rejected_at: new Date().toISOString(), status, reason });
+    return json(res, status, { ok: false, status: 'rejected', errors: Array.isArray(errors) ? errors : [String(errors)], ...extra });
+  };
 
   const server = http.createServer(async (req, res) => {
     if ((req.method === 'GET' || req.method === 'HEAD') && req.url === '/health') {
@@ -29,9 +36,12 @@ function startNectarDispatchBridge({
         started_at: startedAt.toISOString(),
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,
+        rejected_count: rejected.length,
         inbox_record_count: inboxRecordCount,
         inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
+        last_rejected_at: rejected.length ? rejected[rejected.length - 1].rejected_at : null,
+        last_rejection_reason: rejected.length ? rejected[rejected.length - 1].reason : null,
         max_body_bytes: MAX_BODY_BYTES,
       };
       return req.method === 'HEAD' ? headJson(res, 200) : json(res, 200, body);
@@ -40,28 +50,28 @@ function startNectarDispatchBridge({
       return json(res, 404, { ok: false, error: 'not found' });
     }
     if (token && req.headers.authorization !== `Bearer ${token}`) {
-      return json(res, 401, { ok: false, status: 'rejected', message: 'bad token' });
+      return reject(res, 401, ['bad token']);
     }
     if (!isJsonRequest(req)) {
       req.resume();
-      return json(res, 415, { ok: false, status: 'rejected', errors: ['content-type must be application/json'] });
+      return reject(res, 415, ['content-type must be application/json']);
     }
 
     const contentLength = Number(req.headers['content-length'] || 0);
     if (contentLength > MAX_BODY_BYTES) {
       req.resume();
-      return json(res, 413, { ok: false, status: 'rejected', errors: ['body too large'] });
+      return reject(res, 413, ['body too large']);
     }
 
     const body = await readJson(req);
     if (body && body.__body_too_large) {
-      return json(res, 413, { ok: false, status: 'rejected', errors: ['body too large'] });
+      return reject(res, 413, ['body too large']);
     }
     if (body && body.__invalid_json) {
-      return json(res, 400, { ok: false, status: 'rejected', errors: ['invalid json'] });
+      return reject(res, 400, ['invalid json']);
     }
     const errors = validateEnvelope(body);
-    if (errors.length) return json(res, 400, { ok: false, status: 'rejected', errors });
+    if (errors.length) return reject(res, 400, errors);
 
     const record = {
       received_at: new Date().toISOString(),
