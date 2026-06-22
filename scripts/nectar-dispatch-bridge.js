@@ -7,7 +7,19 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DEFAULT_INBOX = path.join(ROOT, 'local', 'nectar-dispatch-inbox');
-const MAX_BODY_BYTES = Number(process.env.NECTAR_BRIDGE_MAX_BODY_BYTES || 64 * 1024);
+const DEFAULT_MAX_BODY_BYTES = 64 * 1024;
+const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
+
+function positiveIntEnv(name, fallback) {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1) {
+    console.warn(`[nectar-bridge] ignoring invalid ${name}=${raw}; using ${fallback}`);
+    return fallback;
+  }
+  return value;
+}
 
 function startNectarDispatchBridge({
   port = Number(process.env.NECTAR_BRIDGE_PORT || 4310),
@@ -238,4 +250,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, startNectarDispatchBridge, toOpenClawPrompt, validateCallbackUrls, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, positiveIntEnv, startNectarDispatchBridge, toOpenClawPrompt, validateCallbackUrls, validateEnvelope };
