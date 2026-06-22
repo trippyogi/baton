@@ -298,3 +298,8 @@ See `CHANGELOG.md`.
 ## License
 
 MIT — see `LICENSE`.
+
+
+### Nectar bridge health auth signal
+
+The local Nectar dispatch bridge `/health` response includes `token_required` so operators can confirm whether `NECTAR_DISPATCH_TOKEN` is active before sending private local dispatch envelopes.

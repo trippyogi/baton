@@ -155,6 +155,7 @@ async function main() {
   assert.equal(initialHealthHead.status, 200, 'Nectar bridge supports HEAD health probes');
   assert.equal(initialHealthJson.bind_host, '127.0.0.1', 'Nectar bridge health exposes bind host');
   assert.equal(initialHealthJson.dispatch_path, '/baton/dispatch', 'Nectar bridge health exposes dispatch path');
+  assert.equal(initialHealthJson.token_required, true, 'Nectar bridge health exposes whether auth is required');
   assert.match(initialHealthJson.started_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes start timestamp');
   assert.equal(typeof initialHealthJson.uptime_seconds, 'number', 'Nectar bridge health exposes uptime seconds');
   assert.ok(initialHealthJson.uptime_seconds >= 0, 'Nectar bridge uptime is non-negative');
