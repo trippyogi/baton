@@ -42,6 +42,10 @@ function startNectarDispatchBridge({
     if (token && req.headers.authorization !== `Bearer ${token}`) {
       return json(res, 401, { ok: false, status: 'rejected', message: 'bad token' });
     }
+    if (!isJsonRequest(req)) {
+      req.resume();
+      return json(res, 415, { ok: false, status: 'rejected', errors: ['content-type must be application/json'] });
+    }
 
     const contentLength = Number(req.headers['content-length'] || 0);
     if (contentLength > MAX_BODY_BYTES) {
@@ -159,6 +163,11 @@ function readJson(req) {
   });
 }
 
+function isJsonRequest(req) {
+  const contentType = String(req.headers['content-type'] || '').toLowerCase();
+  return contentType.split(';').map(part => part.trim()).includes('application/json');
+}
+
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(body));
@@ -197,4 +206,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };

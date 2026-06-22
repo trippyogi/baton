@@ -78,6 +78,15 @@ async function startBaton() {
 async function main() {
   await startBaton();
 
+  const wrongContentType = await fetch(bridge.url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test', 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ schema: 'baton.dispatch.v1' }),
+  });
+  const wrongContentTypeJson = await wrongContentType.json();
+  assert.equal(wrongContentType.status, 415, 'Nectar bridge rejects non-JSON content types');
+  assert.deepEqual(wrongContentTypeJson.errors, ['content-type must be application/json'], 'non-JSON content type has explicit rejection reason');
+
   const malformed = await fetch(bridge.url, {
     method: 'POST',
     headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
