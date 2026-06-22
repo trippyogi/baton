@@ -20,10 +20,10 @@ function startNectarDispatchBridge({
   fs.mkdirSync(inboxDir, { recursive: true });
 
   const server = http.createServer(async (req, res) => {
-    if (req.method === 'GET' && req.url === '/health') {
+    if ((req.method === 'GET' || req.method === 'HEAD') && req.url === '/health') {
       const lastReceived = received.length ? received[received.length - 1] : null;
       const inboxRecordCount = countInboxRecords(inboxDir);
-      return json(res, 200, {
+      const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
         started_at: startedAt.toISOString(),
@@ -33,7 +33,8 @@ function startNectarDispatchBridge({
         inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
         max_body_bytes: MAX_BODY_BYTES,
-      });
+      };
+      return req.method === 'HEAD' ? headJson(res, 200) : json(res, 200, body);
     }
     if (req.method !== 'POST' || req.url !== '/baton/dispatch') {
       return json(res, 404, { ok: false, error: 'not found' });
@@ -161,6 +162,11 @@ function readJson(req) {
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(body));
+}
+
+function headJson(res, status) {
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end();
 }
 
 function safeName(value) {

@@ -98,6 +98,8 @@ async function main() {
 
   const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const initialHealthJson = await initialHealth.json();
+  const initialHealthHead = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`, { method: 'HEAD' });
+  assert.equal(initialHealthHead.status, 200, 'Nectar bridge supports HEAD health probes');
   assert.match(initialHealthJson.started_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes start timestamp');
   assert.equal(typeof initialHealthJson.uptime_seconds, 'number', 'Nectar bridge health exposes uptime seconds');
   assert.ok(initialHealthJson.uptime_seconds >= 0, 'Nectar bridge uptime is non-negative');
