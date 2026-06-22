@@ -41,6 +41,7 @@ function startNectarDispatchBridge({
   const server = http.createServer(async (req, res) => {
     if ((req.method === 'GET' || req.method === 'HEAD') && req.url === '/health') {
       const lastReceived = received.length ? received[received.length - 1] : null;
+      const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
       const inboxRecordCount = countInboxRecords(inboxDir);
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const body = {
@@ -55,9 +56,12 @@ function startNectarDispatchBridge({
         inbox_record_count: inboxRecordCount,
         inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
+        last_received_dispatch_id: lastReceived ? lastReceived.envelope.dispatch_id : null,
+        last_received_run_id: lastReceived ? lastReceived.envelope.run_id : null,
         last_inbox_path: lastInboxPath,
-        last_rejected_at: rejected.length ? rejected[rejected.length - 1].rejected_at : null,
-        last_rejection_reason: rejected.length ? rejected[rejected.length - 1].reason : null,
+        last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
+        last_rejection_status: lastRejected ? lastRejected.status : null,
+        last_rejection_reason: lastRejected ? lastRejected.reason : null,
         max_body_bytes: MAX_BODY_BYTES,
       };
       return req.method === 'HEAD' ? headJson(res, 200) : json(res, 200, body);
