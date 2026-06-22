@@ -247,3 +247,5 @@ Remove-Item data/vmc.db,data/vmc.db-shm,data/vmc.db-wal -ErrorAction SilentlyCon
 ```
 
 The next `npm start` recreates the schema and generic demo data.
+
+It also rejects syntactically valid but non-object JSON bodies (for example `null` or arrays) with HTTP 400 before validation, so malformed dispatches cannot crash the local bridge.

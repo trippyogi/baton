@@ -93,6 +93,9 @@ function startNectarDispatchBridge({
 
 function validateEnvelope(body) {
   const errors = [];
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return ['body must be a JSON object'];
+  }
   for (const key of ['schema', 'dispatch_id', 'run_id', 'task_id', 'touch_id', 'agent_id', 'callbacks']) {
     if (!body[key]) errors.push(`missing ${key}`);
   }

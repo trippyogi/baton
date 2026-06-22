@@ -96,6 +96,16 @@ async function main() {
   assert.equal(malformed.status, 400, 'Nectar bridge rejects malformed JSON');
   assert.deepEqual(malformedJson.errors, ['invalid json'], 'malformed JSON has explicit rejection reason');
 
+
+  const nonObject = await fetch(bridge.url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
+    body: 'null',
+  });
+  const nonObjectJson = await nonObject.json();
+  assert.equal(nonObject.status, 400, 'Nectar bridge rejects non-object JSON bodies');
+  assert.deepEqual(nonObjectJson.errors, ['body must be a JSON object'], 'non-object JSON has explicit rejection reason');
+
   const oversized = await fetch(bridge.url, {
     method: 'POST',
     headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
