@@ -30,6 +30,7 @@ function startNectarDispatchBridge({
     if ((req.method === 'GET' || req.method === 'HEAD') && req.url === '/health') {
       const lastReceived = received.length ? received[received.length - 1] : null;
       const inboxRecordCount = countInboxRecords(inboxDir);
+      const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
@@ -40,6 +41,7 @@ function startNectarDispatchBridge({
         inbox_record_count: inboxRecordCount,
         inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
+        last_inbox_path: lastInboxPath,
         last_rejected_at: rejected.length ? rejected[rejected.length - 1].rejected_at : null,
         last_rejection_reason: rejected.length ? rejected[rejected.length - 1].reason : null,
         max_body_bytes: MAX_BODY_BYTES,
