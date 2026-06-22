@@ -98,7 +98,23 @@ function validateEnvelope(body) {
   }
   if (body.schema !== 'baton.dispatch.v1') errors.push('bad schema');
   if (body.agent_id && body.agent_id !== 'nectar') errors.push('agent_id must be nectar');
+  errors.push(...validateCallbackUrls(body.callbacks));
   if (JSON.stringify(body).length > 25000) errors.push('envelope too large');
+  return errors;
+}
+
+function validateCallbackUrls(callbacks = {}) {
+  const errors = [];
+  for (const key of ['ack_url', 'status_url', 'review_packet_url']) {
+    const value = callbacks[key];
+    if (!value) continue;
+    try {
+      const parsed = new URL(value);
+      if (!['http:', 'https:'].includes(parsed.protocol)) errors.push(`${key} must be http(s)`);
+    } catch (_) {
+      errors.push(`${key} must be a valid URL`);
+    }
+  }
   return errors;
 }
 
@@ -206,4 +222,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, startNectarDispatchBridge, toOpenClawPrompt, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, startNectarDispatchBridge, toOpenClawPrompt, validateCallbackUrls, validateEnvelope };

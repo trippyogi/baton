@@ -105,6 +105,23 @@ async function main() {
   assert.equal(oversized.status, 413, 'Nectar bridge rejects oversized bodies');
   assert.deepEqual(oversizedJson.errors, ['body too large'], 'oversized body has explicit rejection reason');
 
+  const badCallback = await fetch(bridge.url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      schema: 'baton.dispatch.v1',
+      dispatch_id: 'disp_bad_callback',
+      run_id: 'run_bad_callback',
+      task_id: 'task_bad_callback',
+      touch_id: 'touch_bad_callback',
+      agent_id: 'nectar',
+      callbacks: { ack_url: 'not-a-url' },
+    }),
+  });
+  const badCallbackJson = await badCallback.json();
+  assert.equal(badCallback.status, 400, 'Nectar bridge rejects malformed callback URLs');
+  assert.ok(badCallbackJson.errors.includes('ack_url must be a valid URL'), 'malformed callback URL has explicit rejection reason');
+
   const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const initialHealthJson = await initialHealth.json();
   const initialHealthHead = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`, { method: 'HEAD' });
