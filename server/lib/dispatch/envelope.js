@@ -42,6 +42,8 @@ function buildDispatchEnvelope({ db, run, task, touch, agent, settings, baseUrl,
       expected_output: 'review_packet',
       no_external_spend: true,
       no_public_posting: true,
+      do_not_expose_private_context: true,
+      do_not_share_callback_urls_or_tokens: true,
     },
   };
 }

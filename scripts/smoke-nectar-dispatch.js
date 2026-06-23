@@ -246,6 +246,8 @@ async function main() {
   assert.equal(files.length, 1, 'Nectar bridge wrote one inbox record');
   const record = JSON.parse(fs.readFileSync(path.join(bridge.inboxDir, files[0]), 'utf8'));
   assert.equal(record.envelope.agent_id, 'nectar', 'inbox record stores Nectar envelope');
+  assert.equal(record.envelope.constraints.do_not_expose_private_context, true, 'envelope carries private-context safety constraint');
+  assert.equal(record.envelope.constraints.do_not_share_callback_urls_or_tokens, true, 'envelope carries callback secrecy safety constraint');
   assert.ok(record.prompt.includes('BATON dispatch received for Nectar'), 'inbox record includes OpenClaw-ready prompt');
   assert.ok(record.prompt.includes(`Dispatch: ${record.envelope.dispatch_id}`), 'prompt includes dispatch id for traceability');
   assert.ok(record.prompt.includes(`Touch: ${record.envelope.touch_id}`), 'prompt includes touch id for traceability');
