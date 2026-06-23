@@ -73,7 +73,7 @@ Implemented phases:
 
 - **Local Nectar dispatch bridge**
   - `npm run bridge:nectar` starts a private local bridge at `/baton/dispatch` for `baton.dispatch.v1` handoffs to Nectar; `node scripts/nectar-dispatch-bridge.js --help` prints the safe local env/route reference without starting a listener.
-  - The bridge ACKs and writes ignored inbox records under `local/nectar-dispatch-inbox/`; it does not execute external actions by itself.
+  - The bridge ACKs and writes ignored inbox records under `local/nectar-dispatch-inbox/`; accepted/rejected dispatch responses include `schema_version: baton.nectar_bridge.dispatch_result.v1` and `generated_at`; it does not execute external actions by itself.
   - It rejects malformed JSON and oversized bodies before inbox writes, with `NECTAR_BRIDGE_MAX_BODY_BYTES` available only for explicit local overrides.
   - `/health` supports GET and HEAD probes and exposes `bridge_version`, `generated_at`, `bind_host`, `dispatch_path`, `started_at`, `uptime_seconds`, `received_count`, `rejected_count`, `inbox_record_count`, `inbox_dir`, `inbox_writable`, `last_received_at`, `last_inbox_path`, `last_rejected_at`, `last_rejection_reason`, `last_rejection_errors`, and `max_body_bytes` for smoke/debug checks.
   - `npm run smoke:nectar` exercises the bridge and public-safe Nectar fixture.

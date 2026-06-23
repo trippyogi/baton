@@ -93,6 +93,8 @@ async function main() {
   });
   const wrongContentTypeJson = await wrongContentType.json();
   assert.equal(wrongContentType.status, 415, 'Nectar bridge rejects non-JSON content types');
+  assert.equal(wrongContentTypeJson.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'rejection response exposes dispatch result schema');
+  assert.match(wrongContentTypeJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'rejection response exposes timestamp');
   assert.deepEqual(wrongContentTypeJson.errors, ['content-type must be application/json'], 'non-JSON content type has explicit rejection reason');
 
   const malformed = await fetch(bridge.url, {
@@ -225,6 +227,8 @@ async function main() {
     body: { dry_run: false, agent_id: 'nectar', task_id: task.id, touch_id: prep.run.touch_id, intent: 'orchestrate' },
   })).json;
   assert.equal(live.dispatch_status, 'accepted', 'Nectar bridge accepted live dispatch');
+  assert.equal(live.ack.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'accepted bridge response exposes dispatch result schema');
+  assert.match(live.ack.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'accepted bridge response exposes timestamp');
   assert.equal(bridge.received.length, 1, 'Nectar bridge received one envelope');
 
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);

@@ -34,10 +34,18 @@ function startNectarDispatchBridge({
   fs.mkdirSync(inboxDir, { recursive: true });
 
   const reject = (res, status, errors, extra = {}) => {
+    const generatedAt = new Date().toISOString();
     const reason = Array.isArray(errors) ? errors.join('; ') : String(errors);
     const errorList = Array.isArray(errors) ? errors : [String(errors)];
-    rejected.push({ rejected_at: new Date().toISOString(), status, reason, errors: errorList });
-    return json(res, status, { ok: false, status: 'rejected', errors: errorList, ...extra });
+    rejected.push({ rejected_at: generatedAt, status, reason, errors: errorList });
+    return json(res, status, {
+      ok: false,
+      schema_version: 'baton.nectar_bridge.dispatch_result.v1',
+      generated_at: generatedAt,
+      status: 'rejected',
+      errors: errorList,
+      ...extra,
+    });
   };
 
   const server = http.createServer(async (req, res) => {
@@ -113,6 +121,8 @@ function startNectarDispatchBridge({
 
     return json(res, 200, {
       ok: true,
+      schema_version: 'baton.nectar_bridge.dispatch_result.v1',
+      generated_at: record.received_at,
       status: 'accepted',
       external_run_id: `nectar_bridge_${body.run_id}`,
       inbox_path: path.relative(ROOT, file).split(path.sep).join('/'),
