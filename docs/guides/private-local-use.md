@@ -136,6 +136,12 @@ For a local Nectar handoff smoke test, start the local bridge:
 NECTAR_DISPATCH_TOKEN=change-me npm run bridge:nectar
 ```
 
+For the operator env/route reference without opening a listener:
+
+```bash
+node scripts/nectar-dispatch-bridge.js --help
+```
+
 Then import the public-safe Nectar fixture:
 
 ```bash

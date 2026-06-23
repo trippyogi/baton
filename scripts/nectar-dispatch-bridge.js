@@ -256,11 +256,33 @@ function isInboxWritable(inboxDir) {
   }
 }
 
+function usage() {
+  return `Usage: node scripts/nectar-dispatch-bridge.js
+
+Starts the local-only BATON -> Nectar dispatch bridge.
+
+Environment:
+  NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; keep loopback for private local use.
+  NECTAR_BRIDGE_PORT=4310             Bridge HTTP port.
+  NECTAR_DISPATCH_TOKEN=...           Optional Bearer token required for POST /baton/dispatch.
+  NECTAR_DISPATCH_INBOX=local/...     Inbox directory for accepted dispatch records.
+  NECTAR_BRIDGE_MAX_BODY_BYTES=65536  Positive integer body-size limit.
+
+Routes:
+  GET|HEAD /health                    Safe health/observability check.
+  POST /baton/dispatch                Accept baton.dispatch.v1 envelopes for local inbox processing.
+`;
+}
+
 if (require.main === module) {
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    process.stdout.write(usage());
+    process.exit(0);
+  }
   startNectarDispatchBridge().catch(err => {
     console.error(err);
     process.exit(1);
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, positiveIntEnv, startNectarDispatchBridge, toOpenClawPrompt, validateCallbackUrls, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, positiveIntEnv, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };

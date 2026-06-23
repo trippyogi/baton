@@ -5,7 +5,7 @@ const assert = require('assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { MAX_BODY_BYTES, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
 
 let baton = null;
@@ -76,6 +76,14 @@ async function startBaton() {
 }
 
 async function main() {
+  const help = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--help'], {
+    cwd: path.join(__dirname, '..'),
+    encoding: 'utf8',
+  });
+  assert.equal(help.status, 0, 'Nectar bridge --help exits cleanly');
+  assert.ok(help.stdout.includes('POST /baton/dispatch'), 'Nectar bridge help documents dispatch route');
+  assert.ok(help.stdout.includes('NECTAR_BRIDGE_MAX_BODY_BYTES'), 'Nectar bridge help documents body limit env');
+
   await startBaton();
 
   const wrongContentType = await fetch(bridge.url, {
