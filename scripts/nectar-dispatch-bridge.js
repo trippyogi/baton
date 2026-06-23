@@ -46,6 +46,7 @@ function startNectarDispatchBridge({
       const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
       const inboxRecordCount = countInboxRecords(inboxDir);
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
+      const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
       const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
@@ -58,6 +59,7 @@ function startNectarDispatchBridge({
         received_count: received.length,
         rejected_count: rejected.length,
         inbox_record_count: inboxRecordCount,
+        inbox_dir: healthInboxDir,
         inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
         last_received_dispatch_id: lastReceived ? lastReceived.envelope.dispatch_id : null,

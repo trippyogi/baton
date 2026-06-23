@@ -163,6 +163,7 @@ async function main() {
   assert.equal(initialHealthJson.received_count, 0, 'Nectar bridge health exposes received count before dispatch');
   assert.equal(initialHealthJson.rejected_count, 6, 'Nectar bridge health exposes rejection count before dispatch');
   assert.equal(initialHealthJson.inbox_record_count, 0, 'Nectar bridge health exposes inbox record count before dispatch');
+  assert.match(initialHealthJson.inbox_dir, /nectar-inbox$/, 'Nectar bridge health exposes configured inbox directory');
   assert.equal(initialHealthJson.inbox_writable, true, 'Nectar bridge health exposes writable inbox state');
   assert.equal(initialHealthJson.last_received_at, null, 'Nectar bridge health has no last received timestamp before dispatch');
   assert.equal(initialHealthJson.last_received_dispatch_id, null, 'Nectar bridge health has no last dispatch id before dispatch');
