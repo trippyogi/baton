@@ -154,6 +154,7 @@ async function main() {
   const initialHealthHead = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`, { method: 'HEAD' });
   assert.equal(initialHealthHead.status, 200, 'Nectar bridge supports HEAD health probes');
   assert.equal(initialHealthJson.bind_host, '127.0.0.1', 'Nectar bridge health exposes bind host');
+  assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
   assert.equal(initialHealthJson.dispatch_path, '/baton/dispatch', 'Nectar bridge health exposes dispatch path');
   assert.equal(initialHealthJson.token_required, true, 'Nectar bridge health exposes whether auth is required');
   assert.match(initialHealthJson.started_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes start timestamp');

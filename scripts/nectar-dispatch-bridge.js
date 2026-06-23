@@ -6,6 +6,7 @@ const http = require('http');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
+const PACKAGE = require(path.join(ROOT, 'package.json'));
 const DEFAULT_INBOX = path.join(ROOT, 'local', 'nectar-dispatch-inbox');
 const DEFAULT_MAX_BODY_BYTES = 64 * 1024;
 const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
@@ -48,6 +49,7 @@ function startNectarDispatchBridge({
       const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
+        bridge_version: PACKAGE.version,
         bind_host: host,
         dispatch_path: '/baton/dispatch',
         token_required: Boolean(token),
