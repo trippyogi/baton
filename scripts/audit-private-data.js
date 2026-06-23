@@ -159,7 +159,12 @@ function main() {
   const failed = Object.values(checks).some(list => list.length > 0);
 
   if (json) {
-    console.log(JSON.stringify({ ok: !failed, checks }, null, 2));
+    console.log(JSON.stringify({
+      schema_version: 'baton.private_data_audit.v1',
+      generated_at: new Date().toISOString(),
+      ok: !failed,
+      checks,
+    }, null, 2));
   } else {
     console.log('BATON private data audit');
     for (const [name, findings] of Object.entries(checks)) {
