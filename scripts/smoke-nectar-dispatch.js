@@ -95,6 +95,7 @@ async function main() {
   assert.equal(wrongContentType.status, 415, 'Nectar bridge rejects non-JSON content types');
   assert.equal(wrongContentTypeJson.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'rejection response exposes dispatch result schema');
   assert.match(wrongContentTypeJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'rejection response exposes timestamp');
+  assert.equal(wrongContentTypeJson.error_count, 1, 'rejection response exposes error count');
   assert.deepEqual(wrongContentTypeJson.errors, ['content-type must be application/json'], 'non-JSON content type has explicit rejection reason');
 
   const malformed = await fetch(bridge.url, {
@@ -187,6 +188,7 @@ async function main() {
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
   assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
   assert.deepEqual(initialHealthJson.last_rejection_errors, ['ack_url must not include credentials'], 'Nectar bridge health exposes structured last rejection errors');
+  assert.equal(initialHealthJson.last_rejection_error_count, 1, 'Nectar bridge health exposes last rejection error count');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
 
   const nectar = (await request('/api/agents', {

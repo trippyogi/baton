@@ -43,6 +43,7 @@ function startNectarDispatchBridge({
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
       generated_at: generatedAt,
       status: 'rejected',
+      error_count: errorList.length,
       errors: errorList,
       ...extra,
     });
@@ -79,6 +80,7 @@ function startNectarDispatchBridge({
         last_rejection_status: lastRejected ? lastRejected.status : null,
         last_rejection_reason: lastRejected ? lastRejected.reason : null,
         last_rejection_errors: lastRejected ? lastRejected.errors : null,
+        last_rejection_error_count: lastRejected ? lastRejected.errors.length : 0,
         max_body_bytes: MAX_BODY_BYTES,
       };
       return req.method === 'HEAD' ? headJson(res, 200) : json(res, 200, body);
