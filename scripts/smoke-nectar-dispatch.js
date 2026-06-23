@@ -170,6 +170,7 @@ async function main() {
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
   assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
+  assert.deepEqual(initialHealthJson.last_rejection_errors, ['ack_url must not include credentials'], 'Nectar bridge health exposes structured last rejection errors');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
 
   const nectar = (await request('/api/agents', {

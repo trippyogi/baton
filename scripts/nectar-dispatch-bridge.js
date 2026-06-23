@@ -34,8 +34,9 @@ function startNectarDispatchBridge({
 
   const reject = (res, status, errors, extra = {}) => {
     const reason = Array.isArray(errors) ? errors.join('; ') : String(errors);
-    rejected.push({ rejected_at: new Date().toISOString(), status, reason });
-    return json(res, status, { ok: false, status: 'rejected', errors: Array.isArray(errors) ? errors : [String(errors)], ...extra });
+    const errorList = Array.isArray(errors) ? errors : [String(errors)];
+    rejected.push({ rejected_at: new Date().toISOString(), status, reason, errors: errorList });
+    return json(res, status, { ok: false, status: 'rejected', errors: errorList, ...extra });
   };
 
   const server = http.createServer(async (req, res) => {
@@ -63,6 +64,7 @@ function startNectarDispatchBridge({
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
         last_rejection_status: lastRejected ? lastRejected.status : null,
         last_rejection_reason: lastRejected ? lastRejected.reason : null,
+        last_rejection_errors: lastRejected ? lastRejected.errors : null,
         max_body_bytes: MAX_BODY_BYTES,
       };
       return req.method === 'HEAD' ? headJson(res, 200) : json(res, 200, body);
