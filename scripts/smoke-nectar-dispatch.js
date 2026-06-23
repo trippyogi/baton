@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { MAX_BODY_BYTES, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
+const { MAX_BODY_BYTES, isLoopbackHost, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
 
 let baton = null;
 let bridge = null;
@@ -83,6 +83,14 @@ async function main() {
   assert.equal(help.status, 0, 'Nectar bridge --help exits cleanly');
   assert.ok(help.stdout.includes('POST /baton/dispatch'), 'Nectar bridge help documents dispatch route');
   assert.ok(help.stdout.includes('NECTAR_BRIDGE_MAX_BODY_BYTES'), 'Nectar bridge help documents body limit env');
+  assert.ok(help.stdout.includes('non-loopback binds require NECTAR_DISPATCH_TOKEN'), 'Nectar bridge help documents non-loopback auth guard');
+  assert.equal(isLoopbackHost('127.0.0.1'), true, 'loopback host helper accepts IPv4 loopback');
+  assert.equal(isLoopbackHost('0.0.0.0'), false, 'loopback host helper rejects wildcard binds');
+  assert.throws(
+    () => startNectarDispatchBridge({ host: '0.0.0.0', port: randomPort(4900), token: '', inboxDir: path.join(os.tmpdir(), 'unused-nectar-inbox') }),
+    /refusing non-loopback Nectar bridge bind/,
+    'Nectar bridge refuses unauthenticated non-loopback binds',
+  );
 
   await startBaton();
 

@@ -28,6 +28,9 @@ function startNectarDispatchBridge({
   inboxDir = process.env.NECTAR_DISPATCH_INBOX || DEFAULT_INBOX,
   host = process.env.NECTAR_BRIDGE_HOST || '127.0.0.1',
 } = {}) {
+  if (!isLoopbackHost(host) && !token) {
+    throw new Error(`refusing non-loopback Nectar bridge bind without NECTAR_DISPATCH_TOKEN: ${host}`);
+  }
   const received = [];
   const rejected = [];
   const startedAt = new Date();
@@ -239,6 +242,10 @@ function isJsonRequest(req) {
   return contentType.split(';').map(part => part.trim()).includes('application/json');
 }
 
+function isLoopbackHost(host) {
+  return ['localhost', '127.0.0.1', '::1'].includes(String(host || '').trim().toLowerCase());
+}
+
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
@@ -276,7 +283,7 @@ function usage() {
 Starts the local-only BATON -> Nectar dispatch bridge.
 
 Environment:
-  NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; keep loopback for private local use.
+  NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; non-loopback binds require NECTAR_DISPATCH_TOKEN.
   NECTAR_BRIDGE_PORT=4310             Bridge HTTP port.
   NECTAR_DISPATCH_TOKEN=...           Optional Bearer token required for POST /baton/dispatch.
   NECTAR_DISPATCH_INBOX=local/...     Inbox directory for accepted dispatch records.
@@ -299,4 +306,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, positiveIntEnv, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
