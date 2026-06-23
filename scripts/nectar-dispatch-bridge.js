@@ -50,6 +50,7 @@ function startNectarDispatchBridge({
       const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
+        health_schema_version: 'baton.nectar_bridge.health.v1',
         bridge_version: PACKAGE.version,
         bind_host: host,
         dispatch_path: '/baton/dispatch',
