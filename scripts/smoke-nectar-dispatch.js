@@ -105,6 +105,7 @@ async function main() {
   assert.equal(wrongContentTypeJson.bridge_version, '0.1.0', 'rejection response exposes bridge version');
   assert.match(wrongContentTypeJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'rejection response exposes timestamp');
   assert.equal(wrongContentTypeJson.error_count, 1, 'rejection response exposes error count');
+  assert.equal(wrongContentTypeJson.rejection_code, 'unsupported_content_type', 'rejection response exposes stable rejection code');
   assert.deepEqual(wrongContentTypeJson.errors, ['content-type must be application/json'], 'non-JSON content type has explicit rejection reason');
 
   const malformed = await fetch(bridge.url, {
@@ -115,6 +116,7 @@ async function main() {
   const malformedJson = await malformed.json();
   assert.equal(malformed.status, 400, 'Nectar bridge rejects malformed JSON');
   assert.deepEqual(malformedJson.errors, ['invalid json'], 'malformed JSON has explicit rejection reason');
+  assert.equal(malformedJson.rejection_code, 'invalid_json', 'malformed JSON has stable rejection code');
 
 
   const nonObject = await fetch(bridge.url, {
@@ -125,6 +127,7 @@ async function main() {
   const nonObjectJson = await nonObject.json();
   assert.equal(nonObject.status, 400, 'Nectar bridge rejects non-object JSON bodies');
   assert.deepEqual(nonObjectJson.errors, ['body must be a JSON object'], 'non-object JSON has explicit rejection reason');
+  assert.equal(nonObjectJson.rejection_code, 'invalid_body_type', 'non-object JSON has stable rejection code');
 
   const oversized = await fetch(bridge.url, {
     method: 'POST',
@@ -134,6 +137,7 @@ async function main() {
   const oversizedJson = await oversized.json();
   assert.equal(oversized.status, 413, 'Nectar bridge rejects oversized bodies');
   assert.deepEqual(oversizedJson.errors, ['body too large'], 'oversized body has explicit rejection reason');
+  assert.equal(oversizedJson.rejection_code, 'body_too_large', 'oversized body has stable rejection code');
 
   const badCallback = await fetch(bridge.url, {
     method: 'POST',
@@ -168,6 +172,7 @@ async function main() {
   const credentialCallbackJson = await credentialCallback.json();
   assert.equal(credentialCallback.status, 400, 'Nectar bridge rejects callback URLs with embedded credentials');
   assert.ok(credentialCallbackJson.errors.includes('ack_url must not include credentials'), 'credential callback URL has explicit rejection reason');
+  assert.equal(credentialCallbackJson.rejection_code, 'invalid_callback_url', 'credential callback URL has stable rejection code');
 
   const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const initialHealthJson = await initialHealth.json();
@@ -200,6 +205,7 @@ async function main() {
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
   assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
+  assert.equal(initialHealthJson.last_rejection_code, 'invalid_callback_url', 'Nectar bridge health exposes last rejection code');
   assert.deepEqual(initialHealthJson.last_rejection_errors, ['ack_url must not include credentials'], 'Nectar bridge health exposes structured last rejection errors');
   assert.equal(initialHealthJson.last_rejection_error_count, 1, 'Nectar bridge health exposes last rejection error count');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');

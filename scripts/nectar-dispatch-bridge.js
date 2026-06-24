@@ -40,13 +40,15 @@ function startNectarDispatchBridge({
     const generatedAt = new Date().toISOString();
     const reason = Array.isArray(errors) ? errors.join('; ') : String(errors);
     const errorList = Array.isArray(errors) ? errors : [String(errors)];
-    rejected.push({ rejected_at: generatedAt, status, reason, errors: errorList });
+    const rejectionCode = rejectionCodeFor(status, errorList);
+    rejected.push({ rejected_at: generatedAt, status, reason, errors: errorList, code: rejectionCode });
     return json(res, status, {
       ok: false,
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
       bridge_version: PACKAGE.version,
       generated_at: generatedAt,
       status: 'rejected',
+      rejection_code: rejectionCode,
       error_count: errorList.length,
       errors: errorList,
       ...extra,
@@ -87,6 +89,7 @@ function startNectarDispatchBridge({
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
         last_rejection_status: lastRejected ? lastRejected.status : null,
         last_rejection_reason: lastRejected ? lastRejected.reason : null,
+        last_rejection_code: lastRejected ? lastRejected.code : null,
         last_rejection_errors: lastRejected ? lastRejected.errors : null,
         last_rejection_error_count: lastRejected ? lastRejected.errors.length : 0,
         max_body_bytes: MAX_BODY_BYTES,
@@ -157,6 +160,18 @@ function startNectarDispatchBridge({
       resolve({ server, received, url, inboxDir });
     });
   });
+}
+
+function rejectionCodeFor(status, errors) {
+  if (status === 401) return 'bad_token';
+  if (status === 413) return 'body_too_large';
+  if (status === 415) return 'unsupported_content_type';
+  if (errors.includes('invalid json')) return 'invalid_json';
+  if (errors.includes('body must be a JSON object')) return 'invalid_body_type';
+  if (errors.some(error => /^(ack_url|status_url|review_packet_url) /.test(String(error)))) return 'invalid_callback_url';
+  if (errors.some(error => String(error).startsWith('missing '))) return 'missing_required_field';
+  if (errors.includes('bad schema')) return 'bad_schema';
+  return 'invalid_envelope';
 }
 
 function nectarBridgeStatus({ received, rejected, inboxDir }) {
@@ -340,4 +355,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
