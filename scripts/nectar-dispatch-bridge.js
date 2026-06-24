@@ -67,6 +67,7 @@ function startNectarDispatchBridge({
         generated_at: new Date().toISOString(),
         bind_host: host,
         dispatch_path: '/baton/dispatch',
+        dispatch_url: `http://${host}:${port}/baton/dispatch`,
         token_required: Boolean(token),
         started_at: startedAt.toISOString(),
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
