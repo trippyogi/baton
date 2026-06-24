@@ -102,6 +102,7 @@ async function main() {
   const wrongContentTypeJson = await wrongContentType.json();
   assert.equal(wrongContentType.status, 415, 'Nectar bridge rejects non-JSON content types');
   assert.equal(wrongContentTypeJson.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'rejection response exposes dispatch result schema');
+  assert.equal(wrongContentTypeJson.bridge_version, '0.1.0', 'rejection response exposes bridge version');
   assert.match(wrongContentTypeJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'rejection response exposes timestamp');
   assert.equal(wrongContentTypeJson.error_count, 1, 'rejection response exposes error count');
   assert.deepEqual(wrongContentTypeJson.errors, ['content-type must be application/json'], 'non-JSON content type has explicit rejection reason');
@@ -239,6 +240,7 @@ async function main() {
   })).json;
   assert.equal(live.dispatch_status, 'accepted', 'Nectar bridge accepted live dispatch');
   assert.equal(live.ack.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'accepted bridge response exposes dispatch result schema');
+  assert.equal(live.ack.bridge_version, '0.1.0', 'accepted bridge response exposes bridge version');
   assert.match(live.ack.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'accepted bridge response exposes timestamp');
   assert.equal(bridge.received.length, 1, 'Nectar bridge received one envelope');
   assert.equal(live.ack.dispatch_id, bridge.received[0].envelope.dispatch_id, 'accepted bridge response echoes dispatch id');

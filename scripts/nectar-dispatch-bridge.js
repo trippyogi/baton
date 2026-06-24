@@ -44,6 +44,7 @@ function startNectarDispatchBridge({
     return json(res, status, {
       ok: false,
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
+      bridge_version: PACKAGE.version,
       generated_at: generatedAt,
       status: 'rejected',
       error_count: errorList.length,
@@ -128,6 +129,7 @@ function startNectarDispatchBridge({
     return json(res, 200, {
       ok: true,
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
+      bridge_version: PACKAGE.version,
       generated_at: record.received_at,
       status: 'accepted',
       dispatch_id: body.dispatch_id,
