@@ -80,6 +80,8 @@ function startNectarDispatchBridge({
         last_received_at: lastReceived ? lastReceived.received_at : null,
         last_received_dispatch_id: lastReceived ? lastReceived.envelope.dispatch_id : null,
         last_received_run_id: lastReceived ? lastReceived.envelope.run_id : null,
+        last_received_task_id: lastReceived ? lastReceived.envelope.task_id : null,
+        last_received_touch_id: lastReceived ? lastReceived.envelope.touch_id : null,
         last_inbox_path: lastInboxPath,
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
         last_rejection_status: lastRejected ? lastRejected.status : null,

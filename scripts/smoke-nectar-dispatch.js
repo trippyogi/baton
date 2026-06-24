@@ -193,6 +193,8 @@ async function main() {
   assert.equal(initialHealthJson.last_received_at, null, 'Nectar bridge health has no last received timestamp before dispatch');
   assert.equal(initialHealthJson.last_received_dispatch_id, null, 'Nectar bridge health has no last dispatch id before dispatch');
   assert.equal(initialHealthJson.last_received_run_id, null, 'Nectar bridge health has no last run id before dispatch');
+  assert.equal(initialHealthJson.last_received_task_id, null, 'Nectar bridge health has no last task id before dispatch');
+  assert.equal(initialHealthJson.last_received_touch_id, null, 'Nectar bridge health has no last touch id before dispatch');
   assert.equal(initialHealthJson.last_inbox_path, null, 'Nectar bridge health has no last inbox path before dispatch');
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
@@ -257,6 +259,8 @@ async function main() {
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
   assert.equal(finalHealthJson.last_received_dispatch_id, bridge.received[0].envelope.dispatch_id, 'Nectar bridge health exposes last dispatch id');
   assert.equal(finalHealthJson.last_received_run_id, bridge.received[0].envelope.run_id, 'Nectar bridge health exposes last run id');
+  assert.equal(finalHealthJson.last_received_task_id, bridge.received[0].envelope.task_id, 'Nectar bridge health exposes last task id');
+  assert.equal(finalHealthJson.last_received_touch_id, bridge.received[0].envelope.touch_id, 'Nectar bridge health exposes last touch id');
   assert.match(finalHealthJson.last_inbox_path, /^local\/nectar-dispatch-inbox|^\.\.\//, 'Nectar bridge health exposes last inbox path');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));
