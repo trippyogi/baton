@@ -202,6 +202,7 @@ async function main() {
   assert.deepEqual(initialHealthJson.last_rejection_errors, ['ack_url must not include credentials'], 'Nectar bridge health exposes structured last rejection errors');
   assert.equal(initialHealthJson.last_rejection_error_count, 1, 'Nectar bridge health exposes last rejection error count');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
+  assert.equal(initialHealthJson.operator_next_check, 'fix the last_rejection_errors in the dispatch client, then retry the handoff', 'Nectar bridge health exposes next operator check after rejections');
 
   const nectar = (await request('/api/agents', {
     method: 'POST',
@@ -249,6 +250,7 @@ async function main() {
   assert.equal(live.ack.run_id, bridge.received[0].envelope.run_id, 'accepted bridge response echoes run id');
   assert.equal(live.ack.task_id, bridge.received[0].envelope.task_id, 'accepted bridge response echoes task id');
   assert.equal(live.ack.touch_id, bridge.received[0].envelope.touch_id, 'accepted bridge response echoes touch id');
+  assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
 
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const finalHealthJson = await finalHealth.json();
@@ -258,6 +260,7 @@ async function main() {
   assert.equal(finalHealthJson.inbox_writable, true, 'Nectar bridge inbox remains writable after dispatch');
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
   assert.equal(finalHealthJson.last_received_dispatch_id, bridge.received[0].envelope.dispatch_id, 'Nectar bridge health exposes last dispatch id');
+  assert.equal(finalHealthJson.operator_next_check, 'open last_inbox_path and hand the generated prompt to local Nectar/OpenClaw', 'Nectar bridge health updates next operator check after dispatch');
   assert.equal(finalHealthJson.last_received_run_id, bridge.received[0].envelope.run_id, 'Nectar bridge health exposes last run id');
   assert.equal(finalHealthJson.last_received_task_id, bridge.received[0].envelope.task_id, 'Nectar bridge health exposes last task id');
   assert.equal(finalHealthJson.last_received_touch_id, bridge.received[0].envelope.touch_id, 'Nectar bridge health exposes last touch id');

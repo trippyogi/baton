@@ -89,6 +89,7 @@ function startNectarDispatchBridge({
         last_rejection_errors: lastRejected ? lastRejected.errors : null,
         last_rejection_error_count: lastRejected ? lastRejected.errors.length : 0,
         max_body_bytes: MAX_BODY_BYTES,
+        operator_next_check: nectarBridgeNextCheck({ received, rejected, inboxDir }),
       };
       return req.method === 'HEAD' ? headJson(res, 200) : json(res, 200, body);
     }
@@ -141,6 +142,7 @@ function startNectarDispatchBridge({
       external_run_id: `nectar_bridge_${body.run_id}`,
       inbox_path: path.relative(ROOT, file).split(path.sep).join('/'),
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
+      operator_next_check: 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing',
     });
   });
 
@@ -152,6 +154,19 @@ function startNectarDispatchBridge({
       resolve({ server, received, url, inboxDir });
     });
   });
+}
+
+function nectarBridgeNextCheck({ received, rejected, inboxDir }) {
+  if (!isInboxWritable(inboxDir)) {
+    return 'fix NECTAR_DISPATCH_INBOX permissions before dispatching more work';
+  }
+  if (received.length) {
+    return 'open last_inbox_path and hand the generated prompt to local Nectar/OpenClaw';
+  }
+  if (rejected.length) {
+    return 'fix the last_rejection_errors in the dispatch client, then retry the handoff';
+  }
+  return 'send a BATON dispatch smoke request before wiring a real local agent';
 }
 
 function validateEnvelope(body) {
