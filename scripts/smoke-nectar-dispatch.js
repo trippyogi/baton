@@ -241,6 +241,10 @@ async function main() {
   assert.equal(live.ack.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'accepted bridge response exposes dispatch result schema');
   assert.match(live.ack.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'accepted bridge response exposes timestamp');
   assert.equal(bridge.received.length, 1, 'Nectar bridge received one envelope');
+  assert.equal(live.ack.dispatch_id, bridge.received[0].envelope.dispatch_id, 'accepted bridge response echoes dispatch id');
+  assert.equal(live.ack.run_id, bridge.received[0].envelope.run_id, 'accepted bridge response echoes run id');
+  assert.equal(live.ack.task_id, bridge.received[0].envelope.task_id, 'accepted bridge response echoes task id');
+  assert.equal(live.ack.touch_id, bridge.received[0].envelope.touch_id, 'accepted bridge response echoes touch id');
 
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const finalHealthJson = await finalHealth.json();
