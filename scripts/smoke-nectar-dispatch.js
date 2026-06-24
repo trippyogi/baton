@@ -263,6 +263,7 @@ async function main() {
   assert.equal(live.ack.received_count, 1, 'accepted bridge response exposes in-memory received count');
   assert.equal(live.ack.inbox_record_count, 1, 'accepted bridge response exposes inbox record count');
   assert.equal(live.ack.inbox_record_schema_version, 'baton.nectar_bridge.inbox_record.v1', 'accepted bridge response exposes inbox record schema');
+  assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
 
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
@@ -284,6 +285,8 @@ async function main() {
   assert.equal(files.length, 1, 'Nectar bridge wrote one inbox record');
   const record = JSON.parse(fs.readFileSync(path.join(bridge.inboxDir, files[0]), 'utf8'));
   assert.equal(record.schema_version, 'baton.nectar_bridge.inbox_record.v1', 'inbox record exposes stable schema');
+  assert.equal(record.processing_status, 'pending_local_operator', 'inbox record starts in explicit pending state');
+  assert.equal(record.operator_next_check, 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes', 'inbox record carries local operator handoff guidance');
   assert.equal(record.envelope.agent_id, 'nectar', 'inbox record stores Nectar envelope');
   assert.equal(record.envelope.constraints.do_not_expose_private_context, true, 'envelope carries private-context safety constraint');
   assert.equal(record.envelope.constraints.do_not_share_callback_urls_or_tokens, true, 'envelope carries callback secrecy safety constraint');

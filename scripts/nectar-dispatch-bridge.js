@@ -130,6 +130,8 @@ function startNectarDispatchBridge({
     const record = {
       schema_version: INBOX_RECORD_SCHEMA_VERSION,
       received_at: new Date().toISOString(),
+      processing_status: 'pending_local_operator',
+      operator_next_check: 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes',
       envelope: body,
       prompt: toOpenClawPrompt(body),
     };
@@ -150,6 +152,7 @@ function startNectarDispatchBridge({
       external_run_id: `nectar_bridge_${body.run_id}`,
       inbox_path: path.relative(ROOT, file).split(path.sep).join('/'),
       inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
+      inbox_processing_status: record.processing_status,
       received_count: received.length,
       inbox_record_count: countInboxRecords(inboxDir),
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
