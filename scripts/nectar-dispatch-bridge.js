@@ -9,6 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const PACKAGE = require(path.join(ROOT, 'package.json'));
 const DEFAULT_INBOX = path.join(ROOT, 'local', 'nectar-dispatch-inbox');
 const DEFAULT_MAX_BODY_BYTES = 64 * 1024;
+const INBOX_RECORD_SCHEMA_VERSION = 'baton.nectar_bridge.inbox_record.v1';
 const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
 
 function positiveIntEnv(name, fallback) {
@@ -80,6 +81,7 @@ function startNectarDispatchBridge({
         rejected_count: rejected.length,
         inbox_record_count: inboxRecordCount,
         inbox_dir: healthInboxDir,
+        inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
         inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
         last_received_dispatch_id: lastReceived ? lastReceived.envelope.dispatch_id : null,
@@ -126,6 +128,7 @@ function startNectarDispatchBridge({
     if (errors.length) return reject(res, 400, errors);
 
     const record = {
+      schema_version: INBOX_RECORD_SCHEMA_VERSION,
       received_at: new Date().toISOString(),
       envelope: body,
       prompt: toOpenClawPrompt(body),
@@ -146,6 +149,7 @@ function startNectarDispatchBridge({
       touch_id: body.touch_id,
       external_run_id: `nectar_bridge_${body.run_id}`,
       inbox_path: path.relative(ROOT, file).split(path.sep).join('/'),
+      inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
       received_count: received.length,
       inbox_record_count: countInboxRecords(inboxDir),
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
@@ -376,4 +380,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
