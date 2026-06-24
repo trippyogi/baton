@@ -70,6 +70,7 @@ function startNectarDispatchBridge({
         dispatch_path: '/baton/dispatch',
         dispatch_url: `http://${host}:${port}/baton/dispatch`,
         token_required: Boolean(token),
+        bridge_status: nectarBridgeStatus({ received, rejected, inboxDir }),
         started_at: startedAt.toISOString(),
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,
@@ -156,6 +157,13 @@ function startNectarDispatchBridge({
       resolve({ server, received, url, inboxDir });
     });
   });
+}
+
+function nectarBridgeStatus({ received, rejected, inboxDir }) {
+  if (!isInboxWritable(inboxDir)) return 'blocked_inbox_unwritable';
+  if (received.length) return 'ready_to_process';
+  if (rejected.length) return 'needs_client_fix';
+  return 'idle';
 }
 
 function nectarBridgeNextCheck({ received, rejected, inboxDir }) {

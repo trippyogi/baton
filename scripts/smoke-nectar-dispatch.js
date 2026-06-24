@@ -182,6 +182,7 @@ async function main() {
   assert.equal(initialHealthJson.dispatch_path, '/baton/dispatch', 'Nectar bridge health exposes dispatch path');
   assert.equal(initialHealthJson.dispatch_url, bridge.url, 'Nectar bridge health exposes full dispatch URL');
   assert.equal(initialHealthJson.token_required, true, 'Nectar bridge health exposes whether auth is required');
+  assert.equal(initialHealthJson.bridge_status, 'needs_client_fix', 'Nectar bridge health summarizes rejected pre-dispatch state');
   assert.match(initialHealthJson.started_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes start timestamp');
   assert.equal(typeof initialHealthJson.uptime_seconds, 'number', 'Nectar bridge health exposes uptime seconds');
   assert.ok(initialHealthJson.uptime_seconds >= 0, 'Nectar bridge uptime is non-negative');
@@ -258,6 +259,7 @@ async function main() {
   const finalHealthJson = await finalHealth.json();
   assert.equal(finalHealthJson.received_count, 1, 'Nectar bridge health updates received count after dispatch');
   assert.equal(finalHealthJson.rejected_count, 6, 'Nectar bridge health preserves rejection count after dispatch');
+  assert.equal(finalHealthJson.bridge_status, 'ready_to_process', 'Nectar bridge health summarizes ready inbox state after dispatch');
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
   assert.equal(finalHealthJson.inbox_writable, true, 'Nectar bridge inbox remains writable after dispatch');
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
