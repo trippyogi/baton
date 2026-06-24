@@ -106,6 +106,7 @@ async function main() {
   assert.match(wrongContentTypeJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'rejection response exposes timestamp');
   assert.equal(wrongContentTypeJson.error_count, 1, 'rejection response exposes error count');
   assert.equal(wrongContentTypeJson.rejection_code, 'unsupported_content_type', 'rejection response exposes stable rejection code');
+  assert.equal(wrongContentTypeJson.operator_next_check, 'fix the dispatch client request encoding before retrying the handoff', 'rejection response exposes next operator check');
   assert.deepEqual(wrongContentTypeJson.errors, ['content-type must be application/json'], 'non-JSON content type has explicit rejection reason');
 
   const malformed = await fetch(bridge.url, {
@@ -173,6 +174,7 @@ async function main() {
   assert.equal(credentialCallback.status, 400, 'Nectar bridge rejects callback URLs with embedded credentials');
   assert.ok(credentialCallbackJson.errors.includes('ack_url must not include credentials'), 'credential callback URL has explicit rejection reason');
   assert.equal(credentialCallbackJson.rejection_code, 'invalid_callback_url', 'credential callback URL has stable rejection code');
+  assert.equal(credentialCallbackJson.operator_next_check, 'fix callback URLs and keep credentials out of URL userinfo before retrying', 'callback rejection guides next operator check');
 
   const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const initialHealthJson = await initialHealth.json();

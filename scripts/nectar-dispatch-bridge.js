@@ -51,6 +51,7 @@ function startNectarDispatchBridge({
       rejection_code: rejectionCode,
       error_count: errorList.length,
       errors: errorList,
+      operator_next_check: nectarRejectionNextCheck(rejectionCode),
       ...extra,
     });
   };
@@ -192,6 +193,26 @@ function nectarBridgeNextCheck({ received, rejected, inboxDir }) {
     return 'fix the last_rejection_errors in the dispatch client, then retry the handoff';
   }
   return 'send a BATON dispatch smoke request before wiring a real local agent';
+}
+
+function nectarRejectionNextCheck(rejectionCode) {
+  switch (rejectionCode) {
+    case 'bad_token':
+      return 'check NECTAR_DISPATCH_TOKEN on both BATON and the local Nectar bridge before retrying';
+    case 'unsupported_content_type':
+    case 'invalid_json':
+    case 'invalid_body_type':
+      return 'fix the dispatch client request encoding before retrying the handoff';
+    case 'body_too_large':
+      return 'shrink the dispatch envelope or explicitly raise NECTAR_BRIDGE_MAX_BODY_BYTES for this local bridge';
+    case 'invalid_callback_url':
+      return 'fix callback URLs and keep credentials out of URL userinfo before retrying';
+    case 'missing_required_field':
+    case 'bad_schema':
+    case 'invalid_envelope':
+    default:
+      return 'fix the reported envelope errors in the dispatch client, then retry the handoff';
+  }
 }
 
 function validateEnvelope(body) {
