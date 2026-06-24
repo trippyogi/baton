@@ -11,6 +11,7 @@ const DEFAULT_INBOX = path.join(ROOT, 'local', 'nectar-dispatch-inbox');
 const DEFAULT_MAX_BODY_BYTES = 64 * 1024;
 const INBOX_RECORD_SCHEMA_VERSION = 'baton.nectar_bridge.inbox_record.v1';
 const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
+const BRIDGE_INSTANCE_ID = `nectar_bridge_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 
 function positiveIntEnv(name, fallback) {
   const raw = process.env[name];
@@ -47,6 +48,7 @@ function startNectarDispatchBridge({
       ok: false,
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
       bridge_version: PACKAGE.version,
+      bridge_instance_id: BRIDGE_INSTANCE_ID,
       generated_at: generatedAt,
       status: 'rejected',
       rejection_code: rejectionCode,
@@ -69,6 +71,7 @@ function startNectarDispatchBridge({
         service: 'nectar-dispatch-bridge',
         health_schema_version: 'baton.nectar_bridge.health.v1',
         bridge_version: PACKAGE.version,
+        bridge_instance_id: BRIDGE_INSTANCE_ID,
         generated_at: new Date().toISOString(),
         bind_host: host,
         dispatch_path: '/baton/dispatch',
@@ -130,6 +133,7 @@ function startNectarDispatchBridge({
     const record = {
       schema_version: INBOX_RECORD_SCHEMA_VERSION,
       received_at: new Date().toISOString(),
+      bridge_instance_id: BRIDGE_INSTANCE_ID,
       processing_status: 'pending_local_operator',
       operator_next_check: 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes',
       envelope: body,
@@ -143,6 +147,7 @@ function startNectarDispatchBridge({
       ok: true,
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
       bridge_version: PACKAGE.version,
+      bridge_instance_id: BRIDGE_INSTANCE_ID,
       generated_at: record.received_at,
       status: 'accepted',
       dispatch_id: body.dispatch_id,
