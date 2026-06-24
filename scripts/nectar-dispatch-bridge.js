@@ -141,6 +141,8 @@ function startNectarDispatchBridge({
       touch_id: body.touch_id,
       external_run_id: `nectar_bridge_${body.run_id}`,
       inbox_path: path.relative(ROOT, file).split(path.sep).join('/'),
+      received_count: received.length,
+      inbox_record_count: countInboxRecords(inboxDir),
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
       operator_next_check: 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing',
     });

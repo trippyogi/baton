@@ -250,6 +250,8 @@ async function main() {
   assert.equal(live.ack.run_id, bridge.received[0].envelope.run_id, 'accepted bridge response echoes run id');
   assert.equal(live.ack.task_id, bridge.received[0].envelope.task_id, 'accepted bridge response echoes task id');
   assert.equal(live.ack.touch_id, bridge.received[0].envelope.touch_id, 'accepted bridge response echoes touch id');
+  assert.equal(live.ack.received_count, 1, 'accepted bridge response exposes in-memory received count');
+  assert.equal(live.ack.inbox_record_count, 1, 'accepted bridge response exposes inbox record count');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
 
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
