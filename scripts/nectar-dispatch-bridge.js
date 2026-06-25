@@ -64,9 +64,11 @@ function startNectarDispatchBridge({
       const lastReceived = received.length ? received[received.length - 1] : null;
       const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
       const inboxRecordCount = countInboxRecords(inboxDir);
+      const firstPendingInboxName = firstInboxRecordName(inboxDir);
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
+      const firstPendingInboxPath = firstPendingInboxName ? path.posix.join(healthInboxDir, firstPendingInboxName) : null;
       const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
@@ -85,6 +87,8 @@ function startNectarDispatchBridge({
         rejected_count: rejected.length,
         inbox_record_count: inboxRecordCount,
         pending_inbox_count: inboxRecordCount,
+        first_pending_inbox_name: firstPendingInboxName,
+        first_pending_inbox_path: firstPendingInboxPath,
         inbox_dir: healthInboxDir,
         inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
         inbox_writable: isInboxWritable(inboxDir),
@@ -147,6 +151,10 @@ function startNectarDispatchBridge({
     const file = path.join(inboxDir, inboxRecordName);
     fs.writeFileSync(file, JSON.stringify(record, null, 2));
     received.push({ file, envelope: body, received_at: record.received_at });
+    const firstPendingInboxName = firstInboxRecordName(inboxDir);
+    const firstPendingInboxPath = firstPendingInboxName
+      ? path.relative(ROOT, path.join(inboxDir, firstPendingInboxName)).split(path.sep).join('/')
+      : null;
 
     return json(res, 200, {
       ok: true,
@@ -167,6 +175,8 @@ function startNectarDispatchBridge({
       received_count: received.length,
       inbox_record_count: countInboxRecords(inboxDir),
       pending_inbox_count: countInboxRecords(inboxDir),
+      first_pending_inbox_name: firstPendingInboxName,
+      first_pending_inbox_path: firstPendingInboxPath,
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
       operator_next_check: 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing',
     });
@@ -349,12 +359,20 @@ function safeName(value) {
   return String(value || 'unknown').replace(/[^A-Za-z0-9_.-]+/g, '_').slice(0, 80);
 }
 
-function countInboxRecords(inboxDir) {
+function inboxRecordNames(inboxDir) {
   try {
-    return fs.readdirSync(inboxDir).filter(file => file.endsWith('.json')).length;
+    return fs.readdirSync(inboxDir).filter(file => file.endsWith('.json')).sort();
   } catch (_) {
-    return 0;
+    return [];
   }
+}
+
+function countInboxRecords(inboxDir) {
+  return inboxRecordNames(inboxDir).length;
+}
+
+function firstInboxRecordName(inboxDir) {
+  return inboxRecordNames(inboxDir)[0] || null;
 }
 
 function isInboxWritable(inboxDir) {
@@ -395,4 +413,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
