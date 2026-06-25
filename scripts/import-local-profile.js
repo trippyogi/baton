@@ -41,11 +41,26 @@ const DEFAULT_AGENT = {
   last_activity_at: null,
 };
 
+function usage() {
+  return `Usage: node scripts/import-local-profile.js [profile.json] [options]
+
+Import a public-safe local BATON profile from an ignored private file.
+
+Options:
+  --dry-run                         Validate and summarize without writing SQLite
+  --json                            Emit machine-readable output
+  --mode insert|upsert              Insert new records only, or update by stable ID
+  --allow-external-dispatch-targets Allow non-local webhook targets explicitly
+  -h, --help                        Show this help
+`;
+}
+
 function parseArgs(argv) {
-  const opts = { profile: null, dryRun: false, json: false, allowExternalDispatchTargets: false, mode: 'insert' };
+  const opts = { profile: null, dryRun: false, json: false, allowExternalDispatchTargets: false, mode: 'insert', help: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--dry-run') opts.dryRun = true;
+    if (arg === '-h' || arg === '--help') opts.help = true;
+    else if (arg === '--dry-run') opts.dryRun = true;
     else if (arg === '--json') opts.json = true;
     else if (arg === '--allow-external-dispatch-targets') opts.allowExternalDispatchTargets = true;
     else if (arg === '--mode') opts.mode = argv[++i] || '';
@@ -263,6 +278,10 @@ function outputReport(report, json) {
 function main() {
   try {
     const opts = parseArgs(process.argv.slice(2));
+    if (opts.help) {
+      console.log(usage());
+      return;
+    }
     const profile = loadProfile(opts.profile);
     let db = null;
     let domains = DEFAULT_DOMAINS;
