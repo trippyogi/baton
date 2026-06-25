@@ -180,6 +180,7 @@ async function main() {
   const initialHealthJson = await initialHealth.json();
   const initialHealthHead = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`, { method: 'HEAD' });
   assert.equal(initialHealthHead.status, 200, 'Nectar bridge supports HEAD health probes');
+  assert.equal(await initialHealthHead.text(), '', 'Nectar bridge HEAD health returns no response body');
   assert.equal(initialHealth.headers.get('cache-control'), 'no-store', 'Nectar bridge health disables caching');
   assert.equal(initialHealthHead.headers.get('cache-control'), 'no-store', 'Nectar bridge HEAD health disables caching');
   assert.equal(initialHealthJson.bind_host, '127.0.0.1', 'Nectar bridge health exposes bind host');
