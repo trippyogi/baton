@@ -199,6 +199,7 @@ async function main() {
   assert.equal(initialHealthJson.rejected_count, 6, 'Nectar bridge health exposes rejection count before dispatch');
   assert.equal(initialHealthJson.inbox_record_count, 0, 'Nectar bridge health exposes inbox record count before dispatch');
   assert.equal(initialHealthJson.pending_inbox_count, 0, 'Nectar bridge health exposes pending inbox count before dispatch');
+  assert.deepEqual(initialHealthJson.pending_inbox_paths, [], 'Nectar bridge health exposes no pending inbox paths before dispatch');
   assert.equal(initialHealthJson.first_pending_inbox_name, null, 'Nectar bridge health has no first pending inbox before dispatch');
   assert.equal(initialHealthJson.first_pending_inbox_path, null, 'Nectar bridge health has no first pending inbox path before dispatch');
   assert.match(initialHealthJson.inbox_dir, /nectar-inbox$/, 'Nectar bridge health exposes configured inbox directory');
@@ -271,6 +272,7 @@ async function main() {
   assert.equal(live.ack.inbox_record_count, 1, 'accepted bridge response exposes inbox record count');
   assert.equal(live.ack.pending_inbox_count, 1, 'accepted bridge response exposes pending inbox count');
   assert.deepEqual(live.ack.pending_inbox_names, [live.ack.inbox_record_name], 'accepted bridge response exposes pending inbox names');
+  assert.deepEqual(live.ack.pending_inbox_paths, [live.ack.inbox_path], 'accepted bridge response exposes pending inbox paths');
   assert.equal(live.ack.pending_inbox_overflow_count, 0, 'accepted bridge response exposes pending inbox overflow count');
   assert.equal(live.ack.inbox_record_schema_version, 'baton.nectar_bridge.inbox_record.v1', 'accepted bridge response exposes inbox record schema');
   assert.match(live.ack.inbox_record_name, /^run_[a-f0-9-]+-dispatch_[a-f0-9-]+\.json$/, 'accepted bridge response exposes inbox record filename');
@@ -287,6 +289,7 @@ async function main() {
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
   assert.equal(finalHealthJson.pending_inbox_count, 1, 'Nectar bridge health updates pending inbox count after dispatch');
   assert.deepEqual(finalHealthJson.pending_inbox_names, [live.ack.inbox_record_name], 'Nectar bridge health exposes pending inbox names');
+  assert.deepEqual(finalHealthJson.pending_inbox_paths, [live.ack.inbox_path], 'Nectar bridge health exposes pending inbox paths');
   assert.equal(finalHealthJson.pending_inbox_overflow_count, 0, 'Nectar bridge health exposes pending inbox overflow count');
   assert.equal(finalHealthJson.first_pending_inbox_name, live.ack.inbox_record_name, 'Nectar bridge health exposes next pending inbox filename');
   assert.ok(finalHealthJson.first_pending_inbox_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes next pending inbox path');

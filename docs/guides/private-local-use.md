@@ -272,3 +272,8 @@ It also rejects syntactically valid but non-object JSON bodies (for example `nul
 ### Nectar bridge health auth signal
 
 The local Nectar dispatch bridge `/health` response includes `token_required` so operators can confirm whether `NECTAR_DISPATCH_TOKEN` is active before sending private local dispatch envelopes.
+
+
+## Nectar bridge inbox lookup
+
+The local Nectar bridge health and accepted ACK payloads include `pending_inbox_paths` plus the first pending inbox name/path. Use these ignored local paths to hand a dispatch prompt to Nectar/OpenClaw without guessing filenames.

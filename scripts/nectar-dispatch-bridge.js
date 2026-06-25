@@ -64,6 +64,7 @@ function startNectarDispatchBridge({
       const lastReceived = received.length ? received[received.length - 1] : null;
       const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
       const pendingInboxNames = inboxRecordNames(inboxDir);
+      const pendingInboxPaths = pendingInboxNames.map(name => path.posix.join(path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.', name));
       const inboxRecordCount = pendingInboxNames.length;
       const firstPendingInboxName = pendingInboxNames[0] || null;
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
@@ -89,6 +90,7 @@ function startNectarDispatchBridge({
         inbox_record_count: inboxRecordCount,
         pending_inbox_count: inboxRecordCount,
         pending_inbox_names: pendingInboxNames.slice(0, 5),
+        pending_inbox_paths: pendingInboxPaths.slice(0, 5),
         pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - 5),
         first_pending_inbox_name: firstPendingInboxName,
         first_pending_inbox_path: firstPendingInboxPath,
@@ -155,6 +157,7 @@ function startNectarDispatchBridge({
     fs.writeFileSync(file, JSON.stringify(record, null, 2));
     received.push({ file, envelope: body, received_at: record.received_at });
     const pendingInboxNames = inboxRecordNames(inboxDir);
+    const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
     const firstPendingInboxName = pendingInboxNames[0] || null;
     const firstPendingInboxPath = firstPendingInboxName
       ? path.relative(ROOT, path.join(inboxDir, firstPendingInboxName)).split(path.sep).join('/')
@@ -180,6 +183,7 @@ function startNectarDispatchBridge({
       inbox_record_count: countInboxRecords(inboxDir),
       pending_inbox_count: pendingInboxNames.length,
       pending_inbox_names: pendingInboxNames.slice(0, 5),
+      pending_inbox_paths: pendingInboxPaths.slice(0, 5),
       pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - 5),
       first_pending_inbox_name: firstPendingInboxName,
       first_pending_inbox_path: firstPendingInboxPath,
