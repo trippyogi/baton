@@ -154,7 +154,14 @@ function startNectarDispatchBridge({
       prompt: toOpenClawPrompt(body),
     };
     const file = path.join(inboxDir, inboxRecordName);
-    fs.writeFileSync(file, JSON.stringify(record, null, 2));
+    try {
+      fs.writeFileSync(file, JSON.stringify(record, null, 2), { flag: 'wx' });
+    } catch (err) {
+      if (err && err.code === 'EEXIST') {
+        return reject(res, 409, ['duplicate dispatch inbox record'], { inbox_record_name: inboxRecordName });
+      }
+      throw err;
+    }
     received.push({ file, envelope: body, received_at: record.received_at });
     const pendingInboxNames = inboxRecordNames(inboxDir);
     const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
@@ -206,6 +213,7 @@ function rejectionCodeFor(status, errors) {
   if (status === 401) return 'bad_token';
   if (status === 413) return 'body_too_large';
   if (status === 415) return 'unsupported_content_type';
+  if (status === 409) return 'duplicate_dispatch';
   if (errors.includes('invalid json')) return 'invalid_json';
   if (errors.includes('body must be a JSON object')) return 'invalid_body_type';
   if (errors.some(error => /^(ack_url|status_url|review_packet_url) /.test(String(error)))) return 'invalid_callback_url';
@@ -238,6 +246,8 @@ function nectarRejectionNextCheck(rejectionCode) {
   switch (rejectionCode) {
     case 'bad_token':
       return 'check NECTAR_DISPATCH_TOKEN on both BATON and the local Nectar bridge before retrying';
+    case 'duplicate_dispatch':
+      return 'open the existing inbox_record_name instead of retrying the same dispatch';
     case 'unsupported_content_type':
     case 'invalid_json':
     case 'invalid_body_type':

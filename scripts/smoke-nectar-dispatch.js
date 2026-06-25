@@ -281,10 +281,21 @@ async function main() {
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
 
+  const duplicateDispatch = await fetch(bridge.url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer test', 'Content-Type': 'application/json' },
+    body: JSON.stringify(bridge.received[0].envelope),
+  });
+  const duplicateDispatchJson = await duplicateDispatch.json();
+  assert.equal(duplicateDispatch.status, 409, 'Nectar bridge rejects duplicate inbox records without overwriting local prompts');
+  assert.equal(duplicateDispatchJson.rejection_code, 'duplicate_dispatch', 'duplicate dispatch has stable rejection code');
+  assert.equal(duplicateDispatchJson.inbox_record_name, live.ack.inbox_record_name, 'duplicate dispatch points at existing inbox record');
+  assert.equal(duplicateDispatchJson.operator_next_check, 'open the existing inbox_record_name instead of retrying the same dispatch', 'duplicate dispatch guides operator to existing prompt');
+
   const finalHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const finalHealthJson = await finalHealth.json();
   assert.equal(finalHealthJson.received_count, 1, 'Nectar bridge health updates received count after dispatch');
-  assert.equal(finalHealthJson.rejected_count, 6, 'Nectar bridge health preserves rejection count after dispatch');
+  assert.equal(finalHealthJson.rejected_count, 7, 'Nectar bridge health tracks duplicate rejection after dispatch');
   assert.equal(finalHealthJson.bridge_status, 'ready_to_process', 'Nectar bridge health summarizes ready inbox state after dispatch');
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
   assert.equal(finalHealthJson.pending_inbox_count, 1, 'Nectar bridge health updates pending inbox count after dispatch');
