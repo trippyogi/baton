@@ -63,8 +63,9 @@ function startNectarDispatchBridge({
     if ((req.method === 'GET' || req.method === 'HEAD') && req.url === '/health') {
       const lastReceived = received.length ? received[received.length - 1] : null;
       const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
-      const inboxRecordCount = countInboxRecords(inboxDir);
-      const firstPendingInboxName = firstInboxRecordName(inboxDir);
+      const pendingInboxNames = inboxRecordNames(inboxDir);
+      const inboxRecordCount = pendingInboxNames.length;
+      const firstPendingInboxName = pendingInboxNames[0] || null;
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
@@ -87,6 +88,8 @@ function startNectarDispatchBridge({
         rejected_count: rejected.length,
         inbox_record_count: inboxRecordCount,
         pending_inbox_count: inboxRecordCount,
+        pending_inbox_names: pendingInboxNames.slice(0, 5),
+        pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - 5),
         first_pending_inbox_name: firstPendingInboxName,
         first_pending_inbox_path: firstPendingInboxPath,
         inbox_dir: healthInboxDir,
@@ -151,7 +154,8 @@ function startNectarDispatchBridge({
     const file = path.join(inboxDir, inboxRecordName);
     fs.writeFileSync(file, JSON.stringify(record, null, 2));
     received.push({ file, envelope: body, received_at: record.received_at });
-    const firstPendingInboxName = firstInboxRecordName(inboxDir);
+    const pendingInboxNames = inboxRecordNames(inboxDir);
+    const firstPendingInboxName = pendingInboxNames[0] || null;
     const firstPendingInboxPath = firstPendingInboxName
       ? path.relative(ROOT, path.join(inboxDir, firstPendingInboxName)).split(path.sep).join('/')
       : null;
@@ -174,7 +178,9 @@ function startNectarDispatchBridge({
       inbox_processing_status: record.processing_status,
       received_count: received.length,
       inbox_record_count: countInboxRecords(inboxDir),
-      pending_inbox_count: countInboxRecords(inboxDir),
+      pending_inbox_count: pendingInboxNames.length,
+      pending_inbox_names: pendingInboxNames.slice(0, 5),
+      pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - 5),
       first_pending_inbox_name: firstPendingInboxName,
       first_pending_inbox_path: firstPendingInboxPath,
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
