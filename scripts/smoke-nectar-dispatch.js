@@ -197,6 +197,7 @@ async function main() {
   assert.equal(initialHealthJson.received_count, 0, 'Nectar bridge health exposes received count before dispatch');
   assert.equal(initialHealthJson.rejected_count, 6, 'Nectar bridge health exposes rejection count before dispatch');
   assert.equal(initialHealthJson.inbox_record_count, 0, 'Nectar bridge health exposes inbox record count before dispatch');
+  assert.equal(initialHealthJson.pending_inbox_count, 0, 'Nectar bridge health exposes pending inbox count before dispatch');
   assert.match(initialHealthJson.inbox_dir, /nectar-inbox$/, 'Nectar bridge health exposes configured inbox directory');
   assert.equal(initialHealthJson.inbox_record_schema_version, 'baton.nectar_bridge.inbox_record.v1', 'Nectar bridge health exposes inbox record schema');
   assert.equal(initialHealthJson.inbox_writable, true, 'Nectar bridge health exposes writable inbox state');
@@ -265,6 +266,7 @@ async function main() {
   assert.equal(live.ack.touch_id, bridge.received[0].envelope.touch_id, 'accepted bridge response echoes touch id');
   assert.equal(live.ack.received_count, 1, 'accepted bridge response exposes in-memory received count');
   assert.equal(live.ack.inbox_record_count, 1, 'accepted bridge response exposes inbox record count');
+  assert.equal(live.ack.pending_inbox_count, 1, 'accepted bridge response exposes pending inbox count');
   assert.equal(live.ack.inbox_record_schema_version, 'baton.nectar_bridge.inbox_record.v1', 'accepted bridge response exposes inbox record schema');
   assert.match(live.ack.inbox_record_name, /^run_[a-f0-9-]+-dispatch_[a-f0-9-]+\.json$/, 'accepted bridge response exposes inbox record filename');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
@@ -276,6 +278,7 @@ async function main() {
   assert.equal(finalHealthJson.rejected_count, 6, 'Nectar bridge health preserves rejection count after dispatch');
   assert.equal(finalHealthJson.bridge_status, 'ready_to_process', 'Nectar bridge health summarizes ready inbox state after dispatch');
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
+  assert.equal(finalHealthJson.pending_inbox_count, 1, 'Nectar bridge health updates pending inbox count after dispatch');
   assert.equal(finalHealthJson.inbox_writable, true, 'Nectar bridge inbox remains writable after dispatch');
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
   assert.equal(finalHealthJson.last_received_dispatch_id, bridge.received[0].envelope.dispatch_id, 'Nectar bridge health exposes last dispatch id');
