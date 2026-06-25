@@ -159,6 +159,18 @@ The bridge accepts `baton.dispatch.v1`, writes an ignored local inbox record wit
 
 Inbox prompts include a **Local safety** section reminding the receiving agent not to publish private envelope data, callback URLs, tokens, or task context, and to call callbacks only after the corresponding work is actually done.
 
+### Process pending Nectar inbox records
+
+Use the bridge health response as the local handoff queue before asking Nectar to work on a dispatch:
+
+1. Call `GET /health` on the local bridge.
+2. If `pending_inbox_count` is greater than `0`, open `first_pending_inbox_path` under this repo.
+3. Hand only that record's `prompt` field to the local Nectar/OpenClaw agent.
+4. Leave the inbox record private and ignored by Git.
+5. Call BATON callbacks only after the corresponding local work actually completes.
+
+If `bridge_status` is `needs_client_fix`, fix `last_rejection_errors` in the dispatch client before retrying. If it is `blocked_inbox_unwritable`, fix the local inbox path/permissions before sending more work.
+
 Run the bridge smoke test with:
 
 ```bash
