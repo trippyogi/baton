@@ -247,10 +247,15 @@ function importAgents(db, agents, opts) {
 
 function validateProfileUniqueness(tasks, agents) {
   const titles = new Set();
+  const taskIds = new Set();
   for (const task of tasks) {
     const key = task.title.toLowerCase();
     if (titles.has(key)) throw new Error(`duplicate task title in profile rejected: ${task.title}`);
     titles.add(key);
+    if (task.id) {
+      if (taskIds.has(task.id)) throw new Error(`duplicate task id in profile rejected: ${task.id}`);
+      taskIds.add(task.id);
+    }
   }
   const agentIds = new Set();
   for (const agent of agents) {
