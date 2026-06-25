@@ -9,6 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const PACKAGE = require(path.join(ROOT, 'package.json'));
 const DEFAULT_INBOX = path.join(ROOT, 'local', 'nectar-dispatch-inbox');
 const DEFAULT_MAX_BODY_BYTES = 64 * 1024;
+const PENDING_INBOX_PREVIEW_LIMIT = 5;
 const INBOX_RECORD_SCHEMA_VERSION = 'baton.nectar_bridge.inbox_record.v1';
 const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
 const BRIDGE_INSTANCE_ID = `nectar_bridge_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
@@ -89,9 +90,10 @@ function startNectarDispatchBridge({
         rejected_count: rejected.length,
         inbox_record_count: inboxRecordCount,
         pending_inbox_count: inboxRecordCount,
-        pending_inbox_names: pendingInboxNames.slice(0, 5),
-        pending_inbox_paths: pendingInboxPaths.slice(0, 5),
-        pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - 5),
+        pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
+        pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
+        pending_inbox_paths: pendingInboxPaths.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
+        pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - PENDING_INBOX_PREVIEW_LIMIT),
         first_pending_inbox_name: firstPendingInboxName,
         first_pending_inbox_path: firstPendingInboxPath,
         inbox_dir: healthInboxDir,
@@ -189,9 +191,10 @@ function startNectarDispatchBridge({
       received_count: received.length,
       inbox_record_count: countInboxRecords(inboxDir),
       pending_inbox_count: pendingInboxNames.length,
-      pending_inbox_names: pendingInboxNames.slice(0, 5),
-      pending_inbox_paths: pendingInboxPaths.slice(0, 5),
-      pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - 5),
+      pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
+      pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
+      pending_inbox_paths: pendingInboxPaths.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
+      pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - PENDING_INBOX_PREVIEW_LIMIT),
       first_pending_inbox_name: firstPendingInboxName,
       first_pending_inbox_path: firstPendingInboxPath,
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
