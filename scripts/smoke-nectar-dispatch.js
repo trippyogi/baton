@@ -206,6 +206,7 @@ async function main() {
   assert.equal(initialHealthJson.last_received_task_id, null, 'Nectar bridge health has no last task id before dispatch');
   assert.equal(initialHealthJson.last_received_touch_id, null, 'Nectar bridge health has no last touch id before dispatch');
   assert.equal(initialHealthJson.last_inbox_path, null, 'Nectar bridge health has no last inbox path before dispatch');
+  assert.equal(initialHealthJson.last_inbox_name, null, 'Nectar bridge health has no last inbox name before dispatch');
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
   assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
@@ -265,6 +266,7 @@ async function main() {
   assert.equal(live.ack.received_count, 1, 'accepted bridge response exposes in-memory received count');
   assert.equal(live.ack.inbox_record_count, 1, 'accepted bridge response exposes inbox record count');
   assert.equal(live.ack.inbox_record_schema_version, 'baton.nectar_bridge.inbox_record.v1', 'accepted bridge response exposes inbox record schema');
+  assert.match(live.ack.inbox_record_name, /^run_[a-f0-9-]+-dispatch_[a-f0-9-]+\.json$/, 'accepted bridge response exposes inbox record filename');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
 
@@ -282,12 +284,14 @@ async function main() {
   assert.equal(finalHealthJson.last_received_task_id, bridge.received[0].envelope.task_id, 'Nectar bridge health exposes last task id');
   assert.equal(finalHealthJson.last_received_touch_id, bridge.received[0].envelope.touch_id, 'Nectar bridge health exposes last touch id');
   assert.match(finalHealthJson.last_inbox_path, /^local\/nectar-dispatch-inbox|^\.\.\//, 'Nectar bridge health exposes last inbox path');
+  assert.equal(finalHealthJson.last_inbox_name, live.ack.inbox_record_name, 'Nectar bridge health exposes last inbox filename');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));
   assert.equal(files.length, 1, 'Nectar bridge wrote one inbox record');
   const record = JSON.parse(fs.readFileSync(path.join(bridge.inboxDir, files[0]), 'utf8'));
   assert.equal(record.schema_version, 'baton.nectar_bridge.inbox_record.v1', 'inbox record exposes stable schema');
   assert.equal(record.bridge_instance_id, initialHealthJson.bridge_instance_id, 'inbox record carries bridge instance id');
+  assert.equal(record.inbox_record_name, live.ack.inbox_record_name, 'inbox record carries its stable filename');
   assert.equal(record.processing_status, 'pending_local_operator', 'inbox record starts in explicit pending state');
   assert.equal(record.operator_next_check, 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes', 'inbox record carries local operator handoff guidance');
   assert.equal(record.envelope.agent_id, 'nectar', 'inbox record stores Nectar envelope');

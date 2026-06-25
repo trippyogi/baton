@@ -65,6 +65,7 @@ function startNectarDispatchBridge({
       const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
       const inboxRecordCount = countInboxRecords(inboxDir);
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
+      const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
       const body = {
         ok: true,
@@ -92,6 +93,7 @@ function startNectarDispatchBridge({
         last_received_task_id: lastReceived ? lastReceived.envelope.task_id : null,
         last_received_touch_id: lastReceived ? lastReceived.envelope.touch_id : null,
         last_inbox_path: lastInboxPath,
+        last_inbox_name: lastInboxName,
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
         last_rejection_status: lastRejected ? lastRejected.status : null,
         last_rejection_reason: lastRejected ? lastRejected.reason : null,
@@ -130,8 +132,10 @@ function startNectarDispatchBridge({
     const errors = validateEnvelope(body);
     if (errors.length) return reject(res, 400, errors);
 
+    const inboxRecordName = `${safeName(body.run_id)}-${safeName(body.dispatch_id)}.json`;
     const record = {
       schema_version: INBOX_RECORD_SCHEMA_VERSION,
+      inbox_record_name: inboxRecordName,
       received_at: new Date().toISOString(),
       bridge_instance_id: BRIDGE_INSTANCE_ID,
       processing_status: 'pending_local_operator',
@@ -139,7 +143,7 @@ function startNectarDispatchBridge({
       envelope: body,
       prompt: toOpenClawPrompt(body),
     };
-    const file = path.join(inboxDir, `${safeName(body.run_id)}-${safeName(body.dispatch_id)}.json`);
+    const file = path.join(inboxDir, inboxRecordName);
     fs.writeFileSync(file, JSON.stringify(record, null, 2));
     received.push({ file, envelope: body, received_at: record.received_at });
 
@@ -156,6 +160,7 @@ function startNectarDispatchBridge({
       touch_id: body.touch_id,
       external_run_id: `nectar_bridge_${body.run_id}`,
       inbox_path: path.relative(ROOT, file).split(path.sep).join('/'),
+      inbox_record_name: inboxRecordName,
       inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
       inbox_processing_status: record.processing_status,
       received_count: received.length,
