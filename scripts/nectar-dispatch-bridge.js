@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -11,6 +12,7 @@ const DEFAULT_INBOX = path.join(ROOT, 'local', 'nectar-dispatch-inbox');
 const DEFAULT_MAX_BODY_BYTES = 64 * 1024;
 const PENDING_INBOX_PREVIEW_LIMIT = 5;
 const INBOX_RECORD_SCHEMA_VERSION = 'baton.nectar_bridge.inbox_record.v1';
+const PROMPT_HASH_ALGORITHM = 'sha256';
 const SAFETY_PROFILE = 'private_local_inbox_only';
 const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
 const BRIDGE_INSTANCE_ID = `nectar_bridge_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
@@ -78,6 +80,7 @@ function startNectarDispatchBridge({
       const firstPendingInboxName = pendingInboxNames[0] || null;
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
+      const lastPromptSha256 = lastReceived ? lastReceived.prompt_sha256 : null;
       const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
       const firstPendingInboxPath = firstPendingInboxName ? path.posix.join(healthInboxDir, firstPendingInboxName) : null;
       const body = {
@@ -118,6 +121,7 @@ function startNectarDispatchBridge({
         last_received_touch_id: lastReceived ? lastReceived.envelope.touch_id : null,
         last_inbox_path: lastInboxPath,
         last_inbox_name: lastInboxName,
+        last_prompt_sha256: lastPromptSha256,
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
         last_rejection_request_id: lastRejected ? lastRejected.request_id : null,
         last_rejection_status: lastRejected ? lastRejected.status : null,
@@ -159,6 +163,8 @@ function startNectarDispatchBridge({
 
     const requestId = bridgeRequestId();
     const inboxRecordName = `${safeName(body.run_id)}-${safeName(body.dispatch_id)}.json`;
+    const prompt = toOpenClawPrompt(body);
+    const promptSha256 = sha256Hex(prompt);
     const record = {
       schema_version: INBOX_RECORD_SCHEMA_VERSION,
       inbox_record_name: inboxRecordName,
@@ -169,7 +175,9 @@ function startNectarDispatchBridge({
       processing_status: 'pending_local_operator',
       operator_next_check: 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes',
       envelope: body,
-      prompt: toOpenClawPrompt(body),
+      prompt_sha256: promptSha256,
+      prompt_hash_algorithm: PROMPT_HASH_ALGORITHM,
+      prompt,
     };
     const file = path.join(inboxDir, inboxRecordName);
     try {
@@ -180,7 +188,7 @@ function startNectarDispatchBridge({
       }
       throw err;
     }
-    received.push({ file, envelope: body, received_at: record.received_at, request_id: requestId });
+    received.push({ file, envelope: body, received_at: record.received_at, request_id: requestId, prompt_sha256: promptSha256 });
     const pendingInboxNames = inboxRecordNames(inboxDir);
     const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
     const firstPendingInboxName = pendingInboxNames[0] || null;
@@ -206,6 +214,8 @@ function startNectarDispatchBridge({
       inbox_record_name: inboxRecordName,
       inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
       inbox_processing_status: record.processing_status,
+      prompt_sha256: promptSha256,
+      prompt_hash_algorithm: PROMPT_HASH_ALGORITHM,
       received_count: received.length,
       inbox_record_count: countInboxRecords(inboxDir),
       pending_inbox_count: pendingInboxNames.length,
@@ -230,6 +240,10 @@ function startNectarDispatchBridge({
       resolve({ server, received, url, inboxDir });
     });
   });
+}
+
+function sha256Hex(value) {
+  return crypto.createHash('sha256').update(value).digest('hex');
 }
 
 function rejectionCodeFor(status, errors) {

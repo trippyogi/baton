@@ -2,6 +2,7 @@
 'use strict';
 
 const assert = require('assert/strict');
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -218,6 +219,7 @@ async function main() {
   assert.equal(initialHealthJson.last_received_touch_id, null, 'Nectar bridge health has no last touch id before dispatch');
   assert.equal(initialHealthJson.last_inbox_path, null, 'Nectar bridge health has no last inbox path before dispatch');
   assert.equal(initialHealthJson.last_inbox_name, null, 'Nectar bridge health has no last inbox name before dispatch');
+  assert.equal(initialHealthJson.last_prompt_sha256, null, 'Nectar bridge health has no last prompt hash before dispatch');
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
   assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
@@ -291,6 +293,8 @@ async function main() {
   assert.equal(live.ack.pending_inbox_oldest_name, live.ack.inbox_record_name, 'accepted bridge response exposes oldest pending inbox filename');
   assert.ok(live.ack.pending_inbox_oldest_path.endsWith(live.ack.inbox_record_name), 'accepted bridge response exposes oldest pending inbox path');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
+  assert.match(live.ack.prompt_sha256, /^[a-f0-9]{64}$/, 'accepted bridge response exposes prompt sha256');
+  assert.equal(live.ack.prompt_hash_algorithm, 'sha256', 'accepted bridge response exposes prompt hash algorithm');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
 
   const duplicateDispatch = await fetch(bridge.url, {
@@ -329,6 +333,7 @@ async function main() {
   assert.equal(finalHealthJson.last_received_touch_id, bridge.received[0].envelope.touch_id, 'Nectar bridge health exposes last touch id');
   assert.match(finalHealthJson.last_inbox_path, /^local\/nectar-dispatch-inbox|^\.\.\//, 'Nectar bridge health exposes last inbox path');
   assert.equal(finalHealthJson.last_inbox_name, live.ack.inbox_record_name, 'Nectar bridge health exposes last inbox filename');
+  assert.equal(finalHealthJson.last_prompt_sha256, live.ack.prompt_sha256, 'Nectar bridge health exposes last prompt hash');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));
   assert.equal(files.length, 1, 'Nectar bridge wrote one inbox record');
@@ -338,6 +343,9 @@ async function main() {
   assert.equal(record.bridge_request_id, live.ack.bridge_request_id, 'inbox record carries accepted request id');
   assert.equal(record.safety_profile, 'private_local_inbox_only', 'inbox record carries safety profile');
   assert.equal(record.inbox_record_name, live.ack.inbox_record_name, 'inbox record carries its stable filename');
+  assert.equal(record.prompt_sha256, live.ack.prompt_sha256, 'inbox record carries prompt sha256');
+  assert.equal(record.prompt_hash_algorithm, 'sha256', 'inbox record carries prompt hash algorithm');
+  assert.equal(crypto.createHash('sha256').update(record.prompt).digest('hex'), record.prompt_sha256, 'inbox record prompt hash matches prompt body');
   assert.equal(record.processing_status, 'pending_local_operator', 'inbox record starts in explicit pending state');
   assert.equal(record.operator_next_check, 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes', 'inbox record carries local operator handoff guidance');
   assert.equal(record.envelope.agent_id, 'nectar', 'inbox record stores Nectar envelope');
