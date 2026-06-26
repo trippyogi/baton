@@ -99,6 +99,8 @@ function startNectarDispatchBridge({
         pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - PENDING_INBOX_PREVIEW_LIMIT),
         first_pending_inbox_name: firstPendingInboxName,
         first_pending_inbox_path: firstPendingInboxPath,
+        pending_inbox_oldest_name: firstPendingInboxName,
+        pending_inbox_oldest_path: firstPendingInboxPath,
         inbox_dir: healthInboxDir,
         inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
         inbox_writable: isInboxWritable(inboxDir),
@@ -202,6 +204,8 @@ function startNectarDispatchBridge({
       pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - PENDING_INBOX_PREVIEW_LIMIT),
       first_pending_inbox_name: firstPendingInboxName,
       first_pending_inbox_path: firstPendingInboxPath,
+      pending_inbox_oldest_name: firstPendingInboxName,
+      pending_inbox_oldest_path: firstPendingInboxPath,
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
       operator_next_check: 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing',
     });

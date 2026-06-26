@@ -6,6 +6,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- Nectar bridge health/ACK payloads now include explicit `pending_inbox_oldest_name` and `pending_inbox_oldest_path` aliases so local operators can process the private inbox FIFO without relying on UI wording.
 - API routes now support global bearer-token protection and require `BATON_API_TOKEN` when BATON is bound outside localhost.
 - Private-boundary audit now fails if a tracked `.npmrc` or npm auth token is introduced.
 - Private-boundary audit now catches private terms in tracked code outside allowlisted public metadata/spec files.

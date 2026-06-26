@@ -276,4 +276,4 @@ The local Nectar dispatch bridge `/health` response includes `token_required` so
 
 ## Nectar bridge inbox lookup
 
-The local Nectar bridge health and accepted ACK payloads include `pending_inbox_paths`, `pending_inbox_preview_limit`, plus the first pending inbox name/path. Use these ignored local paths to hand a dispatch prompt to Nectar/OpenClaw without guessing filenames; if `pending_inbox_overflow_count` is non-zero, process or archive older local inbox records before relying only on the preview list.
+The local Nectar bridge health and accepted ACK payloads include `pending_inbox_paths`, `pending_inbox_preview_limit`, plus the first/oldest pending inbox name/path (`first_pending_inbox_*` and `pending_inbox_oldest_*`). Use these ignored local paths to hand a dispatch prompt to Nectar/OpenClaw without guessing filenames; if `pending_inbox_overflow_count` is non-zero, process or archive older local inbox records before relying only on the preview list.
