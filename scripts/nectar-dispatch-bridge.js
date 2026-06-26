@@ -77,7 +77,7 @@ function startNectarDispatchBridge({
       const pendingInboxNames = inboxRecordNames(inboxDir);
       const pendingInboxPaths = pendingInboxNames.map(name => path.posix.join(path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.', name));
       const inboxRecordCount = pendingInboxNames.length;
-      const firstPendingInboxName = pendingInboxNames[0] || null;
+      const firstPendingInboxName = oldestInboxRecordName(inboxDir);
       const newestPendingInboxName = newestInboxRecordName(inboxDir);
       const oldestPendingInboxReceivedAt = firstPendingInboxName ? inboxRecordReceivedAt(inboxDir, firstPendingInboxName) : null;
       const newestPendingInboxReceivedAt = newestPendingInboxName ? inboxRecordReceivedAt(inboxDir, newestPendingInboxName) : null;
@@ -199,7 +199,7 @@ function startNectarDispatchBridge({
     received.push({ file, envelope: body, received_at: record.received_at, request_id: requestId, prompt_sha256: promptSha256 });
     const pendingInboxNames = inboxRecordNames(inboxDir);
     const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
-    const firstPendingInboxName = pendingInboxNames[0] || null;
+    const firstPendingInboxName = oldestInboxRecordName(inboxDir);
     const newestPendingInboxName = newestInboxRecordName(inboxDir);
     const firstPendingInboxPath = firstPendingInboxName
       ? path.relative(ROOT, path.join(inboxDir, firstPendingInboxName)).split(path.sep).join('/')
@@ -452,7 +452,21 @@ function inboxRecordReceivedAt(inboxDir, name) {
 }
 
 function firstInboxRecordName(inboxDir) {
-  return inboxRecordNames(inboxDir)[0] || null;
+  return oldestInboxRecordName(inboxDir);
+}
+
+function oldestInboxRecordName(inboxDir) {
+  const names = inboxRecordNames(inboxDir);
+  let oldest = null;
+  let oldestReceivedAt = '';
+  for (const name of names) {
+    const receivedAt = inboxRecordReceivedAt(inboxDir, name) || '';
+    if (!oldest || receivedAt < oldestReceivedAt || (receivedAt === oldestReceivedAt && name < oldest)) {
+      oldest = name;
+      oldestReceivedAt = receivedAt;
+    }
+  }
+  return oldest;
 }
 
 function newestInboxRecordName(inboxDir) {
@@ -507,4 +521,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
