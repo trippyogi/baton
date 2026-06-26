@@ -204,6 +204,8 @@ async function main() {
   assert.equal(initialHealthJson.inbox_record_count, 0, 'Nectar bridge health exposes inbox record count before dispatch');
   assert.equal(initialHealthJson.pending_inbox_count, 0, 'Nectar bridge health exposes pending inbox count before dispatch');
   assert.equal(initialHealthJson.pending_inbox_preview_limit, 5, 'Nectar bridge health exposes pending inbox preview limit');
+  assert.equal(initialHealthJson.pending_inbox_needs_operator, false, 'Nectar bridge health exposes no pending operator work before dispatch');
+  assert.equal(initialHealthJson.pending_inbox_attention_required, false, 'Nectar bridge health exposes no pending attention before dispatch');
   assert.deepEqual(initialHealthJson.pending_inbox_paths, [], 'Nectar bridge health exposes no pending inbox paths before dispatch');
   assert.equal(initialHealthJson.first_pending_inbox_name, null, 'Nectar bridge health has no first pending inbox before dispatch');
   assert.equal(initialHealthJson.first_pending_inbox_path, null, 'Nectar bridge health has no first pending inbox path before dispatch');
@@ -289,6 +291,8 @@ async function main() {
   assert.equal(live.ack.received_count, 1, 'accepted bridge response exposes in-memory received count');
   assert.equal(live.ack.inbox_record_count, 1, 'accepted bridge response exposes inbox record count');
   assert.equal(live.ack.pending_inbox_count, 1, 'accepted bridge response exposes pending inbox count');
+  assert.equal(live.ack.pending_inbox_needs_operator, true, 'accepted bridge response flags pending local operator work');
+  assert.equal(live.ack.pending_inbox_attention_required, true, 'accepted bridge response flags pending local attention');
   assert.equal(live.ack.pending_inbox_preview_limit, 5, 'accepted bridge response exposes pending inbox preview limit');
   assert.deepEqual(live.ack.pending_inbox_names, [live.ack.inbox_record_name], 'accepted bridge response exposes pending inbox names');
   assert.deepEqual(live.ack.pending_inbox_paths, [live.ack.inbox_path], 'accepted bridge response exposes pending inbox paths');
@@ -324,6 +328,8 @@ async function main() {
   assert.equal(finalHealthJson.bridge_status, 'ready_to_process', 'Nectar bridge health summarizes ready inbox state after dispatch');
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
   assert.equal(finalHealthJson.pending_inbox_count, 1, 'Nectar bridge health updates pending inbox count after dispatch');
+  assert.equal(finalHealthJson.pending_inbox_needs_operator, true, 'Nectar bridge health flags pending local operator work after dispatch');
+  assert.equal(finalHealthJson.pending_inbox_attention_required, true, 'Nectar bridge health flags pending local attention after dispatch');
   assert.equal(finalHealthJson.pending_inbox_preview_limit, 5, 'Nectar bridge health keeps exposing pending inbox preview limit');
   assert.deepEqual(finalHealthJson.pending_inbox_names, [live.ack.inbox_record_name], 'Nectar bridge health exposes pending inbox names');
   assert.deepEqual(finalHealthJson.pending_inbox_paths, [live.ack.inbox_path], 'Nectar bridge health exposes pending inbox paths');
