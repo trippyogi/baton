@@ -175,6 +175,7 @@ async function main() {
   assert.ok(credentialCallbackJson.errors.includes('ack_url must not include credentials'), 'credential callback URL has explicit rejection reason');
   assert.equal(credentialCallbackJson.rejection_code, 'invalid_callback_url', 'credential callback URL has stable rejection code');
   assert.equal(credentialCallbackJson.operator_next_check, 'fix callback URLs and keep credentials out of URL userinfo before retrying', 'callback rejection guides next operator check');
+  assert.equal(credentialCallbackJson.safety_profile, 'private_local_inbox_only', 'rejections expose bridge safety profile');
 
   const initialHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
   const initialHealthJson = await initialHealth.json();
@@ -187,6 +188,7 @@ async function main() {
   assert.equal(initialHealthJson.health_schema_version, 'baton.nectar_bridge.health.v1', 'Nectar bridge health exposes stable health schema');
   assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
   assert.match(initialHealthJson.bridge_instance_id, /^nectar_bridge_/, 'Nectar bridge health exposes bridge instance id');
+  assert.equal(initialHealthJson.safety_profile, 'private_local_inbox_only', 'Nectar bridge health exposes safety profile');
   assert.match(initialHealthJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes response timestamp');
   assert.equal(initialHealthJson.dispatch_path, '/baton/dispatch', 'Nectar bridge health exposes dispatch path');
   assert.equal(initialHealthJson.dispatch_url, bridge.url, 'Nectar bridge health exposes full dispatch URL');
@@ -263,6 +265,7 @@ async function main() {
   assert.equal(live.ack.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'accepted bridge response exposes dispatch result schema');
   assert.equal(live.ack.bridge_version, '0.1.0', 'accepted bridge response exposes bridge version');
   assert.equal(live.ack.bridge_instance_id, initialHealthJson.bridge_instance_id, 'accepted bridge response echoes bridge instance id');
+  assert.equal(live.ack.safety_profile, 'private_local_inbox_only', 'accepted bridge response exposes safety profile');
   assert.match(live.ack.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'accepted bridge response exposes timestamp');
   assert.equal(bridge.received.length, 1, 'Nectar bridge received one envelope');
   assert.equal(live.ack.dispatch_id, bridge.received[0].envelope.dispatch_id, 'accepted bridge response echoes dispatch id');
@@ -322,6 +325,7 @@ async function main() {
   const record = JSON.parse(fs.readFileSync(path.join(bridge.inboxDir, files[0]), 'utf8'));
   assert.equal(record.schema_version, 'baton.nectar_bridge.inbox_record.v1', 'inbox record exposes stable schema');
   assert.equal(record.bridge_instance_id, initialHealthJson.bridge_instance_id, 'inbox record carries bridge instance id');
+  assert.equal(record.safety_profile, 'private_local_inbox_only', 'inbox record carries safety profile');
   assert.equal(record.inbox_record_name, live.ack.inbox_record_name, 'inbox record carries its stable filename');
   assert.equal(record.processing_status, 'pending_local_operator', 'inbox record starts in explicit pending state');
   assert.equal(record.operator_next_check, 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes', 'inbox record carries local operator handoff guidance');
