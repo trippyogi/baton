@@ -141,18 +141,25 @@ function checkRequiredDocs() {
 function main() {
   const tracked = runGit(['ls-files']);
   const staged = runGit(['diff', '--cached', '--name-only']);
+  const untracked = runGit(['ls-files', '--others', '--exclude-standard']);
   const blockedTracked = tracked.filter(isBlockedTrackedPath).map(file => ({ file, reason: 'blocked private path is tracked' }));
   const blockedStaged = staged.filter(isBlockedTrackedPath).map(file => ({ file, reason: 'blocked private path is staged' }));
+  const blockedUntracked = untracked.filter(isBlockedTrackedPath).map(file => ({ file, reason: 'blocked private path is untracked but not ignored' }));
   const secretFindings = scanSecrets(tracked);
+  const untrackedSecretFindings = scanSecrets(untracked).map(finding => ({ ...finding, reason: `untracked ${finding.reason}` }));
   const privateTermFindings = scanPrivateTerms(tracked);
+  const untrackedPrivateTermFindings = scanPrivateTerms(untracked).map(finding => ({ ...finding, reason: `untracked ${finding.reason}` }));
   const fixtureFindings = scanFixtures();
   const missingDocs = checkRequiredDocs();
 
   const checks = {
     tracked_blocked_paths: blockedTracked,
     staged_private_paths: blockedStaged,
+    untracked_private_paths: blockedUntracked,
     secret_patterns: secretFindings,
+    untracked_secret_patterns: untrackedSecretFindings,
     private_terms: privateTermFindings,
+    untracked_private_terms: untrackedPrivateTermFindings,
     public_fixture_specificity: fixtureFindings,
     required_docs: missingDocs,
   };
