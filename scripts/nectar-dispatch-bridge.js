@@ -78,12 +78,15 @@ function startNectarDispatchBridge({
       const pendingInboxPaths = pendingInboxNames.map(name => path.posix.join(path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.', name));
       const inboxRecordCount = pendingInboxNames.length;
       const firstPendingInboxName = pendingInboxNames[0] || null;
+      const newestPendingInboxName = newestInboxRecordName(inboxDir);
       const oldestPendingInboxReceivedAt = firstPendingInboxName ? inboxRecordReceivedAt(inboxDir, firstPendingInboxName) : null;
+      const newestPendingInboxReceivedAt = newestPendingInboxName ? inboxRecordReceivedAt(inboxDir, newestPendingInboxName) : null;
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const lastPromptSha256 = lastReceived ? lastReceived.prompt_sha256 : null;
       const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
       const firstPendingInboxPath = firstPendingInboxName ? path.posix.join(healthInboxDir, firstPendingInboxName) : null;
+      const newestPendingInboxPath = newestPendingInboxName ? path.posix.join(healthInboxDir, newestPendingInboxName) : null;
       const body = {
         ok: true,
         service: 'nectar-dispatch-bridge',
@@ -112,6 +115,9 @@ function startNectarDispatchBridge({
         pending_inbox_oldest_name: firstPendingInboxName,
         pending_inbox_oldest_path: firstPendingInboxPath,
         pending_inbox_oldest_received_at: oldestPendingInboxReceivedAt,
+        pending_inbox_newest_name: newestPendingInboxName,
+        pending_inbox_newest_path: newestPendingInboxPath,
+        pending_inbox_newest_received_at: newestPendingInboxReceivedAt,
         inbox_dir: healthInboxDir,
         inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
         inbox_writable: isInboxWritable(inboxDir),
@@ -194,8 +200,12 @@ function startNectarDispatchBridge({
     const pendingInboxNames = inboxRecordNames(inboxDir);
     const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
     const firstPendingInboxName = pendingInboxNames[0] || null;
+    const newestPendingInboxName = newestInboxRecordName(inboxDir);
     const firstPendingInboxPath = firstPendingInboxName
       ? path.relative(ROOT, path.join(inboxDir, firstPendingInboxName)).split(path.sep).join('/')
+      : null;
+    const newestPendingInboxPath = newestPendingInboxName
+      ? path.relative(ROOT, path.join(inboxDir, newestPendingInboxName)).split(path.sep).join('/')
       : null;
 
     return json(res, 200, {
@@ -229,6 +239,8 @@ function startNectarDispatchBridge({
       first_pending_inbox_path: firstPendingInboxPath,
       pending_inbox_oldest_name: firstPendingInboxName,
       pending_inbox_oldest_path: firstPendingInboxPath,
+      pending_inbox_newest_name: newestPendingInboxName,
+      pending_inbox_newest_path: newestPendingInboxPath,
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
       operator_next_check: 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing',
     });
@@ -441,6 +453,20 @@ function inboxRecordReceivedAt(inboxDir, name) {
 
 function firstInboxRecordName(inboxDir) {
   return inboxRecordNames(inboxDir)[0] || null;
+}
+
+function newestInboxRecordName(inboxDir) {
+  const names = inboxRecordNames(inboxDir);
+  let newest = null;
+  let newestReceivedAt = '';
+  for (const name of names) {
+    const receivedAt = inboxRecordReceivedAt(inboxDir, name) || '';
+    if (!newest || receivedAt > newestReceivedAt || (receivedAt === newestReceivedAt && name > newest)) {
+      newest = name;
+      newestReceivedAt = receivedAt;
+    }
+  }
+  return newest;
 }
 
 function isInboxWritable(inboxDir) {

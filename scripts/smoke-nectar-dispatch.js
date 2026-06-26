@@ -210,6 +210,9 @@ async function main() {
   assert.equal(initialHealthJson.pending_inbox_oldest_name, null, 'Nectar bridge health has no oldest pending inbox before dispatch');
   assert.equal(initialHealthJson.pending_inbox_oldest_path, null, 'Nectar bridge health has no oldest pending inbox path before dispatch');
   assert.equal(initialHealthJson.pending_inbox_oldest_received_at, null, 'Nectar bridge health has no oldest pending inbox timestamp before dispatch');
+  assert.equal(initialHealthJson.pending_inbox_newest_name, null, 'Nectar bridge health has no newest pending inbox before dispatch');
+  assert.equal(initialHealthJson.pending_inbox_newest_path, null, 'Nectar bridge health has no newest pending inbox path before dispatch');
+  assert.equal(initialHealthJson.pending_inbox_newest_received_at, null, 'Nectar bridge health has no newest pending inbox timestamp before dispatch');
   assert.match(initialHealthJson.inbox_dir, /nectar-inbox$/, 'Nectar bridge health exposes configured inbox directory');
   assert.equal(initialHealthJson.inbox_record_schema_version, 'baton.nectar_bridge.inbox_record.v1', 'Nectar bridge health exposes inbox record schema');
   assert.equal(initialHealthJson.inbox_writable, true, 'Nectar bridge health exposes writable inbox state');
@@ -293,6 +296,8 @@ async function main() {
   assert.ok(live.ack.first_pending_inbox_path.endsWith(live.ack.inbox_record_name), 'accepted bridge response exposes next pending inbox path');
   assert.equal(live.ack.pending_inbox_oldest_name, live.ack.inbox_record_name, 'accepted bridge response exposes oldest pending inbox filename');
   assert.ok(live.ack.pending_inbox_oldest_path.endsWith(live.ack.inbox_record_name), 'accepted bridge response exposes oldest pending inbox path');
+  assert.equal(live.ack.pending_inbox_newest_name, live.ack.inbox_record_name, 'accepted bridge response exposes newest pending inbox filename');
+  assert.ok(live.ack.pending_inbox_newest_path.endsWith(live.ack.inbox_record_name), 'accepted bridge response exposes newest pending inbox path');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.match(live.ack.prompt_sha256, /^[a-f0-9]{64}$/, 'accepted bridge response exposes prompt sha256');
   assert.equal(live.ack.prompt_hash_algorithm, 'sha256', 'accepted bridge response exposes prompt hash algorithm');
@@ -325,6 +330,9 @@ async function main() {
   assert.equal(finalHealthJson.pending_inbox_oldest_name, live.ack.inbox_record_name, 'Nectar bridge health exposes oldest pending inbox filename');
   assert.ok(finalHealthJson.pending_inbox_oldest_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes oldest pending inbox path');
   assert.match(finalHealthJson.pending_inbox_oldest_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes oldest pending inbox timestamp');
+  assert.equal(finalHealthJson.pending_inbox_newest_name, live.ack.inbox_record_name, 'Nectar bridge health exposes newest pending inbox filename');
+  assert.ok(finalHealthJson.pending_inbox_newest_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes newest pending inbox path');
+  assert.match(finalHealthJson.pending_inbox_newest_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes newest pending inbox timestamp');
   assert.equal(finalHealthJson.inbox_writable, true, 'Nectar bridge inbox remains writable after dispatch');
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
   assert.equal(finalHealthJson.last_received_dispatch_id, bridge.received[0].envelope.dispatch_id, 'Nectar bridge health exposes last dispatch id');
