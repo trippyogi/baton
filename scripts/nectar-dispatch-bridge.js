@@ -78,6 +78,7 @@ function startNectarDispatchBridge({
       const pendingInboxPaths = pendingInboxNames.map(name => path.posix.join(path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.', name));
       const inboxRecordCount = pendingInboxNames.length;
       const firstPendingInboxName = pendingInboxNames[0] || null;
+      const oldestPendingInboxReceivedAt = firstPendingInboxName ? inboxRecordReceivedAt(inboxDir, firstPendingInboxName) : null;
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const lastPromptSha256 = lastReceived ? lastReceived.prompt_sha256 : null;
@@ -110,6 +111,7 @@ function startNectarDispatchBridge({
         first_pending_inbox_path: firstPendingInboxPath,
         pending_inbox_oldest_name: firstPendingInboxName,
         pending_inbox_oldest_path: firstPendingInboxPath,
+        pending_inbox_oldest_received_at: oldestPendingInboxReceivedAt,
         inbox_dir: healthInboxDir,
         inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
         inbox_writable: isInboxWritable(inboxDir),
@@ -428,6 +430,15 @@ function countInboxRecords(inboxDir) {
   return inboxRecordNames(inboxDir).length;
 }
 
+function inboxRecordReceivedAt(inboxDir, name) {
+  try {
+    const record = JSON.parse(fs.readFileSync(path.join(inboxDir, name), 'utf8'));
+    return typeof record.received_at === 'string' ? record.received_at : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function firstInboxRecordName(inboxDir) {
   return inboxRecordNames(inboxDir)[0] || null;
 }
@@ -470,4 +481,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, positiveIntEnv, rejectionCodeFor, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
