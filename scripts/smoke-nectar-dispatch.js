@@ -225,6 +225,7 @@ async function main() {
   assert.equal(initialHealthJson.last_received_touch_id, null, 'Nectar bridge health has no last touch id before dispatch');
   assert.equal(initialHealthJson.last_inbox_path, null, 'Nectar bridge health has no last inbox path before dispatch');
   assert.equal(initialHealthJson.last_inbox_name, null, 'Nectar bridge health has no last inbox name before dispatch');
+  assert.equal(initialHealthJson.last_inbox_processing_status, null, 'Nectar bridge health has no last inbox processing status before dispatch');
   assert.equal(initialHealthJson.last_prompt_sha256, null, 'Nectar bridge health has no last prompt hash before dispatch');
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
@@ -349,6 +350,7 @@ async function main() {
   assert.equal(finalHealthJson.last_received_touch_id, bridge.received[0].envelope.touch_id, 'Nectar bridge health exposes last touch id');
   assert.match(finalHealthJson.last_inbox_path, /^local\/nectar-dispatch-inbox|^\.\.\//, 'Nectar bridge health exposes last inbox path');
   assert.equal(finalHealthJson.last_inbox_name, live.ack.inbox_record_name, 'Nectar bridge health exposes last inbox filename');
+  assert.equal(finalHealthJson.last_inbox_processing_status, 'pending_local_operator', 'Nectar bridge health exposes last inbox processing status');
   assert.equal(finalHealthJson.last_prompt_sha256, live.ack.prompt_sha256, 'Nectar bridge health exposes last prompt hash');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));

@@ -85,6 +85,7 @@ function startNectarDispatchBridge({
       const newestPendingInboxAgeSeconds = secondsSinceIso(newestPendingInboxReceivedAt);
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
+      const lastInboxProcessingStatus = lastInboxName ? inboxRecordProcessingStatus(inboxDir, lastInboxName) : null;
       const lastPromptSha256 = lastReceived ? lastReceived.prompt_sha256 : null;
       const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
       const firstPendingInboxPath = firstPendingInboxName ? path.posix.join(healthInboxDir, firstPendingInboxName) : null;
@@ -133,6 +134,7 @@ function startNectarDispatchBridge({
         last_received_touch_id: lastReceived ? lastReceived.envelope.touch_id : null,
         last_inbox_path: lastInboxPath,
         last_inbox_name: lastInboxName,
+        last_inbox_processing_status: lastInboxProcessingStatus,
         last_prompt_sha256: lastPromptSha256,
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
         last_rejection_request_id: lastRejected ? lastRejected.request_id : null,
@@ -455,6 +457,15 @@ function inboxRecordReceivedAt(inboxDir, name) {
   }
 }
 
+function inboxRecordProcessingStatus(inboxDir, name) {
+  try {
+    const record = JSON.parse(fs.readFileSync(path.join(inboxDir, name), 'utf8'));
+    return typeof record.processing_status === 'string' ? record.processing_status : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function secondsSinceIso(value, now = Date.now()) {
   if (!value) return null;
   const parsed = Date.parse(value);
@@ -532,4 +543,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
