@@ -15,6 +15,10 @@ const SAFETY_PROFILE = 'private_local_inbox_only';
 const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
 const BRIDGE_INSTANCE_ID = `nectar_bridge_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 
+function bridgeRequestId() {
+  return `nectar_req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function positiveIntEnv(name, fallback) {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -42,15 +46,17 @@ function startNectarDispatchBridge({
 
   const reject = (res, status, errors, extra = {}) => {
     const generatedAt = new Date().toISOString();
+    const requestId = bridgeRequestId();
     const reason = Array.isArray(errors) ? errors.join('; ') : String(errors);
     const errorList = Array.isArray(errors) ? errors : [String(errors)];
     const rejectionCode = rejectionCodeFor(status, errorList);
-    rejected.push({ rejected_at: generatedAt, status, reason, errors: errorList, code: rejectionCode });
+    rejected.push({ rejected_at: generatedAt, request_id: requestId, status, reason, errors: errorList, code: rejectionCode });
     return json(res, status, {
       ok: false,
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
       bridge_version: PACKAGE.version,
       bridge_instance_id: BRIDGE_INSTANCE_ID,
+      bridge_request_id: requestId,
       safety_profile: SAFETY_PROFILE,
       generated_at: generatedAt,
       status: 'rejected',
@@ -105,6 +111,7 @@ function startNectarDispatchBridge({
         inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
         inbox_writable: isInboxWritable(inboxDir),
         last_received_at: lastReceived ? lastReceived.received_at : null,
+        last_received_request_id: lastReceived ? lastReceived.request_id : null,
         last_received_dispatch_id: lastReceived ? lastReceived.envelope.dispatch_id : null,
         last_received_run_id: lastReceived ? lastReceived.envelope.run_id : null,
         last_received_task_id: lastReceived ? lastReceived.envelope.task_id : null,
@@ -112,6 +119,7 @@ function startNectarDispatchBridge({
         last_inbox_path: lastInboxPath,
         last_inbox_name: lastInboxName,
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
+        last_rejection_request_id: lastRejected ? lastRejected.request_id : null,
         last_rejection_status: lastRejected ? lastRejected.status : null,
         last_rejection_reason: lastRejected ? lastRejected.reason : null,
         last_rejection_code: lastRejected ? lastRejected.code : null,
@@ -149,12 +157,14 @@ function startNectarDispatchBridge({
     const errors = validateEnvelope(body);
     if (errors.length) return reject(res, 400, errors);
 
+    const requestId = bridgeRequestId();
     const inboxRecordName = `${safeName(body.run_id)}-${safeName(body.dispatch_id)}.json`;
     const record = {
       schema_version: INBOX_RECORD_SCHEMA_VERSION,
       inbox_record_name: inboxRecordName,
       received_at: new Date().toISOString(),
       bridge_instance_id: BRIDGE_INSTANCE_ID,
+      bridge_request_id: requestId,
       safety_profile: SAFETY_PROFILE,
       processing_status: 'pending_local_operator',
       operator_next_check: 'hand prompt to local Nectar/OpenClaw, then update BATON callbacks only after real work completes',
@@ -170,7 +180,7 @@ function startNectarDispatchBridge({
       }
       throw err;
     }
-    received.push({ file, envelope: body, received_at: record.received_at });
+    received.push({ file, envelope: body, received_at: record.received_at, request_id: requestId });
     const pendingInboxNames = inboxRecordNames(inboxDir);
     const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
     const firstPendingInboxName = pendingInboxNames[0] || null;
@@ -183,6 +193,7 @@ function startNectarDispatchBridge({
       schema_version: 'baton.nectar_bridge.dispatch_result.v1',
       bridge_version: PACKAGE.version,
       bridge_instance_id: BRIDGE_INSTANCE_ID,
+      bridge_request_id: requestId,
       safety_profile: SAFETY_PROFILE,
       generated_at: record.received_at,
       status: 'accepted',

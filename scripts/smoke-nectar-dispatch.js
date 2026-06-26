@@ -103,6 +103,7 @@ async function main() {
   assert.equal(wrongContentType.status, 415, 'Nectar bridge rejects non-JSON content types');
   assert.equal(wrongContentTypeJson.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'rejection response exposes dispatch result schema');
   assert.equal(wrongContentTypeJson.bridge_version, '0.1.0', 'rejection response exposes bridge version');
+  assert.match(wrongContentTypeJson.bridge_request_id, /^nectar_req_/, 'rejection response exposes request id');
   assert.match(wrongContentTypeJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'rejection response exposes timestamp');
   assert.equal(wrongContentTypeJson.error_count, 1, 'rejection response exposes error count');
   assert.equal(wrongContentTypeJson.rejection_code, 'unsupported_content_type', 'rejection response exposes stable rejection code');
@@ -221,6 +222,7 @@ async function main() {
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
   assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
   assert.equal(initialHealthJson.last_rejection_code, 'invalid_callback_url', 'Nectar bridge health exposes last rejection code');
+  assert.match(initialHealthJson.last_rejection_request_id, /^nectar_req_/, 'Nectar bridge health exposes last rejection request id');
   assert.deepEqual(initialHealthJson.last_rejection_errors, ['ack_url must not include credentials'], 'Nectar bridge health exposes structured last rejection errors');
   assert.equal(initialHealthJson.last_rejection_error_count, 1, 'Nectar bridge health exposes last rejection error count');
   assert.equal(initialHealthJson.max_body_bytes, MAX_BODY_BYTES, 'Nectar bridge health exposes max body bytes');
@@ -267,6 +269,7 @@ async function main() {
   assert.equal(live.ack.schema_version, 'baton.nectar_bridge.dispatch_result.v1', 'accepted bridge response exposes dispatch result schema');
   assert.equal(live.ack.bridge_version, '0.1.0', 'accepted bridge response exposes bridge version');
   assert.equal(live.ack.bridge_instance_id, initialHealthJson.bridge_instance_id, 'accepted bridge response echoes bridge instance id');
+  assert.match(live.ack.bridge_request_id, /^nectar_req_/, 'accepted bridge response exposes request id');
   assert.equal(live.ack.safety_profile, 'private_local_inbox_only', 'accepted bridge response exposes safety profile');
   assert.match(live.ack.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'accepted bridge response exposes timestamp');
   assert.equal(bridge.received.length, 1, 'Nectar bridge received one envelope');
@@ -319,6 +322,7 @@ async function main() {
   assert.equal(finalHealthJson.inbox_writable, true, 'Nectar bridge inbox remains writable after dispatch');
   assert.match(finalHealthJson.last_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last received timestamp');
   assert.equal(finalHealthJson.last_received_dispatch_id, bridge.received[0].envelope.dispatch_id, 'Nectar bridge health exposes last dispatch id');
+  assert.equal(finalHealthJson.last_received_request_id, live.ack.bridge_request_id, 'Nectar bridge health exposes last received request id');
   assert.equal(finalHealthJson.operator_next_check, 'open last_inbox_path and hand the generated prompt to local Nectar/OpenClaw', 'Nectar bridge health updates next operator check after dispatch');
   assert.equal(finalHealthJson.last_received_run_id, bridge.received[0].envelope.run_id, 'Nectar bridge health exposes last run id');
   assert.equal(finalHealthJson.last_received_task_id, bridge.received[0].envelope.task_id, 'Nectar bridge health exposes last task id');
@@ -331,6 +335,7 @@ async function main() {
   const record = JSON.parse(fs.readFileSync(path.join(bridge.inboxDir, files[0]), 'utf8'));
   assert.equal(record.schema_version, 'baton.nectar_bridge.inbox_record.v1', 'inbox record exposes stable schema');
   assert.equal(record.bridge_instance_id, initialHealthJson.bridge_instance_id, 'inbox record carries bridge instance id');
+  assert.equal(record.bridge_request_id, live.ack.bridge_request_id, 'inbox record carries accepted request id');
   assert.equal(record.safety_profile, 'private_local_inbox_only', 'inbox record carries safety profile');
   assert.equal(record.inbox_record_name, live.ack.inbox_record_name, 'inbox record carries its stable filename');
   assert.equal(record.processing_status, 'pending_local_operator', 'inbox record starts in explicit pending state');
