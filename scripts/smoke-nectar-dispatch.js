@@ -7,7 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { MAX_BODY_BYTES, isLoopbackHost, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
+const { MAX_BODY_BYTES, isLoopbackHost, pendingInboxRecordNames, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
 
 let baton = null;
 let bridge = null;
@@ -92,6 +92,14 @@ async function main() {
     /refusing non-loopback Nectar bridge bind/,
     'Nectar bridge refuses unauthenticated non-loopback binds',
   );
+  const pendingHelperDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-pending-helper-'));
+  try {
+    fs.writeFileSync(path.join(pendingHelperDir, 'done.json'), JSON.stringify({ processing_status: 'completed' }));
+    fs.writeFileSync(path.join(pendingHelperDir, 'pending.json'), JSON.stringify({ processing_status: 'pending_local_operator' }));
+    assert.deepEqual(pendingInboxRecordNames(pendingHelperDir), ['pending.json'], 'pending inbox helper excludes processed records');
+  } finally {
+    fs.rmSync(pendingHelperDir, { recursive: true, force: true });
+  }
 
   await startBaton();
 

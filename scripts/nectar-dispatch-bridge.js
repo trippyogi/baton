@@ -74,11 +74,11 @@ function startNectarDispatchBridge({
     if ((req.method === 'GET' || req.method === 'HEAD') && req.url === '/health') {
       const lastReceived = received.length ? received[received.length - 1] : null;
       const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
-      const pendingInboxNames = inboxRecordNames(inboxDir);
+      const inboxRecordCount = countInboxRecords(inboxDir);
+      const pendingInboxNames = pendingInboxRecordNames(inboxDir);
       const pendingInboxPaths = pendingInboxNames.map(name => path.posix.join(path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.', name));
-      const inboxRecordCount = pendingInboxNames.length;
-      const firstPendingInboxName = oldestInboxRecordName(inboxDir);
-      const newestPendingInboxName = newestInboxRecordName(inboxDir);
+      const firstPendingInboxName = oldestPendingInboxRecordName(inboxDir);
+      const newestPendingInboxName = newestPendingInboxRecordName(inboxDir);
       const oldestPendingInboxReceivedAt = firstPendingInboxName ? inboxRecordReceivedAt(inboxDir, firstPendingInboxName) : null;
       const newestPendingInboxReceivedAt = newestPendingInboxName ? inboxRecordReceivedAt(inboxDir, newestPendingInboxName) : null;
       const oldestPendingInboxAgeSeconds = secondsSinceIso(oldestPendingInboxReceivedAt);
@@ -205,10 +205,10 @@ function startNectarDispatchBridge({
       throw err;
     }
     received.push({ file, envelope: body, received_at: record.received_at, request_id: requestId, prompt_sha256: promptSha256 });
-    const pendingInboxNames = inboxRecordNames(inboxDir);
+    const pendingInboxNames = pendingInboxRecordNames(inboxDir);
     const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
-    const firstPendingInboxName = oldestInboxRecordName(inboxDir);
-    const newestPendingInboxName = newestInboxRecordName(inboxDir);
+    const firstPendingInboxName = oldestPendingInboxRecordName(inboxDir);
+    const newestPendingInboxName = newestPendingInboxRecordName(inboxDir);
     const firstPendingInboxPath = firstPendingInboxName
       ? path.relative(ROOT, path.join(inboxDir, firstPendingInboxName)).split(path.sep).join('/')
       : null;
@@ -470,6 +470,10 @@ function inboxRecordProcessingStatus(inboxDir, name) {
   }
 }
 
+function pendingInboxRecordNames(inboxDir) {
+  return inboxRecordNames(inboxDir).filter(name => inboxRecordProcessingStatus(inboxDir, name) === 'pending_local_operator');
+}
+
 function secondsSinceIso(value, now = Date.now()) {
   if (!value) return null;
   const parsed = Date.parse(value);
@@ -497,6 +501,40 @@ function oldestInboxRecordName(inboxDir) {
 
 function newestInboxRecordName(inboxDir) {
   const names = inboxRecordNames(inboxDir);
+  let newest = null;
+  let newestReceivedAt = '';
+  for (const name of names) {
+    const receivedAt = inboxRecordReceivedAt(inboxDir, name) || '';
+    if (!newest || receivedAt > newestReceivedAt || (receivedAt === newestReceivedAt && name > newest)) {
+      newest = name;
+      newestReceivedAt = receivedAt;
+    }
+  }
+  return newest;
+}
+
+function oldestPendingInboxRecordName(inboxDir) {
+  return oldestNamedInboxRecord(inboxDir, pendingInboxRecordNames(inboxDir));
+}
+
+function newestPendingInboxRecordName(inboxDir) {
+  return newestNamedInboxRecord(inboxDir, pendingInboxRecordNames(inboxDir));
+}
+
+function oldestNamedInboxRecord(inboxDir, names) {
+  let oldest = null;
+  let oldestReceivedAt = '';
+  for (const name of names) {
+    const receivedAt = inboxRecordReceivedAt(inboxDir, name) || '';
+    if (!oldest || receivedAt < oldestReceivedAt || (receivedAt === oldestReceivedAt && name < oldest)) {
+      oldest = name;
+      oldestReceivedAt = receivedAt;
+    }
+  }
+  return oldest;
+}
+
+function newestNamedInboxRecord(inboxDir, names) {
   let newest = null;
   let newestReceivedAt = '';
   for (const name of names) {
@@ -547,4 +585,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
