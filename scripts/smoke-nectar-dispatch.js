@@ -221,6 +221,7 @@ async function main() {
   assert.equal(initialHealthJson.pending_inbox_oldest_path, null, 'Nectar bridge health has no oldest pending inbox path before dispatch');
   assert.equal(initialHealthJson.pending_inbox_oldest_received_at, null, 'Nectar bridge health has no oldest pending inbox timestamp before dispatch');
   assert.equal(initialHealthJson.pending_inbox_oldest_age_seconds, null, 'Nectar bridge health has no oldest pending inbox age before dispatch');
+  assert.equal(initialHealthJson.pending_inbox_oldest_age_bucket, 'none', 'Nectar bridge health buckets missing pending inbox age');
   assert.equal(initialHealthJson.pending_inbox_newest_name, null, 'Nectar bridge health has no newest pending inbox before dispatch');
   assert.equal(initialHealthJson.pending_inbox_newest_path, null, 'Nectar bridge health has no newest pending inbox path before dispatch');
   assert.equal(initialHealthJson.pending_inbox_newest_received_at, null, 'Nectar bridge health has no newest pending inbox timestamp before dispatch');
@@ -349,6 +350,7 @@ async function main() {
   assert.match(finalHealthJson.pending_inbox_oldest_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes oldest pending inbox timestamp');
   assert.equal(typeof finalHealthJson.pending_inbox_oldest_age_seconds, 'number', 'Nectar bridge health exposes oldest pending inbox age');
   assert.ok(finalHealthJson.pending_inbox_oldest_age_seconds >= 0, 'Nectar bridge oldest pending age is non-negative');
+  assert.equal(finalHealthJson.pending_inbox_oldest_age_bucket, 'fresh', 'Nectar bridge health buckets fresh pending inbox age');
   assert.equal(finalHealthJson.pending_inbox_newest_name, live.ack.inbox_record_name, 'Nectar bridge health exposes newest pending inbox filename');
   assert.ok(finalHealthJson.pending_inbox_newest_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes newest pending inbox path');
   assert.match(finalHealthJson.pending_inbox_newest_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes newest pending inbox timestamp');

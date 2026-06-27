@@ -83,6 +83,7 @@ function startNectarDispatchBridge({
       const newestPendingInboxReceivedAt = newestPendingInboxName ? inboxRecordReceivedAt(inboxDir, newestPendingInboxName) : null;
       const oldestPendingInboxAgeSeconds = secondsSinceIso(oldestPendingInboxReceivedAt);
       const newestPendingInboxAgeSeconds = secondsSinceIso(newestPendingInboxReceivedAt);
+      const pendingInboxOldestAgeBucket = pendingAgeBucket(oldestPendingInboxAgeSeconds);
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const lastInboxProcessingStatus = lastInboxName ? inboxRecordProcessingStatus(inboxDir, lastInboxName) : null;
@@ -121,6 +122,7 @@ function startNectarDispatchBridge({
         pending_inbox_oldest_path: firstPendingInboxPath,
         pending_inbox_oldest_received_at: oldestPendingInboxReceivedAt,
         pending_inbox_oldest_age_seconds: oldestPendingInboxAgeSeconds,
+        pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
         pending_inbox_newest_name: newestPendingInboxName,
         pending_inbox_newest_path: newestPendingInboxPath,
         pending_inbox_newest_received_at: newestPendingInboxReceivedAt,
@@ -479,6 +481,14 @@ function secondsSinceIso(value, now = Date.now()) {
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed)) return null;
   return Math.max(0, Math.floor((now - parsed) / 1000));
+}
+
+function pendingAgeBucket(ageSeconds) {
+  if (ageSeconds == null) return 'none';
+  if (ageSeconds < 15 * 60) return 'fresh';
+  if (ageSeconds < 60 * 60) return 'warm';
+  if (ageSeconds < 24 * 60 * 60) return 'stale';
+  return 'old';
 }
 
 function firstInboxRecordName(inboxDir) {
