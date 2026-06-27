@@ -218,6 +218,7 @@ async function main() {
   assert.equal(initialHealthJson.pending_inbox_count, 0, 'Nectar bridge health exposes pending inbox count before dispatch');
   assert.deepEqual(initialHealthJson.inbox_processing_status_counts, {}, 'Nectar bridge health exposes empty inbox status counts before dispatch');
   assert.equal(initialHealthJson.pending_inbox_preview_limit, 5, 'Nectar bridge health exposes pending inbox preview limit');
+  assert.equal(initialHealthJson.pending_inbox_has_overflow, false, 'Nectar bridge health exposes no pending inbox preview overflow before dispatch');
   assert.equal(initialHealthJson.pending_inbox_needs_operator, false, 'Nectar bridge health exposes no pending operator work before dispatch');
   assert.equal(initialHealthJson.pending_inbox_attention_required, false, 'Nectar bridge health exposes no pending attention before dispatch');
   assert.deepEqual(initialHealthJson.pending_inbox_paths, [], 'Nectar bridge health exposes no pending inbox paths before dispatch');
@@ -316,6 +317,7 @@ async function main() {
   assert.deepEqual(live.ack.pending_inbox_names, [live.ack.inbox_record_name], 'accepted bridge response exposes pending inbox names');
   assert.deepEqual(live.ack.pending_inbox_paths, [live.ack.inbox_path], 'accepted bridge response exposes pending inbox paths');
   assert.equal(live.ack.pending_inbox_overflow_count, 0, 'accepted bridge response exposes pending inbox overflow count');
+  assert.equal(live.ack.pending_inbox_has_overflow, false, 'accepted bridge response exposes pending inbox overflow boolean');
   assert.equal(live.ack.inbox_record_schema_version, 'baton.nectar_bridge.inbox_record.v1', 'accepted bridge response exposes inbox record schema');
   assert.match(live.ack.inbox_record_name, /^run_[a-f0-9-]+-dispatch_[a-f0-9-]+\.json$/, 'accepted bridge response exposes inbox record filename');
   assert.equal(live.ack.first_pending_inbox_name, live.ack.inbox_record_name, 'accepted bridge response exposes next pending inbox filename');
@@ -356,6 +358,7 @@ async function main() {
   assert.deepEqual(finalHealthJson.pending_inbox_names, [live.ack.inbox_record_name], 'Nectar bridge health exposes pending inbox names');
   assert.deepEqual(finalHealthJson.pending_inbox_paths, [live.ack.inbox_path], 'Nectar bridge health exposes pending inbox paths');
   assert.equal(finalHealthJson.pending_inbox_overflow_count, 0, 'Nectar bridge health exposes pending inbox overflow count');
+  assert.equal(finalHealthJson.pending_inbox_has_overflow, false, 'Nectar bridge health exposes pending inbox overflow boolean after dispatch');
   assert.equal(finalHealthJson.first_pending_inbox_name, live.ack.inbox_record_name, 'Nectar bridge health exposes next pending inbox filename');
   assert.ok(finalHealthJson.first_pending_inbox_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes next pending inbox path');
   assert.equal(finalHealthJson.pending_inbox_next_name, live.ack.inbox_record_name, 'Nectar bridge health exposes explicit next pending inbox filename');
