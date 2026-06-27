@@ -84,6 +84,7 @@ function startNectarDispatchBridge({
       const oldestPendingInboxAgeSeconds = secondsSinceIso(oldestPendingInboxReceivedAt);
       const newestPendingInboxAgeSeconds = secondsSinceIso(newestPendingInboxReceivedAt);
       const pendingInboxOldestAgeBucket = pendingAgeBucket(oldestPendingInboxAgeSeconds);
+      const pendingInboxNewestAgeBucket = pendingAgeBucket(newestPendingInboxAgeSeconds);
       const lastInboxPath = lastReceived ? path.relative(ROOT, lastReceived.file).split(path.sep).join('/') : null;
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const lastInboxProcessingStatus = lastInboxName ? inboxRecordProcessingStatus(inboxDir, lastInboxName) : null;
@@ -127,6 +128,7 @@ function startNectarDispatchBridge({
         pending_inbox_newest_path: newestPendingInboxPath,
         pending_inbox_newest_received_at: newestPendingInboxReceivedAt,
         pending_inbox_newest_age_seconds: newestPendingInboxAgeSeconds,
+        pending_inbox_newest_age_bucket: pendingInboxNewestAgeBucket,
         inbox_dir: healthInboxDir,
         inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
         inbox_writable: isInboxWritable(inboxDir),
