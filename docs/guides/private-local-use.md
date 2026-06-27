@@ -130,6 +130,14 @@ BATON creates or reuses a `baton.dispatch.v1` envelope for that task/agent witho
 
 ## Local Nectar bridge
 
+Before starting a listener, validate the local bridge env/config:
+
+```bash
+npm run check:nectar-bridge
+```
+
+This check is read-only: it reports whether the inbox already exists or is creatable (`inbox_exists`, `inbox_creatable`, `inbox_writable`) without creating the ignored inbox directory.
+
 For a local Nectar handoff smoke test, start the local bridge:
 
 ```bash

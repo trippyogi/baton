@@ -72,7 +72,7 @@ Implemented phases:
   - `npm run fake:spectre` and `npm run smoke:dispatch` exercise the full local loop.
 
 - **Local Nectar dispatch bridge**
-  - `npm run bridge:nectar` starts a private local bridge at `/baton/dispatch` for `baton.dispatch.v1` handoffs to Nectar; `node scripts/nectar-dispatch-bridge.js --help` prints the safe local env/route reference without starting a listener.
+  - `npm run bridge:nectar` starts a private local bridge at `/baton/dispatch` for `baton.dispatch.v1` handoffs to Nectar; `npm run check:nectar-bridge` validates the local bridge env/config without starting a listener or creating the inbox, and `node scripts/nectar-dispatch-bridge.js --help` prints the safe local env/route reference.
   - The bridge ACKs and writes ignored inbox records under `local/nectar-dispatch-inbox/`; accepted/rejected dispatch responses include `schema_version: baton.nectar_bridge.dispatch_result.v1`, `bridge_version`, `bridge_instance_id`, `bridge_request_id`, and `generated_at`, and accepted ACKs echo dispatch/run/task/touch ids, `inbox_record_schema_version`, `inbox_processing_status: pending_local_operator`, and `prompt_sha256` for local traceability; it does not execute external actions by itself.
   - It rejects malformed JSON and oversized bodies before inbox writes, with `NECTAR_BRIDGE_MAX_BODY_BYTES` available only for explicit local overrides.
   - `/health` supports GET and HEAD probes and exposes `bridge_version`, `bridge_instance_id`, `generated_at`, `bind_host`, `dispatch_path`, `dispatch_url`, `started_at`, `uptime_seconds`, `received_count`, `rejected_count`, `inbox_record_count`, `inbox_dir`, `inbox_record_schema_version`, `inbox_writable`, `last_received_at`, `last_received_request_id`, `last_received_dispatch_id`, `last_received_run_id`, `last_received_task_id`, `last_received_touch_id`, `last_inbox_path`, `last_prompt_sha256`, `pending_inbox_preview_limit`, `pending_inbox_paths`, oldest/newest pending inbox timestamps and ages, `last_rejected_at`, `last_rejection_request_id`, `last_rejection_reason`, `last_rejection_errors`, `last_rejection_error_count`, and `max_body_bytes` for smoke/debug checks.
@@ -189,7 +189,7 @@ npm run audit:private
 npm run check:private
 ```
 
-`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop. `npm run smoke:nectar` verifies Baton can hand a `baton.dispatch.v1` envelope to the local Nectar bridge and write an ignored inbox record. `npm run audit:private` checks that private local data and high-signal secrets are not tracked. `npm run check:private` combines that audit with dry-runs of the public-safe local profile fixtures for the private/local agent workflow.
+`npm test` runs syntax checks and a self-contained Flow smoke test. `npm run smoke:dispatch` starts BATON plus a fake Spectre webhook on isolated temp state and verifies the dispatch/review loop. `npm run check:nectar-bridge` validates the local Nectar bridge env/config without starting a listener, while `npm run smoke:nectar` verifies Baton can hand a `baton.dispatch.v1` envelope to the local Nectar bridge and write an ignored inbox record. `npm run audit:private` checks that private local data and high-signal secrets are not tracked. `npm run check:private` combines that audit with dry-runs of the public-safe local profile fixtures for the private/local agent workflow.
 
 ## API overview
 

@@ -68,9 +68,12 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
   const inboxParent = path.dirname(path.resolve(config.inboxDir || DEFAULT_INBOX));
   const inboxParentExists = fs.existsSync(inboxParent);
   const inboxExists = fs.existsSync(config.inboxDir);
-  const inboxWritable = inboxExists ? isInboxWritable(config.inboxDir) : inboxParentExists && isInboxWritable(inboxParent);
-  if (!inboxParentExists) errors.push(`NECTAR_DISPATCH_INBOX parent does not exist: ${inboxParent}`);
-  if (inboxParentExists && !inboxWritable) errors.push(`NECTAR_DISPATCH_INBOX parent is not writable: ${inboxParent}`);
+  const inboxCreatable = !inboxExists && canCreateDirectory(config.inboxDir);
+  const inboxWritable = inboxExists ? isInboxWritable(config.inboxDir) : inboxCreatable;
+  if (!inboxWritable) {
+    const writableTarget = inboxParentExists ? inboxParent : nearestExistingParent(config.inboxDir);
+    errors.push(`NECTAR_DISPATCH_INBOX is not writable or creatable from: ${writableTarget}`);
+  }
   return {
     ok: errors.length === 0,
     schema_version: 'baton.nectar_bridge.check_env.v1',
@@ -87,6 +90,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     inbox_dir: path.relative(ROOT, config.inboxDir).split(path.sep).join('/') || '.',
     inbox_parent_exists: inboxParentExists,
     inbox_exists: inboxExists,
+    inbox_creatable: inboxCreatable,
     inbox_writable: inboxWritable,
     max_body_bytes: config.maxBodyBytes,
     errors,
@@ -641,6 +645,21 @@ function newestNamedInboxRecord(inboxDir, names) {
   return newest;
 }
 
+function nearestExistingParent(targetPath) {
+  let current = path.resolve(targetPath);
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) return current;
+    current = parent;
+  }
+  return current;
+}
+
+function canCreateDirectory(targetPath) {
+  const parent = nearestExistingParent(targetPath);
+  return isInboxWritable(parent);
+}
+
 function isInboxWritable(inboxDir) {
   try {
     fs.accessSync(inboxDir, fs.constants.W_OK);
@@ -687,4 +706,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, checkBridgeEnvironment, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
