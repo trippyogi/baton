@@ -32,14 +32,72 @@ function positiveIntEnv(name, fallback) {
   return value;
 }
 
-function startNectarDispatchBridge({
-  port = Number(process.env.NECTAR_BRIDGE_PORT || 4310),
-  token = process.env.NECTAR_DISPATCH_TOKEN || '',
-  inboxDir = process.env.NECTAR_DISPATCH_INBOX || DEFAULT_INBOX,
-  host = process.env.NECTAR_BRIDGE_HOST || '127.0.0.1',
-} = {}) {
-  if (!isLoopbackHost(host) && !token) {
-    throw new Error(`refusing non-loopback Nectar bridge bind without NECTAR_DISPATCH_TOKEN: ${host}`);
+function bridgeConfigFromEnv(env = process.env) {
+  return {
+    port: Number(env.NECTAR_BRIDGE_PORT || 4310),
+    token: env.NECTAR_DISPATCH_TOKEN || '',
+    inboxDir: env.NECTAR_DISPATCH_INBOX || DEFAULT_INBOX,
+    host: env.NECTAR_BRIDGE_HOST || '127.0.0.1',
+    maxBodyBytes: MAX_BODY_BYTES,
+  };
+}
+
+function validateBridgeConfig(config = bridgeConfigFromEnv()) {
+  const errors = [];
+  if (!Number.isSafeInteger(config.port) || config.port < 1 || config.port > 65535) {
+    errors.push('NECTAR_BRIDGE_PORT must be an integer from 1 to 65535');
+  }
+  if (!config.host || typeof config.host !== 'string') {
+    errors.push('NECTAR_BRIDGE_HOST must be non-empty');
+  } else if (!isLoopbackHost(config.host) && !config.token) {
+    errors.push('non-loopback Nectar bridge binds require NECTAR_DISPATCH_TOKEN');
+  }
+  if (!config.inboxDir || typeof config.inboxDir !== 'string') {
+    errors.push('NECTAR_DISPATCH_INBOX must be a non-empty directory path');
+  } else if (path.resolve(config.inboxDir) === path.parse(path.resolve(config.inboxDir)).root) {
+    errors.push('NECTAR_DISPATCH_INBOX must not be a filesystem root');
+  }
+  if (!Number.isSafeInteger(config.maxBodyBytes) || config.maxBodyBytes < 1) {
+    errors.push('NECTAR_BRIDGE_MAX_BODY_BYTES must be a positive integer');
+  }
+  return errors;
+}
+
+function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
+  const errors = validateBridgeConfig(config);
+  const inboxParent = path.dirname(path.resolve(config.inboxDir || DEFAULT_INBOX));
+  const inboxParentExists = fs.existsSync(inboxParent);
+  const inboxExists = fs.existsSync(config.inboxDir);
+  const inboxWritable = inboxExists ? isInboxWritable(config.inboxDir) : inboxParentExists && isInboxWritable(inboxParent);
+  if (!inboxParentExists) errors.push(`NECTAR_DISPATCH_INBOX parent does not exist: ${inboxParent}`);
+  if (inboxParentExists && !inboxWritable) errors.push(`NECTAR_DISPATCH_INBOX parent is not writable: ${inboxParent}`);
+  return {
+    ok: errors.length === 0,
+    schema_version: 'baton.nectar_bridge.check_env.v1',
+    safety_profile: SAFETY_PROFILE,
+    generated_at: new Date().toISOString(),
+    bridge_version: PACKAGE.version,
+    bind_host: config.host,
+    port: config.port,
+    dispatch_path: '/baton/dispatch',
+    dispatch_url: `http://${config.host}:${config.port}/baton/dispatch`,
+    token_required: Boolean(config.token),
+    inbox_dir: path.relative(ROOT, config.inboxDir).split(path.sep).join('/') || '.',
+    inbox_parent_exists: inboxParentExists,
+    inbox_exists: inboxExists,
+    inbox_writable: inboxWritable,
+    max_body_bytes: config.maxBodyBytes,
+    errors,
+    operator_next_check: errors.length ? 'fix the reported bridge environment issue before starting the local bridge' : 'start the bridge when ready, then check GET /health before wiring BATON dispatch',
+  };
+}
+
+function startNectarDispatchBridge(config = {}) {
+  const resolvedConfig = { ...bridgeConfigFromEnv(), ...config };
+  const { port, token, inboxDir, host } = resolvedConfig;
+  const configErrors = validateBridgeConfig({ port, token, inboxDir, host, maxBodyBytes: MAX_BODY_BYTES });
+  if (configErrors.length) {
+    throw new Error(configErrors.join('; '));
   }
   const received = [];
   const rejected = [];
@@ -588,9 +646,12 @@ function isInboxWritable(inboxDir) {
 }
 
 function usage() {
-  return `Usage: node scripts/nectar-dispatch-bridge.js
+  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env]
 
 Starts the local-only BATON -> Nectar dispatch bridge.
+
+Options:
+  --check-env                         Validate env/config and print JSON without starting a listener.
 
 Environment:
   NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; non-loopback binds require NECTAR_DISPATCH_TOKEN.
@@ -610,10 +671,15 @@ if (require.main === module) {
     process.stdout.write(usage());
     process.exit(0);
   }
+  if (process.argv.includes('--check-env')) {
+    const result = checkBridgeEnvironment();
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    process.exit(result.ok ? 0 : 2);
+  }
   startNectarDispatchBridge().catch(err => {
     console.error(err);
     process.exit(1);
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, checkBridgeEnvironment, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };

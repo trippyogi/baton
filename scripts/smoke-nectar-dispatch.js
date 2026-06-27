@@ -85,11 +85,25 @@ async function main() {
   assert.ok(help.stdout.includes('POST /baton/dispatch'), 'Nectar bridge help documents dispatch route');
   assert.ok(help.stdout.includes('NECTAR_BRIDGE_MAX_BODY_BYTES'), 'Nectar bridge help documents body limit env');
   assert.ok(help.stdout.includes('non-loopback binds require NECTAR_DISPATCH_TOKEN'), 'Nectar bridge help documents non-loopback auth guard');
+  assert.ok(help.stdout.includes('--check-env'), 'Nectar bridge help documents config check mode');
+  const checkEnvInbox = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-check-env-'));
+  const checkEnv = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4800)) },
+    encoding: 'utf8',
+  });
+  assert.equal(checkEnv.status, 0, 'Nectar bridge --check-env exits cleanly for local config');
+  const checkEnvJson = JSON.parse(checkEnv.stdout);
+  assert.equal(checkEnvJson.schema_version, 'baton.nectar_bridge.check_env.v1', 'check-env exposes stable schema');
+  assert.equal(checkEnvJson.ok, true, 'check-env reports ok for local config');
+  assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
+  assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
+  fs.rmSync(checkEnvInbox, { recursive: true, force: true });
   assert.equal(isLoopbackHost('127.0.0.1'), true, 'loopback host helper accepts IPv4 loopback');
   assert.equal(isLoopbackHost('0.0.0.0'), false, 'loopback host helper rejects wildcard binds');
   assert.throws(
     () => startNectarDispatchBridge({ host: '0.0.0.0', port: randomPort(4900), token: '', inboxDir: path.join(os.tmpdir(), 'unused-nectar-inbox') }),
-    /refusing non-loopback Nectar bridge bind/,
+    /non-loopback Nectar bridge binds require NECTAR_DISPATCH_TOKEN/,
     'Nectar bridge refuses unauthenticated non-loopback binds',
   );
   const pendingHelperDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-pending-helper-'));
