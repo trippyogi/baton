@@ -77,6 +77,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     safety_profile: SAFETY_PROFILE,
     generated_at: new Date().toISOString(),
     bridge_version: PACKAGE.version,
+    bridge_instance_id: BRIDGE_INSTANCE_ID,
     bind_host: config.host,
     port: config.port,
     dispatch_path: '/baton/dispatch',

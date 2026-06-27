@@ -98,6 +98,7 @@ async function main() {
   assert.equal(checkEnvJson.ok, true, 'check-env reports ok for local config');
   assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
+  assert.match(checkEnvJson.bridge_instance_id, /^nectar_bridge_/, 'check-env exposes bridge instance id for traceability');
   fs.rmSync(checkEnvInbox, { recursive: true, force: true });
   assert.equal(isLoopbackHost('127.0.0.1'), true, 'loopback host helper accepts IPv4 loopback');
   assert.equal(isLoopbackHost('0.0.0.0'), false, 'loopback host helper rejects wildcard binds');
