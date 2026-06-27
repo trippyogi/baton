@@ -413,6 +413,17 @@ async function main() {
   assert.ok(record.prompt.includes('Local safety:'), 'prompt includes local safety section');
   assert.ok(record.prompt.includes('do not publish the envelope'), 'prompt warns against exposing private handoff context');
 
+  record.processing_status = 'completed_local_operator';
+  fs.writeFileSync(path.join(bridge.inboxDir, files[0]), JSON.stringify(record, null, 2));
+  const completedHealth = await fetch(`${bridge.url.replace('/baton/dispatch', '')}/health`);
+  const completedHealthJson = await completedHealth.json();
+  assert.equal(completedHealthJson.inbox_record_count, 1, 'Nectar bridge health keeps total inbox count after local completion');
+  assert.equal(completedHealthJson.pending_inbox_count, 0, 'Nectar bridge health excludes completed records from pending count');
+  assert.deepEqual(completedHealthJson.inbox_processing_status_counts, { completed_local_operator: 1 }, 'Nectar bridge health counts completed local records separately');
+  assert.equal(completedHealthJson.pending_inbox_needs_operator, false, 'Nectar bridge health clears pending operator flag after local completion');
+  assert.equal(completedHealthJson.pending_inbox_attention_required, false, 'Nectar bridge health clears pending attention after local completion');
+  assert.deepEqual(completedHealthJson.pending_inbox_names, [], 'Nectar bridge health clears pending inbox names after local completion');
+
   console.log(`smoke-nectar-dispatch ok against ${BASE}`);
 }
 
