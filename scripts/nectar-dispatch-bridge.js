@@ -76,6 +76,7 @@ function startNectarDispatchBridge({
       const lastRejected = rejected.length ? rejected[rejected.length - 1] : null;
       const inboxRecordCount = countInboxRecords(inboxDir);
       const pendingInboxNames = pendingInboxRecordNames(inboxDir);
+      const inboxProcessingStatusCounts = inboxRecordProcessingStatusCounts(inboxDir);
       const pendingInboxPaths = pendingInboxNames.map(name => path.posix.join(path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.', name));
       const firstPendingInboxName = oldestPendingInboxRecordName(inboxDir);
       const newestPendingInboxName = newestPendingInboxRecordName(inboxDir);
@@ -111,6 +112,7 @@ function startNectarDispatchBridge({
         rejected_count: rejected.length,
         inbox_record_count: inboxRecordCount,
         pending_inbox_count: inboxRecordCount,
+        inbox_processing_status_counts: inboxProcessingStatusCounts,
         pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
         pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
         pending_inbox_paths: pendingInboxPaths.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
@@ -210,6 +212,7 @@ function startNectarDispatchBridge({
     }
     received.push({ file, envelope: body, received_at: record.received_at, request_id: requestId, prompt_sha256: promptSha256 });
     const pendingInboxNames = pendingInboxRecordNames(inboxDir);
+    const inboxProcessingStatusCounts = inboxRecordProcessingStatusCounts(inboxDir);
     const pendingInboxPaths = pendingInboxNames.map(name => path.relative(ROOT, path.join(inboxDir, name)).split(path.sep).join('/'));
     const firstPendingInboxName = oldestPendingInboxRecordName(inboxDir);
     const newestPendingInboxName = newestPendingInboxRecordName(inboxDir);
@@ -243,6 +246,7 @@ function startNectarDispatchBridge({
       received_count: received.length,
       inbox_record_count: countInboxRecords(inboxDir),
       pending_inbox_count: pendingInboxNames.length,
+      inbox_processing_status_counts: inboxProcessingStatusCounts,
       pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
       pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
       pending_inbox_paths: pendingInboxPaths.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
@@ -478,6 +482,15 @@ function pendingInboxRecordNames(inboxDir) {
   return inboxRecordNames(inboxDir).filter(name => inboxRecordProcessingStatus(inboxDir, name) === 'pending_local_operator');
 }
 
+function inboxRecordProcessingStatusCounts(inboxDir) {
+  const counts = {};
+  for (const name of inboxRecordNames(inboxDir)) {
+    const status = inboxRecordProcessingStatus(inboxDir, name) || 'unknown';
+    counts[status] = (counts[status] || 0) + 1;
+  }
+  return counts;
+}
+
 function secondsSinceIso(value, now = Date.now()) {
   if (!value) return null;
   const parsed = Date.parse(value);
@@ -597,4 +610,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateCallbackUrls, validateEnvelope };
