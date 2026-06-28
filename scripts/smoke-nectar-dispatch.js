@@ -108,6 +108,7 @@ async function main() {
   assert.ok(checkEnvJson.first_pending_inbox_path.endsWith('/pending-check.json'), 'check-env reports first pending inbox path');
   assert.equal(checkEnvJson.pending_inbox_next_path, checkEnvJson.first_pending_inbox_path, 'check-env aliases next pending inbox path');
   assert.equal(checkEnvJson.pending_inbox_needs_operator, true, 'check-env flags pending operator work');
+  assert.equal(checkEnvJson.pending_inbox_attention_required, true, 'check-env flags pending inbox attention');
   assert.equal(checkEnvJson.pending_inbox_has_overflow, false, 'check-env reports pending preview overflow');
   assert.equal(checkEnvJson.pending_inbox_overflow_count, 0, 'check-env reports zero pending overflow');
   assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
@@ -128,6 +129,7 @@ async function main() {
   assert.equal(missingDefaultJson.inbox_creatable, true, 'check-env reports missing inbox as creatable');
   assert.equal(missingDefaultJson.inbox_record_count, 0, 'missing inbox has no records during check-env');
   assert.equal(missingDefaultJson.pending_inbox_count, 0, 'missing inbox has no pending records during check-env');
+  assert.equal(missingDefaultJson.pending_inbox_attention_required, false, 'check-env leaves attention clear when no pending inbox work exists');
   assert.equal(isLoopbackHost('127.0.0.1'), true, 'loopback host helper accepts IPv4 loopback');
   assert.equal(isLoopbackHost('0.0.0.0'), false, 'loopback host helper rejects wildcard binds');
   assert.throws(
