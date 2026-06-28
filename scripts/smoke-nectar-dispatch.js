@@ -299,6 +299,7 @@ async function main() {
   assert.equal(initialHealthJson.last_inbox_name, null, 'Nectar bridge health has no last inbox name before dispatch');
   assert.equal(initialHealthJson.last_inbox_processing_status, null, 'Nectar bridge health has no last inbox processing status before dispatch');
   assert.equal(initialHealthJson.last_prompt_sha256, null, 'Nectar bridge health has no last prompt hash before dispatch');
+  assert.equal(initialHealthJson.last_prompt_hash_algorithm, null, 'Nectar bridge health has no prompt hash algorithm before dispatch');
   assert.match(initialHealthJson.last_rejected_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes last rejection timestamp');
   assert.equal(initialHealthJson.last_rejection_status, 400, 'Nectar bridge health exposes last rejection status');
   assert.ok(initialHealthJson.last_rejection_reason.includes('ack_url must not include credentials'), 'Nectar bridge health exposes last rejection reason');
@@ -441,6 +442,7 @@ async function main() {
   assert.equal(finalHealthJson.last_inbox_name, live.ack.inbox_record_name, 'Nectar bridge health exposes last inbox filename');
   assert.equal(finalHealthJson.last_inbox_processing_status, 'pending_local_operator', 'Nectar bridge health exposes last inbox processing status');
   assert.equal(finalHealthJson.last_prompt_sha256, live.ack.prompt_sha256, 'Nectar bridge health exposes last prompt hash');
+  assert.equal(finalHealthJson.last_prompt_hash_algorithm, live.ack.prompt_hash_algorithm, 'Nectar bridge health exposes prompt hash algorithm');
 
   const files = fs.readdirSync(bridge.inboxDir).filter(file => file.endsWith('.json'));
   assert.equal(files.length, 1, 'Nectar bridge wrote one inbox record');

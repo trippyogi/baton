@@ -261,6 +261,7 @@ function startNectarDispatchBridge(config = {}) {
         last_inbox_name: lastInboxName,
         last_inbox_processing_status: lastInboxProcessingStatus,
         last_prompt_sha256: lastPromptSha256,
+        last_prompt_hash_algorithm: lastPromptSha256 ? PROMPT_HASH_ALGORITHM : null,
         last_rejected_at: lastRejected ? lastRejected.rejected_at : null,
         last_rejection_request_id: lastRejected ? lastRejected.request_id : null,
         last_rejection_status: lastRejected ? lastRejected.status : null,
