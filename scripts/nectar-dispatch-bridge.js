@@ -87,6 +87,10 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
   const inboxWritable = inboxExists ? isInboxWritable(config.inboxDir) : inboxCreatable;
   const inboxRecordCount = inboxExists ? countInboxRecords(config.inboxDir) : 0;
   const pendingInboxNames = inboxExists ? pendingInboxRecordNames(config.inboxDir) : [];
+  const firstPendingInboxName = inboxExists ? oldestPendingInboxRecordName(config.inboxDir) : null;
+  const oldestPendingInboxReceivedAt = firstPendingInboxName ? inboxRecordReceivedAt(config.inboxDir, firstPendingInboxName) : null;
+  const pendingInboxOldestAgeSeconds = secondsSinceIso(oldestPendingInboxReceivedAt);
+  const pendingInboxOldestAgeBucket = pendingAgeBucket(pendingInboxOldestAgeSeconds);
   if (!inboxWritable) {
     const writableTarget = inboxParentExists ? inboxParent : nearestExistingParent(config.inboxDir);
     errors.push(`NECTAR_DISPATCH_INBOX is not writable or creatable from: ${writableTarget}`);
@@ -112,6 +116,9 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     inbox_writable: inboxWritable,
     inbox_record_count: inboxRecordCount,
     pending_inbox_count: pendingInboxNames.length,
+    pending_inbox_oldest_age_seconds: pendingInboxOldestAgeSeconds,
+    pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
+    pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket),
     pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
     pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
     pending_inbox_has_overflow: pendingInboxNames.length > PENDING_INBOX_PREVIEW_LIMIT,
@@ -229,6 +236,7 @@ function startNectarDispatchBridge(config = {}) {
         pending_inbox_oldest_received_at: oldestPendingInboxReceivedAt,
         pending_inbox_oldest_age_seconds: oldestPendingInboxAgeSeconds,
         pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
+        pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket),
         pending_inbox_newest_name: newestPendingInboxName,
         pending_inbox_newest_path: newestPendingInboxPath,
         pending_inbox_newest_received_at: newestPendingInboxReceivedAt,
@@ -614,6 +622,12 @@ function pendingAgeBucket(ageSeconds) {
   return 'old';
 }
 
+function pendingInboxAttentionReason(count, oldestAgeBucket) {
+  if (!count) return 'none';
+  if (oldestAgeBucket === 'old' || oldestAgeBucket === 'stale') return 'pending_inbox_stale';
+  return 'pending_inbox_waiting';
+}
+
 function firstInboxRecordName(inboxDir) {
   return oldestInboxRecordName(inboxDir);
 }
@@ -741,4 +755,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
