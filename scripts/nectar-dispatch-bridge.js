@@ -63,6 +63,21 @@ function validateBridgeConfig(config = bridgeConfigFromEnv()) {
   return errors;
 }
 
+
+function latestIso(values) {
+  return values.filter(Boolean).sort().pop() || null;
+}
+
+function latestActivitySource({ startedAt, lastReceived, lastRejected }) {
+  const started = startedAt.toISOString();
+  const receivedAt = lastReceived ? lastReceived.received_at : null;
+  const rejectedAt = lastRejected ? lastRejected.rejected_at : null;
+  const latest = latestIso([started, receivedAt, rejectedAt]);
+  if (latest && latest === receivedAt) return 'received';
+  if (latest && latest === rejectedAt) return 'rejected';
+  return 'started';
+}
+
 function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
   const errors = validateBridgeConfig(config);
   const inboxParent = path.dirname(path.resolve(config.inboxDir || DEFAULT_INBOX));
@@ -157,6 +172,11 @@ function startNectarDispatchBridge(config = {}) {
       const lastInboxName = lastReceived ? path.basename(lastReceived.file) : null;
       const lastInboxProcessingStatus = lastInboxName ? inboxRecordProcessingStatus(inboxDir, lastInboxName) : null;
       const lastPromptSha256 = lastReceived ? lastReceived.prompt_sha256 : null;
+      const latestActivityAt = latestIso([
+        startedAt.toISOString(),
+        lastReceived ? lastReceived.received_at : null,
+        lastRejected ? lastRejected.rejected_at : null,
+      ]);
       const healthInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
       const firstPendingInboxPath = firstPendingInboxName ? path.posix.join(healthInboxDir, firstPendingInboxName) : null;
       const newestPendingInboxPath = newestPendingInboxName ? path.posix.join(healthInboxDir, newestPendingInboxName) : null;
@@ -175,6 +195,8 @@ function startNectarDispatchBridge(config = {}) {
         dispatch_url: `http://${host}:${port}/baton/dispatch`,
         token_required: Boolean(token),
         bridge_status: nectarBridgeStatus({ received, rejected, inboxDir }),
+        latest_activity_at: latestActivityAt,
+        latest_activity_source: latestActivitySource({ startedAt, lastReceived, lastRejected }),
         started_at: startedAt.toISOString(),
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,
