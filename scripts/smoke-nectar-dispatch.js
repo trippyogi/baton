@@ -101,6 +101,7 @@ async function main() {
   assert.equal(checkEnvJson.inbox_creatable, false, 'existing temp inbox does not need creation');
   assert.equal(checkEnvJson.inbox_record_count, 1, 'check-env reports existing inbox records without starting bridge');
   assert.equal(checkEnvJson.pending_inbox_count, 1, 'check-env reports pending local operator records');
+  assert.deepEqual(checkEnvJson.inbox_processing_status_counts, { pending_local_operator: 1 }, 'check-env reports inbox processing status counts');
   assert.equal(checkEnvJson.pending_inbox_attention_reason, 'pending_inbox_waiting', 'check-env reports why pending inbox needs attention');
   assert.deepEqual(checkEnvJson.pending_inbox_names, ['pending-check.json'], 'check-env previews pending inbox names');
   assert.equal(checkEnvJson.first_pending_inbox_name, 'pending-check.json', 'check-env reports first pending inbox name');
@@ -129,6 +130,7 @@ async function main() {
   assert.equal(missingDefaultJson.inbox_creatable, true, 'check-env reports missing inbox as creatable');
   assert.equal(missingDefaultJson.inbox_record_count, 0, 'missing inbox has no records during check-env');
   assert.equal(missingDefaultJson.pending_inbox_count, 0, 'missing inbox has no pending records during check-env');
+  assert.deepEqual(missingDefaultJson.inbox_processing_status_counts, {}, 'missing inbox has no status counts during check-env');
   assert.equal(missingDefaultJson.pending_inbox_attention_required, false, 'check-env leaves attention clear when no pending inbox work exists');
   assert.equal(isLoopbackHost('127.0.0.1'), true, 'loopback host helper accepts IPv4 loopback');
   assert.equal(isLoopbackHost('0.0.0.0'), false, 'loopback host helper rejects wildcard binds');

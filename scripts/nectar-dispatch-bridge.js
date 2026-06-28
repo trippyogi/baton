@@ -92,6 +92,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
   const inboxCreatable = !inboxExists && canCreateDirectory(config.inboxDir);
   const inboxWritable = inboxExists ? isInboxWritable(config.inboxDir) : inboxCreatable;
   const inboxRecordCount = inboxExists ? countInboxRecords(config.inboxDir) : 0;
+  const inboxProcessingStatusCounts = inboxExists ? inboxRecordProcessingStatusCounts(config.inboxDir) : {};
   const pendingInboxNames = inboxExists ? pendingInboxRecordNames(config.inboxDir) : [];
   const firstPendingInboxName = inboxExists ? oldestPendingInboxRecordName(config.inboxDir) : null;
   const checkInboxDir = path.relative(ROOT, config.inboxDir).split(path.sep).join('/') || '.';
@@ -125,6 +126,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     inbox_creatable: inboxCreatable,
     inbox_writable: inboxWritable,
     inbox_record_count: inboxRecordCount,
+    inbox_processing_status_counts: inboxProcessingStatusCounts,
     pending_inbox_count: pendingInboxNames.length,
     pending_inbox_attention_required: pendingInboxNames.length > 0,
     pending_inbox_oldest_age_seconds: pendingInboxOldestAgeSeconds,
