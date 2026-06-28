@@ -108,6 +108,7 @@ async function main() {
   assert.equal(checkEnvJson.pending_inbox_next_name, 'pending-check.json', 'check-env aliases next pending inbox name');
   assert.ok(checkEnvJson.first_pending_inbox_path.endsWith('/pending-check.json'), 'check-env reports first pending inbox path');
   assert.equal(checkEnvJson.pending_inbox_next_path, checkEnvJson.first_pending_inbox_path, 'check-env aliases next pending inbox path');
+  assert.ok(checkEnvJson.operator_next_check.includes('pending-check.json'), 'check-env next check points at the pending local inbox record');
   assert.equal(checkEnvJson.pending_inbox_needs_operator, true, 'check-env flags pending operator work');
   assert.equal(checkEnvJson.pending_inbox_attention_required, true, 'check-env flags pending inbox attention');
   assert.equal(checkEnvJson.pending_inbox_has_overflow, false, 'check-env reports pending preview overflow');

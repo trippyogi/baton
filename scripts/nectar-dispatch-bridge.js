@@ -143,8 +143,14 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     pending_inbox_needs_operator: pendingInboxNames.length > 0,
     max_body_bytes: config.maxBodyBytes,
     errors,
-    operator_next_check: errors.length ? 'fix the reported bridge environment issue before starting the local bridge' : 'start the bridge when ready, then check GET /health before wiring BATON dispatch',
+    operator_next_check: checkEnvNextCheck(errors, firstPendingInboxPath),
   };
+}
+
+function checkEnvNextCheck(errors, firstPendingInboxPath) {
+  if (errors.length) return 'fix the reported bridge environment issue before starting the local bridge';
+  if (firstPendingInboxPath) return `open ${firstPendingInboxPath} and hand the generated prompt to local Nectar/OpenClaw`;
+  return 'start the bridge when ready, then check GET /health before wiring BATON dispatch';
 }
 
 function startNectarDispatchBridge(config = {}) {
@@ -773,4 +779,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
