@@ -102,6 +102,10 @@ async function main() {
   assert.equal(checkEnvJson.pending_inbox_count, 1, 'check-env reports pending local operator records');
   assert.equal(checkEnvJson.pending_inbox_attention_reason, 'pending_inbox_waiting', 'check-env reports why pending inbox needs attention');
   assert.deepEqual(checkEnvJson.pending_inbox_names, ['pending-check.json'], 'check-env previews pending inbox names');
+  assert.equal(checkEnvJson.first_pending_inbox_name, 'pending-check.json', 'check-env reports first pending inbox name');
+  assert.equal(checkEnvJson.pending_inbox_next_name, 'pending-check.json', 'check-env aliases next pending inbox name');
+  assert.ok(checkEnvJson.first_pending_inbox_path.endsWith('/pending-check.json'), 'check-env reports first pending inbox path');
+  assert.equal(checkEnvJson.pending_inbox_next_path, checkEnvJson.first_pending_inbox_path, 'check-env aliases next pending inbox path');
   assert.equal(checkEnvJson.pending_inbox_needs_operator, true, 'check-env flags pending operator work');
   assert.equal(checkEnvJson.pending_inbox_has_overflow, false, 'check-env reports pending preview overflow');
   assert.equal(checkEnvJson.pending_inbox_overflow_count, 0, 'check-env reports zero pending overflow');

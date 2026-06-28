@@ -88,6 +88,8 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
   const inboxRecordCount = inboxExists ? countInboxRecords(config.inboxDir) : 0;
   const pendingInboxNames = inboxExists ? pendingInboxRecordNames(config.inboxDir) : [];
   const firstPendingInboxName = inboxExists ? oldestPendingInboxRecordName(config.inboxDir) : null;
+  const checkInboxDir = path.relative(ROOT, config.inboxDir).split(path.sep).join('/') || '.';
+  const firstPendingInboxPath = firstPendingInboxName ? path.posix.join(checkInboxDir, firstPendingInboxName) : null;
   const oldestPendingInboxReceivedAt = firstPendingInboxName ? inboxRecordReceivedAt(config.inboxDir, firstPendingInboxName) : null;
   const pendingInboxOldestAgeSeconds = secondsSinceIso(oldestPendingInboxReceivedAt);
   const pendingInboxOldestAgeBucket = pendingAgeBucket(pendingInboxOldestAgeSeconds);
@@ -109,7 +111,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     dispatch_path: '/baton/dispatch',
     dispatch_url: `http://${config.host}:${config.port}/baton/dispatch`,
     token_required: Boolean(config.token),
-    inbox_dir: path.relative(ROOT, config.inboxDir).split(path.sep).join('/') || '.',
+    inbox_dir: checkInboxDir,
     inbox_parent_exists: inboxParentExists,
     inbox_exists: inboxExists,
     inbox_creatable: inboxCreatable,
@@ -121,6 +123,10 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket),
     pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
     pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
+    first_pending_inbox_name: firstPendingInboxName,
+    first_pending_inbox_path: firstPendingInboxPath,
+    pending_inbox_next_name: firstPendingInboxName,
+    pending_inbox_next_path: firstPendingInboxPath,
     pending_inbox_has_overflow: pendingInboxNames.length > PENDING_INBOX_PREVIEW_LIMIT,
     pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - PENDING_INBOX_PREVIEW_LIMIT),
     pending_inbox_needs_operator: pendingInboxNames.length > 0,
