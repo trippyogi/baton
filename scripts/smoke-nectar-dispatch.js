@@ -87,6 +87,7 @@ async function main() {
   assert.ok(help.stdout.includes('non-loopback binds require NECTAR_DISPATCH_TOKEN'), 'Nectar bridge help documents non-loopback auth guard');
   assert.ok(help.stdout.includes('--check-env'), 'Nectar bridge help documents config check mode');
   const checkEnvInbox = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-check-env-'));
+  fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator' }));
   const checkEnv = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4800)) },
@@ -97,6 +98,12 @@ async function main() {
   assert.equal(checkEnvJson.schema_version, 'baton.nectar_bridge.check_env.v1', 'check-env exposes stable schema');
   assert.equal(checkEnvJson.ok, true, 'check-env reports ok for local config');
   assert.equal(checkEnvJson.inbox_creatable, false, 'existing temp inbox does not need creation');
+  assert.equal(checkEnvJson.inbox_record_count, 1, 'check-env reports existing inbox records without starting bridge');
+  assert.equal(checkEnvJson.pending_inbox_count, 1, 'check-env reports pending local operator records');
+  assert.deepEqual(checkEnvJson.pending_inbox_names, ['pending-check.json'], 'check-env previews pending inbox names');
+  assert.equal(checkEnvJson.pending_inbox_needs_operator, true, 'check-env flags pending operator work');
+  assert.equal(checkEnvJson.pending_inbox_has_overflow, false, 'check-env reports pending preview overflow');
+  assert.equal(checkEnvJson.pending_inbox_overflow_count, 0, 'check-env reports zero pending overflow');
   assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
   assert.match(checkEnvJson.bridge_instance_id, /^nectar_bridge_/, 'check-env exposes bridge instance id for traceability');
@@ -112,6 +119,8 @@ async function main() {
   const missingDefaultJson = JSON.parse(missingDefaultCheck.stdout);
   assert.equal(missingDefaultJson.inbox_exists, false, 'missing inbox remains absent during check-env');
   assert.equal(missingDefaultJson.inbox_creatable, true, 'check-env reports missing inbox as creatable');
+  assert.equal(missingDefaultJson.inbox_record_count, 0, 'missing inbox has no records during check-env');
+  assert.equal(missingDefaultJson.pending_inbox_count, 0, 'missing inbox has no pending records during check-env');
   assert.equal(isLoopbackHost('127.0.0.1'), true, 'loopback host helper accepts IPv4 loopback');
   assert.equal(isLoopbackHost('0.0.0.0'), false, 'loopback host helper rejects wildcard binds');
   assert.throws(

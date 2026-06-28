@@ -85,6 +85,8 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
   const inboxExists = fs.existsSync(config.inboxDir);
   const inboxCreatable = !inboxExists && canCreateDirectory(config.inboxDir);
   const inboxWritable = inboxExists ? isInboxWritable(config.inboxDir) : inboxCreatable;
+  const inboxRecordCount = inboxExists ? countInboxRecords(config.inboxDir) : 0;
+  const pendingInboxNames = inboxExists ? pendingInboxRecordNames(config.inboxDir) : [];
   if (!inboxWritable) {
     const writableTarget = inboxParentExists ? inboxParent : nearestExistingParent(config.inboxDir);
     errors.push(`NECTAR_DISPATCH_INBOX is not writable or creatable from: ${writableTarget}`);
@@ -108,6 +110,13 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     inbox_exists: inboxExists,
     inbox_creatable: inboxCreatable,
     inbox_writable: inboxWritable,
+    inbox_record_count: inboxRecordCount,
+    pending_inbox_count: pendingInboxNames.length,
+    pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
+    pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
+    pending_inbox_has_overflow: pendingInboxNames.length > PENDING_INBOX_PREVIEW_LIMIT,
+    pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - PENDING_INBOX_PREVIEW_LIMIT),
+    pending_inbox_needs_operator: pendingInboxNames.length > 0,
     max_body_bytes: config.maxBodyBytes,
     errors,
     operator_next_check: errors.length ? 'fix the reported bridge environment issue before starting the local bridge' : 'start the bridge when ready, then check GET /health before wiring BATON dispatch',
