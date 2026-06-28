@@ -8,6 +8,23 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const args = new Set(process.argv.slice(2));
 const json = args.has('--json');
+const help = args.has('--help') || args.has('-h');
+
+function usage() {
+  console.log(`Usage: node scripts/audit-private-data.js [--json|--help]
+
+Checks tracked, staged, and untracked repository files for private local state,
+high-signal secret patterns, and fixture specificity before publishing BATON.
+
+Options:
+  --json   Emit machine-readable audit results.
+  --help   Show this help text.`);
+}
+
+if (help) {
+  usage();
+  process.exit(0);
+}
 
 const blockedPathPatterns = [
   /^\.env$/,
