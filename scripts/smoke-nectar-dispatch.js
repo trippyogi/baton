@@ -101,6 +101,7 @@ async function main() {
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
   assert.match(checkEnvJson.bridge_instance_id, /^nectar_bridge_/, 'check-env exposes bridge instance id for traceability');
   assert.equal(typeof checkEnvJson.process_pid, 'number', 'check-env exposes bridge process pid for local traceability');
+  assert.equal(checkEnvJson.node_version, process.version, 'check-env exposes Node runtime version for reproducibility');
   fs.rmSync(checkEnvInbox, { recursive: true, force: true });
   const missingDefaultCheck = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
     cwd: path.join(__dirname, '..'),
@@ -145,6 +146,7 @@ async function main() {
   assert.equal(wrongContentTypeJson.bridge_version, '0.1.0', 'rejection response exposes bridge version');
   assert.match(wrongContentTypeJson.bridge_request_id, /^nectar_req_/, 'rejection response exposes request id');
   assert.equal(typeof wrongContentTypeJson.process_pid, 'number', 'rejection response exposes bridge process pid');
+  assert.equal(wrongContentTypeJson.node_version, process.version, 'rejection response exposes Node runtime version');
   assert.match(wrongContentTypeJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'rejection response exposes timestamp');
   assert.equal(wrongContentTypeJson.error_count, 1, 'rejection response exposes error count');
   assert.equal(wrongContentTypeJson.rejection_code, 'unsupported_content_type', 'rejection response exposes stable rejection code');
@@ -231,6 +233,7 @@ async function main() {
   assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
   assert.match(initialHealthJson.bridge_instance_id, /^nectar_bridge_/, 'Nectar bridge health exposes bridge instance id');
   assert.equal(typeof initialHealthJson.process_pid, 'number', 'Nectar bridge health exposes bridge process pid');
+  assert.equal(initialHealthJson.node_version, process.version, 'Nectar bridge health exposes Node runtime version');
   assert.equal(initialHealthJson.safety_profile, 'private_local_inbox_only', 'Nectar bridge health exposes safety profile');
   assert.match(initialHealthJson.generated_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes response timestamp');
   assert.equal(initialHealthJson.dispatch_path, '/baton/dispatch', 'Nectar bridge health exposes dispatch path');
