@@ -24,10 +24,12 @@ const highSignalSecretPatterns = [
   { name: 'npm token', regex: /(?:^|\s|=)_authToken\s*=\s*npm_[A-Za-z0-9]{20,}/ },
   { name: 'GitHub classic token', regex: /ghp_[A-Za-z0-9_]{20,}/ },
   { name: 'GitHub fine-grained token', regex: /github_pat_[A-Za-z0-9_]{20,}/ },
+  { name: 'GitLab personal access token', regex: /glpat-[A-Za-z0-9_-]{20,}/ },
   { name: 'Slack token', regex: /xox[baprs]-[A-Za-z0-9-]{20,}/ },
   { name: 'private key block', regex: /-----BEGIN (RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----/ },
   { name: 'AWS access key', regex: /AKIA[0-9A-Z]{16}/ },
   { name: 'bearer token literal', regex: /Bearer [A-Za-z0-9._-]{20,}/ },
+  { name: 'authorization header token', regex: /Authorization\s*[:=]\s*["']?(?:Bearer|Basic)\s+[A-Za-z0-9._:/+=-]{20,}/i },
   { name: 'assigned secret-looking value', regex: /(?:api[_-]?key|token|secret|password|private[_-]?key|webhook[_-]?url)\s*[:=]\s*["'](?![A-Z0-9_]+(?:_ENV|_URL|_TOKEN|_SECRET)?["'])[A-Za-z0-9._:\/+=-]{16,}["']/i },
 ];
 
