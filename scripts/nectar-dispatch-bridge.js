@@ -78,6 +78,12 @@ function latestActivitySource({ startedAt, lastReceived, lastRejected }) {
   return 'started';
 }
 
+function checkEnvStatus(errors, pendingCount) {
+  if (errors.length) return 'blocked';
+  if (pendingCount > 0) return 'pending_local_operator';
+  return 'ready';
+}
+
 function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
   const errors = validateBridgeConfig(config);
   const inboxParent = path.dirname(path.resolve(config.inboxDir || DEFAULT_INBOX));
@@ -97,9 +103,11 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     const writableTarget = inboxParentExists ? inboxParent : nearestExistingParent(config.inboxDir);
     errors.push(`NECTAR_DISPATCH_INBOX is not writable or creatable from: ${writableTarget}`);
   }
+  const attentionReason = pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket);
   return {
     ok: errors.length === 0,
     schema_version: 'baton.nectar_bridge.check_env.v1',
+    check_env_status: checkEnvStatus(errors, pendingInboxNames.length),
     safety_profile: SAFETY_PROFILE,
     generated_at: new Date().toISOString(),
     bridge_version: PACKAGE.version,
@@ -120,7 +128,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     pending_inbox_count: pendingInboxNames.length,
     pending_inbox_oldest_age_seconds: pendingInboxOldestAgeSeconds,
     pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
-    pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket),
+    pending_inbox_attention_reason: attentionReason,
     pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
     pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
     first_pending_inbox_name: firstPendingInboxName,

@@ -97,6 +97,7 @@ async function main() {
   const checkEnvJson = JSON.parse(checkEnv.stdout);
   assert.equal(checkEnvJson.schema_version, 'baton.nectar_bridge.check_env.v1', 'check-env exposes stable schema');
   assert.equal(checkEnvJson.ok, true, 'check-env reports ok for local config');
+  assert.equal(checkEnvJson.check_env_status, 'pending_local_operator', 'check-env status highlights pending local handoffs');
   assert.equal(checkEnvJson.inbox_creatable, false, 'existing temp inbox does not need creation');
   assert.equal(checkEnvJson.inbox_record_count, 1, 'check-env reports existing inbox records without starting bridge');
   assert.equal(checkEnvJson.pending_inbox_count, 1, 'check-env reports pending local operator records');
@@ -122,6 +123,7 @@ async function main() {
   });
   assert.equal(missingDefaultCheck.status, 0, 'check-env accepts creatable missing inbox parents without mutating them');
   const missingDefaultJson = JSON.parse(missingDefaultCheck.stdout);
+  assert.equal(missingDefaultJson.check_env_status, 'ready', 'check-env reports ready when no pending inbox work exists');
   assert.equal(missingDefaultJson.inbox_exists, false, 'missing inbox remains absent during check-env');
   assert.equal(missingDefaultJson.inbox_creatable, true, 'check-env reports missing inbox as creatable');
   assert.equal(missingDefaultJson.inbox_record_count, 0, 'missing inbox has no records during check-env');
