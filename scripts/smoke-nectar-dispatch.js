@@ -118,6 +118,9 @@ async function main() {
   assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
   assert.equal(checkEnvJson.accepted_content_type, 'application/json', 'check-env reports dispatch content type');
   assert.deepEqual(checkEnvJson.accepted_methods, ['GET /health', 'HEAD /health', 'POST /baton/dispatch'], 'check-env reports accepted bridge methods');
+  assert.equal(checkEnvJson.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'check-env reports its command');
+  assert.equal(checkEnvJson.start_command, 'node scripts/nectar-dispatch-bridge.js', 'check-env reports bridge start command');
+  assert.equal(checkEnvJson.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'check-env reports next-inbox command');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
   assert.deepEqual(checkEnvJson.verification_scope, ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'], 'check-env exposes verification scope');
   assert.equal(checkEnvJson.verification_scope_count, 4, 'check-env exposes verification scope count');
@@ -135,6 +138,8 @@ async function main() {
   assert.equal(nextInbox.pending_inbox_overflow_count, 0, 'next-inbox reports preview overflow count');
   assert.equal(nextInbox.pending_inbox_next_name, 'pending-check.json', 'next-inbox returns oldest pending record name');
   assert.ok(nextInbox.pending_inbox_next_path.endsWith('/pending-check.json'), 'next-inbox returns oldest pending record path');
+  assert.equal(nextInbox.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'next-inbox reports check-env command');
+  assert.equal(nextInbox.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports its command');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
   assert.equal(nextInbox.prompt_present, false, 'next-inbox reports prompt presence explicitly');
   assert.equal(nextInbox.prompt_length, 0, 'next-inbox reports zero prompt length when no prompt exists');
@@ -283,6 +288,9 @@ async function main() {
   assert.equal(initialHealthJson.bind_host, '127.0.0.1', 'Nectar bridge health exposes bind host');
   assert.equal(initialHealthJson.accepted_content_type, 'application/json', 'Nectar bridge health exposes dispatch content type');
   assert.deepEqual(initialHealthJson.accepted_methods, ['GET /health', 'HEAD /health', 'POST /baton/dispatch'], 'Nectar bridge health exposes accepted methods');
+  assert.equal(initialHealthJson.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'Nectar bridge health reports check-env command');
+  assert.equal(initialHealthJson.start_command, 'node scripts/nectar-dispatch-bridge.js', 'Nectar bridge health reports start command');
+  assert.equal(initialHealthJson.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'Nectar bridge health reports next-inbox command');
   assert.equal(initialHealthJson.health_schema_version, 'baton.nectar_bridge.health.v1', 'Nectar bridge health exposes stable health schema');
   assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
   assert.match(initialHealthJson.bridge_instance_id, /^nectar_bridge_/, 'Nectar bridge health exposes bridge instance id');
@@ -432,6 +440,7 @@ async function main() {
   assert.ok(live.ack.pending_inbox_newest_age_seconds >= 0, 'accepted bridge newest pending age is non-negative');
   assert.equal(live.ack.pending_inbox_newest_age_bucket, 'fresh', 'accepted bridge response buckets fresh newest pending inbox age');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
+  assert.equal(live.ack.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'accepted bridge response reports next-inbox command');
   assert.match(live.ack.prompt_sha256, /^[a-f0-9]{64}$/, 'accepted bridge response exposes prompt sha256');
   assert.equal(live.ack.prompt_hash_algorithm, 'sha256', 'accepted bridge response exposes prompt hash algorithm');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');

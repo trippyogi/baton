@@ -121,6 +121,9 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     accepted_content_type: 'application/json',
     accepted_methods: ['GET /health', 'HEAD /health', 'POST /baton/dispatch'],
     dispatch_url: `http://${config.host}:${config.port}/baton/dispatch`,
+    check_env_command: 'node scripts/nectar-dispatch-bridge.js --check-env',
+    start_command: 'node scripts/nectar-dispatch-bridge.js',
+    next_inbox_command: 'node scripts/nectar-dispatch-bridge.js --next-inbox',
     token_required: Boolean(config.token),
     inbox_dir: checkInboxDir,
     inbox_parent_exists: inboxParentExists,
@@ -204,6 +207,8 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
     operator_next_check: nextPath
       ? 'copy prompt into local Nectar/OpenClaw, then mark or archive the private inbox record after real work completes'
       : 'no pending local Nectar handoff is waiting; use --check-env or GET /health after dispatch',
+    check_env_command: 'node scripts/nectar-dispatch-bridge.js --check-env',
+    next_inbox_command: 'node scripts/nectar-dispatch-bridge.js --next-inbox',
   };
 }
 
@@ -288,6 +293,9 @@ function startNectarDispatchBridge(config = {}) {
         accepted_content_type: 'application/json',
         accepted_methods: ['GET /health', 'HEAD /health', 'POST /baton/dispatch'],
         dispatch_url: `http://${host}:${port}/baton/dispatch`,
+        check_env_command: 'node scripts/nectar-dispatch-bridge.js --check-env',
+        start_command: 'node scripts/nectar-dispatch-bridge.js',
+        next_inbox_command: 'node scripts/nectar-dispatch-bridge.js --next-inbox',
         token_required: Boolean(token),
         bridge_status: nectarBridgeStatus({ received, rejected, inboxDir }),
         verification_scope: ['service_status', 'auth_posture', 'inbox_status', 'handoff_traceability'],
@@ -444,6 +452,7 @@ function startNectarDispatchBridge(config = {}) {
       inbox_record_name: inboxRecordName,
       inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
       inbox_processing_status: record.processing_status,
+      next_inbox_command: 'node scripts/nectar-dispatch-bridge.js --next-inbox',
       prompt_sha256: promptSha256,
       prompt_hash_algorithm: PROMPT_HASH_ALGORITHM,
       received_count: received.length,
