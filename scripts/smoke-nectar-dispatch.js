@@ -7,7 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { MAX_BODY_BYTES, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionReason, pendingInboxRecordNames, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
+const { MAX_BODY_BYTES, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionReason, pendingInboxRecordNames, readNextInboxRecord, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
 
 let baton = null;
 let bridge = null;
@@ -124,6 +124,20 @@ async function main() {
   assert.match(checkEnvJson.bridge_instance_id, /^nectar_bridge_/, 'check-env exposes bridge instance id for traceability');
   assert.equal(typeof checkEnvJson.process_pid, 'number', 'check-env exposes bridge process pid for local traceability');
   assert.equal(checkEnvJson.node_version, process.version, 'check-env exposes Node runtime version for reproducibility');
+  const nextInbox = readNextInboxRecord({ host: '127.0.0.1', port: randomPort(4820), token: '', inboxDir: checkEnvInbox, maxBodyBytes: MAX_BODY_BYTES });
+  assert.equal(nextInbox.schema_version, 'baton.nectar_bridge.next_inbox.v1', 'next-inbox exposes stable schema');
+  assert.equal(nextInbox.ok, true, 'next-inbox helper succeeds for readable local pending record');
+  assert.equal(nextInbox.pending_inbox_count, 1, 'next-inbox reports pending local handoff count');
+  assert.equal(nextInbox.pending_inbox_next_name, 'pending-check.json', 'next-inbox returns oldest pending record name');
+  assert.ok(nextInbox.pending_inbox_next_path.endsWith('/pending-check.json'), 'next-inbox returns oldest pending record path');
+  assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
+  const nextInboxCli = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4825)) },
+    encoding: 'utf8',
+  });
+  assert.equal(nextInboxCli.status, 0, 'Nectar bridge --next-inbox exits cleanly for readable local pending record');
+  assert.equal(JSON.parse(nextInboxCli.stdout).pending_inbox_next_name, 'pending-check.json', '--next-inbox prints the next pending record as JSON');
   fs.rmSync(checkEnvInbox, { recursive: true, force: true });
   const missingDefaultCheck = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
     cwd: path.join(__dirname, '..'),

@@ -159,6 +159,44 @@ function checkEnvNextCheck(errors, firstPendingInboxPath) {
   return 'start the bridge when ready, then check GET /health before wiring BATON dispatch';
 }
 
+function readNextInboxRecord(config = bridgeConfigFromEnv()) {
+  const errors = validateBridgeConfig(config);
+  const inboxDir = config.inboxDir || DEFAULT_INBOX;
+  const inboxExists = fs.existsSync(inboxDir);
+  const pendingInboxNames = inboxExists ? pendingInboxRecordNames(inboxDir) : [];
+  const nextName = inboxExists ? oldestPendingInboxRecordName(inboxDir) : null;
+  const relativeInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
+  const nextPath = nextName ? path.posix.join(relativeInboxDir, nextName) : null;
+  let record = null;
+  if (nextName) {
+    try {
+      record = JSON.parse(fs.readFileSync(path.join(inboxDir, nextName), 'utf8'));
+    } catch (err) {
+      errors.push(`failed_to_read_next_inbox_record: ${err.message}`);
+    }
+  }
+  return {
+    ok: errors.length === 0,
+    schema_version: 'baton.nectar_bridge.next_inbox.v1',
+    safety_profile: SAFETY_PROFILE,
+    generated_at: new Date().toISOString(),
+    bridge_version: PACKAGE.version,
+    inbox_dir: relativeInboxDir,
+    inbox_exists: inboxExists,
+    pending_inbox_count: pendingInboxNames.length,
+    pending_inbox_next_name: nextName,
+    pending_inbox_next_path: nextPath,
+    inbox_record: record,
+    prompt: record && typeof record.prompt === 'string' ? record.prompt : null,
+    prompt_sha256: record && typeof record.prompt_sha256 === 'string' ? record.prompt_sha256 : null,
+    prompt_hash_algorithm: record && typeof record.prompt_hash_algorithm === 'string' ? record.prompt_hash_algorithm : null,
+    errors,
+    operator_next_check: nextPath
+      ? 'copy prompt into local Nectar/OpenClaw, then mark or archive the private inbox record after real work completes'
+      : 'no pending local Nectar handoff is waiting; use --check-env or GET /health after dispatch',
+  };
+}
+
 function startNectarDispatchBridge(config = {}) {
   const resolvedConfig = { ...bridgeConfigFromEnv(), ...config };
   const { port, token, inboxDir, host } = resolvedConfig;
@@ -770,12 +808,13 @@ function isInboxWritable(inboxDir) {
 }
 
 function usage() {
-  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env]
+  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env|--next-inbox]
 
 Starts the local-only BATON -> Nectar dispatch bridge.
 
 Options:
   --check-env                         Validate env/config and print JSON without starting a listener.
+  --next-inbox                        Print the oldest pending local Nectar inbox record and prompt as JSON.
 
 Environment:
   NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; non-loopback binds require NECTAR_DISPATCH_TOKEN.
@@ -800,10 +839,15 @@ if (require.main === module) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     process.exit(result.ok ? 0 : 2);
   }
+  if (process.argv.includes('--next-inbox')) {
+    const result = readNextInboxRecord();
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    process.exit(result.ok ? 0 : 2);
+  }
   startNectarDispatchBridge().catch(err => {
     console.error(err);
     process.exit(1);
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, readNextInboxRecord, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
