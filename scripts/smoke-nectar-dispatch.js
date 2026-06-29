@@ -111,6 +111,7 @@ async function main() {
   assert.ok(checkEnvJson.operator_next_check.includes('pending-check.json'), 'check-env next check points at the pending local inbox record');
   assert.equal(checkEnvJson.pending_inbox_needs_operator, true, 'check-env flags pending operator work');
   assert.equal(checkEnvJson.pending_inbox_attention_required, true, 'check-env flags pending inbox attention');
+  assert.equal(checkEnvJson.local_handoff_required, true, 'check-env flags required local operator handoff');
   assert.equal(checkEnvJson.pending_inbox_has_overflow, false, 'check-env reports pending preview overflow');
   assert.equal(checkEnvJson.pending_inbox_overflow_count, 0, 'check-env reports zero pending overflow');
   assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
@@ -133,6 +134,7 @@ async function main() {
   assert.equal(missingDefaultJson.pending_inbox_count, 0, 'missing inbox has no pending records during check-env');
   assert.deepEqual(missingDefaultJson.inbox_processing_status_counts, {}, 'missing inbox has no status counts during check-env');
   assert.equal(missingDefaultJson.pending_inbox_attention_required, false, 'check-env leaves attention clear when no pending inbox work exists');
+  assert.equal(missingDefaultJson.local_handoff_required, false, 'check-env leaves local handoff clear when no pending inbox work exists');
   assert.equal(isLoopbackHost('127.0.0.1'), true, 'loopback host helper accepts IPv4 loopback');
   assert.equal(isLoopbackHost('0.0.0.0'), false, 'loopback host helper rejects wildcard binds');
   assert.throws(
@@ -372,6 +374,7 @@ async function main() {
   assert.deepEqual(live.ack.inbox_processing_status_counts, { pending_local_operator: 1 }, 'accepted bridge response exposes inbox status counts');
   assert.equal(live.ack.pending_inbox_needs_operator, true, 'accepted bridge response flags pending local operator work');
   assert.equal(live.ack.pending_inbox_attention_required, true, 'accepted bridge response flags pending local attention');
+  assert.equal(live.ack.local_handoff_required, true, 'accepted bridge response flags local handoff requirement');
   assert.equal(live.ack.pending_inbox_preview_limit, 5, 'accepted bridge response exposes pending inbox preview limit');
   assert.deepEqual(live.ack.pending_inbox_names, [live.ack.inbox_record_name], 'accepted bridge response exposes pending inbox names');
   assert.deepEqual(live.ack.pending_inbox_paths, [live.ack.inbox_path], 'accepted bridge response exposes pending inbox paths');
@@ -416,6 +419,7 @@ async function main() {
   assert.deepEqual(finalHealthJson.inbox_processing_status_counts, { pending_local_operator: 1 }, 'Nectar bridge health exposes inbox status counts after dispatch');
   assert.equal(finalHealthJson.pending_inbox_needs_operator, true, 'Nectar bridge health flags pending local operator work after dispatch');
   assert.equal(finalHealthJson.pending_inbox_attention_required, true, 'Nectar bridge health flags pending local attention after dispatch');
+  assert.equal(finalHealthJson.local_handoff_required, true, 'Nectar bridge health flags local handoff requirement after dispatch');
   assert.equal(finalHealthJson.pending_inbox_preview_limit, 5, 'Nectar bridge health keeps exposing pending inbox preview limit');
   assert.deepEqual(finalHealthJson.pending_inbox_names, [live.ack.inbox_record_name], 'Nectar bridge health exposes pending inbox names');
   assert.deepEqual(finalHealthJson.pending_inbox_paths, [live.ack.inbox_path], 'Nectar bridge health exposes pending inbox paths');
@@ -485,6 +489,7 @@ async function main() {
   assert.deepEqual(completedHealthJson.inbox_processing_status_counts, { completed_local_operator: 1 }, 'Nectar bridge health counts completed local records separately');
   assert.equal(completedHealthJson.pending_inbox_needs_operator, false, 'Nectar bridge health clears pending operator flag after local completion');
   assert.equal(completedHealthJson.pending_inbox_attention_required, false, 'Nectar bridge health clears pending attention after local completion');
+  assert.equal(completedHealthJson.local_handoff_required, false, 'Nectar bridge health clears local handoff requirement after local completion');
   assert.deepEqual(completedHealthJson.pending_inbox_names, [], 'Nectar bridge health clears pending inbox names after local completion');
 
   console.log(`smoke-nectar-dispatch ok against ${BASE}`);
