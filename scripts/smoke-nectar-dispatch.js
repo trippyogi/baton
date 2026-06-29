@@ -7,7 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { MAX_BODY_BYTES, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionReason, pendingInboxRecordNames, readNextInboxRecord, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
+const { MAX_BODY_BYTES, bridgeConfigFromEnv, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionReason, pendingInboxRecordNames, readNextInboxRecord, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
 
 let baton = null;
 let bridge = null;
@@ -128,7 +128,15 @@ async function main() {
   assert.match(checkEnvJson.bridge_instance_id, /^nectar_bridge_/, 'check-env exposes bridge instance id for traceability');
   assert.equal(typeof checkEnvJson.process_pid, 'number', 'check-env exposes bridge process pid for local traceability');
   assert.equal(checkEnvJson.node_version, process.version, 'check-env exposes Node runtime version for reproducibility');
-  const nextInbox = readNextInboxRecord({ host: '127.0.0.1', port: randomPort(4820), token: '', inboxDir: checkEnvInbox, maxBodyBytes: MAX_BODY_BYTES });
+  const envConfig = bridgeConfigFromEnv({
+    NECTAR_BRIDGE_PORT: String(randomPort(4820)),
+    NECTAR_BRIDGE_HOST: '127.0.0.1',
+    NECTAR_DISPATCH_INBOX: checkEnvInbox,
+    NECTAR_BRIDGE_MAX_BODY_BYTES: '12345',
+  });
+  assert.equal(envConfig.maxBodyBytes, 12345, 'bridge config reads max body bytes from injected env');
+  assert.equal(envConfig.inboxDir, checkEnvInbox, 'bridge config still reads inbox dir from injected env');
+  const nextInbox = readNextInboxRecord({ host: '127.0.0.1', port: randomPort(4821), token: '', inboxDir: checkEnvInbox, maxBodyBytes: MAX_BODY_BYTES });
   assert.equal(nextInbox.schema_version, 'baton.nectar_bridge.next_inbox.v1', 'next-inbox exposes stable schema');
   assert.equal(nextInbox.ok, true, 'next-inbox helper succeeds for readable local pending record');
   assert.equal(nextInbox.pending_inbox_count, 1, 'next-inbox reports pending local handoff count');
@@ -182,6 +190,28 @@ async function main() {
     /non-loopback Nectar bridge binds require NECTAR_DISPATCH_TOKEN/,
     'Nectar bridge refuses unauthenticated non-loopback binds',
   );
+  const customLimitDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-custom-limit-'));
+  const customLimitBridge = await startNectarDispatchBridge({
+    port: randomPort(4920),
+    token: 'limit-test',
+    inboxDir: customLimitDir,
+    maxBodyBytes: 96,
+  });
+  try {
+    const customHealth = await fetch(customLimitBridge.url.replace('/baton/dispatch', '/health'));
+    assert.equal((await customHealth.json()).max_body_bytes, 96, 'bridge health reports per-instance max body bytes');
+    const customOversized = await fetch(customLimitBridge.url, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer limit-test', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schema: 'baton.dispatch.v1', padding: 'x'.repeat(160) }),
+    });
+    const customOversizedJson = await customOversized.json();
+    assert.equal(customOversized.status, 413, 'Nectar bridge rejects bodies over the configured per-instance limit');
+    assert.equal(customOversizedJson.rejection_code, 'body_too_large', 'custom body limit rejection has stable code');
+  } finally {
+    await new Promise(resolve => customLimitBridge.server.close(resolve));
+    fs.rmSync(customLimitDir, { recursive: true, force: true });
+  }
   const pendingHelperDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-pending-helper-'));
   try {
     fs.writeFileSync(path.join(pendingHelperDir, 'done.json'), JSON.stringify({ processing_status: 'completed' }));

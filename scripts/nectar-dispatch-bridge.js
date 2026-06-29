@@ -21,8 +21,8 @@ function bridgeRequestId() {
   return `nectar_req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function positiveIntEnv(name, fallback) {
-  const raw = process.env[name];
+function positiveIntEnv(name, fallback, env = process.env) {
+  const raw = env[name];
   if (!raw) return fallback;
   const value = Number(raw);
   if (!Number.isSafeInteger(value) || value < 1) {
@@ -38,7 +38,7 @@ function bridgeConfigFromEnv(env = process.env) {
     token: env.NECTAR_DISPATCH_TOKEN || '',
     inboxDir: env.NECTAR_DISPATCH_INBOX || DEFAULT_INBOX,
     host: env.NECTAR_BRIDGE_HOST || '127.0.0.1',
-    maxBodyBytes: MAX_BODY_BYTES,
+    maxBodyBytes: positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES, env),
   };
 }
 
@@ -214,8 +214,8 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
 
 function startNectarDispatchBridge(config = {}) {
   const resolvedConfig = { ...bridgeConfigFromEnv(), ...config };
-  const { port, token, inboxDir, host } = resolvedConfig;
-  const configErrors = validateBridgeConfig({ port, token, inboxDir, host, maxBodyBytes: MAX_BODY_BYTES });
+  const { port, token, inboxDir, host, maxBodyBytes } = resolvedConfig;
+  const configErrors = validateBridgeConfig({ port, token, inboxDir, host, maxBodyBytes });
   if (configErrors.length) {
     throw new Error(configErrors.join('; '));
   }
@@ -354,7 +354,7 @@ function startNectarDispatchBridge(config = {}) {
         last_rejection_code: lastRejected ? lastRejected.code : null,
         last_rejection_errors: lastRejected ? lastRejected.errors : null,
         last_rejection_error_count: lastRejected ? lastRejected.errors.length : 0,
-        max_body_bytes: MAX_BODY_BYTES,
+        max_body_bytes: maxBodyBytes,
         operator_next_check: nectarBridgeNextCheck({ received, rejected, inboxDir }),
       };
       return req.method === 'HEAD' ? headJson(res, 200) : json(res, 200, body);
@@ -371,12 +371,12 @@ function startNectarDispatchBridge(config = {}) {
     }
 
     const contentLength = Number(req.headers['content-length'] || 0);
-    if (contentLength > MAX_BODY_BYTES) {
+    if (contentLength > maxBodyBytes) {
       req.resume();
       return reject(res, 413, ['body too large']);
     }
 
-    const body = await readJson(req);
+    const body = await readJson(req, maxBodyBytes);
     if (body && body.__body_too_large) {
       return reject(res, 413, ['body too large']);
     }
@@ -626,14 +626,14 @@ function toOpenClawPrompt(envelope) {
   return lines.join('\n').trim();
 }
 
-function readJson(req) {
+function readJson(req, maxBodyBytes = MAX_BODY_BYTES) {
   return new Promise(resolve => {
     let data = '';
     let tooLarge = false;
     req.on('data', chunk => {
       if (tooLarge) return;
       data += chunk;
-      if (Buffer.byteLength(data, 'utf8') > MAX_BODY_BYTES) {
+      if (Buffer.byteLength(data, 'utf8') > maxBodyBytes) {
         tooLarge = true;
         data = '';
       }
