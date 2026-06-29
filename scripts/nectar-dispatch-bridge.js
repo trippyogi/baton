@@ -143,6 +143,8 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     pending_inbox_needs_operator: pendingInboxNames.length > 0,
     local_handoff_required: pendingInboxNames.length > 0,
     max_body_bytes: config.maxBodyBytes,
+    verification_scope: ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'],
+    verification_scope_count: 4,
     errors,
     operator_next_check: checkEnvNextCheck(errors, firstPendingInboxPath),
   };
@@ -235,6 +237,8 @@ function startNectarDispatchBridge(config = {}) {
         dispatch_url: `http://${host}:${port}/baton/dispatch`,
         token_required: Boolean(token),
         bridge_status: nectarBridgeStatus({ received, rejected, inboxDir }),
+        verification_scope: ['service_status', 'auth_posture', 'inbox_status', 'handoff_traceability'],
+        verification_scope_count: 4,
         latest_activity_at: latestActivityAt,
         latest_activity_source: latestActivitySource({ startedAt, lastReceived, lastRejected }),
         started_at: startedAt.toISOString(),

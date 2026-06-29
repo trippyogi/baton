@@ -116,6 +116,8 @@ async function main() {
   assert.equal(checkEnvJson.pending_inbox_overflow_count, 0, 'check-env reports zero pending overflow');
   assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
+  assert.deepEqual(checkEnvJson.verification_scope, ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'], 'check-env exposes verification scope');
+  assert.equal(checkEnvJson.verification_scope_count, 4, 'check-env exposes verification scope count');
   assert.match(checkEnvJson.bridge_instance_id, /^nectar_bridge_/, 'check-env exposes bridge instance id for traceability');
   assert.equal(typeof checkEnvJson.process_pid, 'number', 'check-env exposes bridge process pid for local traceability');
   assert.equal(checkEnvJson.node_version, process.version, 'check-env exposes Node runtime version for reproducibility');
@@ -266,6 +268,8 @@ async function main() {
   assert.equal(initialHealthJson.dispatch_url, bridge.url, 'Nectar bridge health exposes full dispatch URL');
   assert.equal(initialHealthJson.token_required, true, 'Nectar bridge health exposes whether auth is required');
   assert.equal(initialHealthJson.bridge_status, 'needs_client_fix', 'Nectar bridge health summarizes rejected pre-dispatch state');
+  assert.deepEqual(initialHealthJson.verification_scope, ['service_status', 'auth_posture', 'inbox_status', 'handoff_traceability'], 'Nectar bridge health exposes verification scope');
+  assert.equal(initialHealthJson.verification_scope_count, 4, 'Nectar bridge health exposes verification scope count');
   assert.match(initialHealthJson.latest_activity_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes latest activity timestamp');
   assert.equal(initialHealthJson.latest_activity_source, 'rejected', 'Nectar bridge health exposes latest activity source after rejection');
   assert.match(initialHealthJson.started_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes start timestamp');
