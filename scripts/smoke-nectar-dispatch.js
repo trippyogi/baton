@@ -380,6 +380,7 @@ async function main() {
   assert.deepEqual(live.ack.inbox_processing_status_counts, { pending_local_operator: 1 }, 'accepted bridge response exposes inbox status counts');
   assert.equal(live.ack.pending_inbox_needs_operator, true, 'accepted bridge response flags pending local operator work');
   assert.equal(live.ack.pending_inbox_attention_required, true, 'accepted bridge response flags pending local attention');
+  assert.equal(live.ack.pending_inbox_attention_reason, 'pending_inbox_waiting', 'accepted bridge response explains pending inbox attention');
   assert.equal(live.ack.local_handoff_required, true, 'accepted bridge response flags local handoff requirement');
   assert.equal(live.ack.pending_inbox_preview_limit, 5, 'accepted bridge response exposes pending inbox preview limit');
   assert.equal(live.ack.pending_inbox_preview_count, 1, 'accepted bridge response exposes pending inbox preview count');
@@ -395,8 +396,16 @@ async function main() {
   assert.ok(live.ack.pending_inbox_next_path.endsWith(live.ack.inbox_record_name), 'accepted bridge response exposes explicit next pending inbox path');
   assert.equal(live.ack.pending_inbox_oldest_name, live.ack.inbox_record_name, 'accepted bridge response exposes oldest pending inbox filename');
   assert.ok(live.ack.pending_inbox_oldest_path.endsWith(live.ack.inbox_record_name), 'accepted bridge response exposes oldest pending inbox path');
+  assert.match(live.ack.pending_inbox_oldest_received_at, /^\d{4}-\d{2}-\d{2}T/, 'accepted bridge response exposes oldest pending inbox timestamp');
+  assert.equal(typeof live.ack.pending_inbox_oldest_age_seconds, 'number', 'accepted bridge response exposes oldest pending inbox age');
+  assert.ok(live.ack.pending_inbox_oldest_age_seconds >= 0, 'accepted bridge oldest pending age is non-negative');
+  assert.equal(live.ack.pending_inbox_oldest_age_bucket, 'fresh', 'accepted bridge response buckets fresh oldest pending inbox age');
   assert.equal(live.ack.pending_inbox_newest_name, live.ack.inbox_record_name, 'accepted bridge response exposes newest pending inbox filename');
   assert.ok(live.ack.pending_inbox_newest_path.endsWith(live.ack.inbox_record_name), 'accepted bridge response exposes newest pending inbox path');
+  assert.match(live.ack.pending_inbox_newest_received_at, /^\d{4}-\d{2}-\d{2}T/, 'accepted bridge response exposes newest pending inbox timestamp');
+  assert.equal(typeof live.ack.pending_inbox_newest_age_seconds, 'number', 'accepted bridge response exposes newest pending inbox age');
+  assert.ok(live.ack.pending_inbox_newest_age_seconds >= 0, 'accepted bridge newest pending age is non-negative');
+  assert.equal(live.ack.pending_inbox_newest_age_bucket, 'fresh', 'accepted bridge response buckets fresh newest pending inbox age');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.match(live.ack.prompt_sha256, /^[a-f0-9]{64}$/, 'accepted bridge response exposes prompt sha256');
   assert.equal(live.ack.prompt_hash_algorithm, 'sha256', 'accepted bridge response exposes prompt hash algorithm');

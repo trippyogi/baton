@@ -365,6 +365,12 @@ function startNectarDispatchBridge(config = {}) {
     const newestPendingInboxPath = newestPendingInboxName
       ? path.relative(ROOT, path.join(inboxDir, newestPendingInboxName)).split(path.sep).join('/')
       : null;
+    const oldestPendingInboxReceivedAt = firstPendingInboxName ? inboxRecordReceivedAt(inboxDir, firstPendingInboxName) : null;
+    const newestPendingInboxReceivedAt = newestPendingInboxName ? inboxRecordReceivedAt(inboxDir, newestPendingInboxName) : null;
+    const oldestPendingInboxAgeSeconds = secondsSinceIso(oldestPendingInboxReceivedAt);
+    const newestPendingInboxAgeSeconds = secondsSinceIso(newestPendingInboxReceivedAt);
+    const oldestPendingInboxAgeBucket = pendingAgeBucket(oldestPendingInboxAgeSeconds);
+    const newestPendingInboxAgeBucket = pendingAgeBucket(newestPendingInboxAgeSeconds);
 
     return json(res, 200, {
       ok: true,
@@ -400,6 +406,7 @@ function startNectarDispatchBridge(config = {}) {
       pending_inbox_has_overflow: pendingInboxNames.length > PENDING_INBOX_PREVIEW_LIMIT,
       pending_inbox_needs_operator: pendingInboxNames.length > 0,
       pending_inbox_attention_required: pendingInboxNames.length > 0,
+      pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, oldestPendingInboxAgeBucket),
       local_handoff_required: pendingInboxNames.length > 0,
       first_pending_inbox_name: firstPendingInboxName,
       first_pending_inbox_path: firstPendingInboxPath,
@@ -407,8 +414,14 @@ function startNectarDispatchBridge(config = {}) {
       pending_inbox_next_path: firstPendingInboxPath,
       pending_inbox_oldest_name: firstPendingInboxName,
       pending_inbox_oldest_path: firstPendingInboxPath,
+      pending_inbox_oldest_received_at: oldestPendingInboxReceivedAt,
+      pending_inbox_oldest_age_seconds: oldestPendingInboxAgeSeconds,
+      pending_inbox_oldest_age_bucket: oldestPendingInboxAgeBucket,
       pending_inbox_newest_name: newestPendingInboxName,
       pending_inbox_newest_path: newestPendingInboxPath,
+      pending_inbox_newest_received_at: newestPendingInboxReceivedAt,
+      pending_inbox_newest_age_seconds: newestPendingInboxAgeSeconds,
+      pending_inbox_newest_age_bucket: newestPendingInboxAgeBucket,
       message: 'Nectar bridge accepted dispatch for local inbox processing.',
       operator_next_check: 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing',
     });
