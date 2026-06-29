@@ -176,6 +176,8 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
       errors.push(`failed_to_read_next_inbox_record: ${err.message}`);
     }
   }
+  const prompt = record && typeof record.prompt === 'string' ? record.prompt : null;
+  const promptSha256 = record && typeof record.prompt_sha256 === 'string' ? record.prompt_sha256 : null;
   return {
     ok: errors.length === 0,
     schema_version: 'baton.nectar_bridge.next_inbox.v1',
@@ -193,8 +195,10 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
     pending_inbox_next_name: nextName,
     pending_inbox_next_path: nextPath,
     inbox_record: record,
-    prompt: record && typeof record.prompt === 'string' ? record.prompt : null,
-    prompt_sha256: record && typeof record.prompt_sha256 === 'string' ? record.prompt_sha256 : null,
+    prompt,
+    prompt_present: Boolean(prompt),
+    prompt_length: prompt ? prompt.length : 0,
+    prompt_sha256: promptSha256,
     prompt_hash_algorithm: record && typeof record.prompt_hash_algorithm === 'string' ? record.prompt_hash_algorithm : null,
     errors,
     operator_next_check: nextPath

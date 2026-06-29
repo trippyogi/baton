@@ -136,6 +136,8 @@ async function main() {
   assert.equal(nextInbox.pending_inbox_next_name, 'pending-check.json', 'next-inbox returns oldest pending record name');
   assert.ok(nextInbox.pending_inbox_next_path.endsWith('/pending-check.json'), 'next-inbox returns oldest pending record path');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
+  assert.equal(nextInbox.prompt_present, false, 'next-inbox reports prompt presence explicitly');
+  assert.equal(nextInbox.prompt_length, 0, 'next-inbox reports zero prompt length when no prompt exists');
   const nextInboxCli = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox'], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4825)) },
