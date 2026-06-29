@@ -58,6 +58,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Fixed
 
+- Local profile imports now reject duplicate agent IDs inside the same profile during dry-run and write modes.
 - Review packet creation is transactional for packet/task writes and accepts agent field aliases.
 - Task JSON fields validate array shape and malformed stored JSON no longer breaks reads.
 - Legacy visible screens escape user/agent text and protocol-validate rendered URLs.

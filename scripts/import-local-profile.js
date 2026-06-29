@@ -230,7 +230,10 @@ function importAgents(db, agents, opts) {
   const insert = db.prepare(`INSERT INTO agents (${fields.join(',')}) VALUES (${fields.map(() => '?').join(',')})`);
   const updateFields = [...Object.keys(DEFAULT_AGENT), 'name'];
   const update = db.prepare(`UPDATE agents SET ${updateFields.map(key => `${key} = ?`).join(', ')}, updated_at = datetime('now') WHERE id = ?`);
+  const seenIds = new Set();
   for (const agent of agents) {
+    if (seenIds.has(agent.id)) throw new Error(`duplicate agent id in profile rejected: ${agent.id}`);
+    seenIds.add(agent.id);
     const exists = db.prepare('SELECT id FROM agents WHERE id = ?').get(agent.id);
     if (exists && opts.mode === 'insert') throw new Error(`duplicate agent id rejected: ${agent.id}`);
     if (opts.dryRun) continue;
