@@ -827,13 +827,14 @@ function isInboxWritable(inboxDir) {
 }
 
 function usage() {
-  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env|--next-inbox]
+  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env|--next-inbox [--prompt-only]]
 
 Starts the local-only BATON -> Nectar dispatch bridge.
 
 Options:
   --check-env                         Validate env/config and print JSON without starting a listener.
   --next-inbox                        Print the oldest pending local Nectar inbox record and prompt as JSON.
+  --prompt-only                       With --next-inbox, print only the prompt text for easy local handoff.
 
 Environment:
   NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; non-loopback binds require NECTAR_DISPATCH_TOKEN.
@@ -860,7 +861,12 @@ if (require.main === module) {
   }
   if (process.argv.includes('--next-inbox')) {
     const result = readNextInboxRecord();
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    if (process.argv.includes('--prompt-only')) {
+      if (result.prompt_present) process.stdout.write(`${result.prompt}\n`);
+      else process.stdout.write('');
+    } else {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    }
     process.exit(result.ok ? 0 : 2);
   }
   startNectarDispatchBridge().catch(err => {

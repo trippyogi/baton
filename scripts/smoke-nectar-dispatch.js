@@ -86,6 +86,7 @@ async function main() {
   assert.ok(help.stdout.includes('NECTAR_BRIDGE_MAX_BODY_BYTES'), 'Nectar bridge help documents body limit env');
   assert.ok(help.stdout.includes('non-loopback binds require NECTAR_DISPATCH_TOKEN'), 'Nectar bridge help documents non-loopback auth guard');
   assert.ok(help.stdout.includes('--check-env'), 'Nectar bridge help documents config check mode');
+  assert.ok(help.stdout.includes('--prompt-only'), 'Nectar bridge help documents prompt-only next-inbox mode');
   const checkEnvInbox = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-check-env-'));
   fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator' }));
   const checkEnv = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
@@ -150,6 +151,14 @@ async function main() {
   });
   assert.equal(nextInboxCli.status, 0, 'Nectar bridge --next-inbox exits cleanly for readable local pending record');
   assert.equal(JSON.parse(nextInboxCli.stdout).pending_inbox_next_name, 'pending-check.json', '--next-inbox prints the next pending record as JSON');
+  fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', prompt: 'Hand this to local Nectar.' }));
+  const nextInboxPromptOnly = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--prompt-only'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4826)) },
+    encoding: 'utf8',
+  });
+  assert.equal(nextInboxPromptOnly.status, 0, 'Nectar bridge --next-inbox --prompt-only exits cleanly');
+  assert.equal(nextInboxPromptOnly.stdout, 'Hand this to local Nectar.\n', '--prompt-only prints only the handoff prompt');
   fs.rmSync(checkEnvInbox, { recursive: true, force: true });
   const missingDefaultCheck = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
     cwd: path.join(__dirname, '..'),
