@@ -116,6 +116,8 @@ async function main() {
   assert.equal(checkEnvJson.pending_inbox_has_overflow, false, 'check-env reports pending preview overflow');
   assert.equal(checkEnvJson.pending_inbox_overflow_count, 0, 'check-env reports zero pending overflow');
   assert.equal(checkEnvJson.dispatch_path, '/baton/dispatch', 'check-env reports dispatch path');
+  assert.equal(checkEnvJson.accepted_content_type, 'application/json', 'check-env reports dispatch content type');
+  assert.deepEqual(checkEnvJson.accepted_methods, ['GET /health', 'HEAD /health', 'POST /baton/dispatch'], 'check-env reports accepted bridge methods');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
   assert.deepEqual(checkEnvJson.verification_scope, ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'], 'check-env exposes verification scope');
   assert.equal(checkEnvJson.verification_scope_count, 4, 'check-env exposes verification scope count');
@@ -258,6 +260,8 @@ async function main() {
   assert.equal(initialHealth.headers.get('cache-control'), 'no-store', 'Nectar bridge health disables caching');
   assert.equal(initialHealthHead.headers.get('cache-control'), 'no-store', 'Nectar bridge HEAD health disables caching');
   assert.equal(initialHealthJson.bind_host, '127.0.0.1', 'Nectar bridge health exposes bind host');
+  assert.equal(initialHealthJson.accepted_content_type, 'application/json', 'Nectar bridge health exposes dispatch content type');
+  assert.deepEqual(initialHealthJson.accepted_methods, ['GET /health', 'HEAD /health', 'POST /baton/dispatch'], 'Nectar bridge health exposes accepted methods');
   assert.equal(initialHealthJson.health_schema_version, 'baton.nectar_bridge.health.v1', 'Nectar bridge health exposes stable health schema');
   assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
   assert.match(initialHealthJson.bridge_instance_id, /^nectar_bridge_/, 'Nectar bridge health exposes bridge instance id');
