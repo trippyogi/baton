@@ -128,6 +128,11 @@ async function main() {
   assert.equal(nextInbox.schema_version, 'baton.nectar_bridge.next_inbox.v1', 'next-inbox exposes stable schema');
   assert.equal(nextInbox.ok, true, 'next-inbox helper succeeds for readable local pending record');
   assert.equal(nextInbox.pending_inbox_count, 1, 'next-inbox reports pending local handoff count');
+  assert.equal(nextInbox.pending_inbox_preview_limit, 5, 'next-inbox reports preview limit');
+  assert.equal(nextInbox.pending_inbox_preview_count, 1, 'next-inbox reports preview count');
+  assert.deepEqual(nextInbox.pending_inbox_names, ['pending-check.json'], 'next-inbox previews pending names');
+  assert.equal(nextInbox.pending_inbox_has_overflow, false, 'next-inbox reports preview overflow state');
+  assert.equal(nextInbox.pending_inbox_overflow_count, 0, 'next-inbox reports preview overflow count');
   assert.equal(nextInbox.pending_inbox_next_name, 'pending-check.json', 'next-inbox returns oldest pending record name');
   assert.ok(nextInbox.pending_inbox_next_path.endsWith('/pending-check.json'), 'next-inbox returns oldest pending record path');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
