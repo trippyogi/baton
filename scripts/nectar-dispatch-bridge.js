@@ -188,6 +188,8 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
   }
   const prompt = record && typeof record.prompt === 'string' ? record.prompt : null;
   const promptSha256 = record && typeof record.prompt_sha256 === 'string' ? record.prompt_sha256 : null;
+  const computedPromptSha256 = prompt ? sha256Hex(prompt) : null;
+  const promptSha256Verified = promptSha256 && computedPromptSha256 ? promptSha256 === computedPromptSha256 : false;
   const nextInboxStatus = errors.length
     ? 'read_error'
     : nextName
@@ -221,6 +223,8 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
     prompt_present: Boolean(prompt),
     prompt_length: prompt ? prompt.length : 0,
     prompt_sha256: promptSha256,
+    prompt_sha256_computed: computedPromptSha256,
+    prompt_sha256_verified: promptSha256Verified,
     prompt_hash_algorithm: record && typeof record.prompt_hash_algorithm === 'string' ? record.prompt_hash_algorithm : null,
     errors,
     operator_next_check: nextPath
