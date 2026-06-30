@@ -130,6 +130,7 @@ async function main() {
   assert.equal(checkEnvJson.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'check-env reports its command');
   assert.equal(checkEnvJson.start_command, 'node scripts/nectar-dispatch-bridge.js', 'check-env reports bridge start command');
   assert.equal(checkEnvJson.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'check-env reports next-inbox command');
+  assert.equal(checkEnvJson.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'check-env reports pending inbox review command when work is waiting');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
   assert.deepEqual(checkEnvJson.verification_scope, ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'], 'check-env exposes verification scope');
   assert.equal(checkEnvJson.verification_scope_count, 4, 'check-env exposes verification scope count');
@@ -163,6 +164,7 @@ async function main() {
   assert.ok(['fresh', 'waiting', 'stale'].includes(nextInbox.pending_inbox_next_age_bucket), 'next-inbox reports pending age bucket');
   assert.equal(nextInbox.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'next-inbox reports check-env command');
   assert.equal(nextInbox.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports its command');
+  assert.equal(nextInbox.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports review command when pending work exists');
   assert.match(nextInbox.inbox_record_sha256, /^[0-9a-f]{64}$/, 'next-inbox reports a stable inbox record hash');
   assert.equal(nextInbox.inbox_record_hash_algorithm, 'sha256', 'next-inbox reports inbox record hash algorithm');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
@@ -347,6 +349,7 @@ async function main() {
   assert.equal(initialHealthJson.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'Nectar bridge health reports check-env command');
   assert.equal(initialHealthJson.start_command, 'node scripts/nectar-dispatch-bridge.js', 'Nectar bridge health reports start command');
   assert.equal(initialHealthJson.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'Nectar bridge health reports next-inbox command');
+  assert.equal(initialHealthJson.pending_inbox_review_command, null, 'Nectar bridge health omits review command when no pending inbox work exists');
   assert.equal(initialHealthJson.health_schema_version, 'baton.nectar_bridge.health.v1', 'Nectar bridge health exposes stable health schema');
   assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
   assert.match(initialHealthJson.bridge_instance_id, /^nectar_bridge_/, 'Nectar bridge health exposes bridge instance id');
@@ -504,6 +507,7 @@ async function main() {
   assert.equal(live.ack.pending_inbox_newest_age_bucket, 'fresh', 'accepted bridge response buckets fresh newest pending inbox age');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.equal(live.ack.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'accepted bridge response reports next-inbox command');
+  assert.equal(live.ack.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'accepted bridge response reports pending inbox review command');
   assert.match(live.ack.prompt_sha256, /^[a-f0-9]{64}$/, 'accepted bridge response exposes prompt sha256');
   assert.equal(live.ack.prompt_hash_algorithm, 'sha256', 'accepted bridge response exposes prompt hash algorithm');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
