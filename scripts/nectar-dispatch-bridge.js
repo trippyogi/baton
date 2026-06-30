@@ -171,6 +171,9 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
   const relativeInboxDir = path.relative(ROOT, inboxDir).split(path.sep).join('/') || '.';
   const nextPath = nextName ? path.posix.join(relativeInboxDir, nextName) : null;
   const pendingInboxPreviewNames = pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT);
+  const pendingInboxNextReceivedAt = nextName ? inboxRecordReceivedAt(inboxDir, nextName) : null;
+  const pendingInboxNextAgeSeconds = secondsSinceIso(pendingInboxNextReceivedAt);
+  const pendingInboxNextAgeBucket = pendingAgeBucket(pendingInboxNextAgeSeconds);
   let record = null;
   if (nextName) {
     try {
@@ -197,6 +200,9 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
     pending_inbox_overflow_count: Math.max(0, pendingInboxNames.length - PENDING_INBOX_PREVIEW_LIMIT),
     pending_inbox_next_name: nextName,
     pending_inbox_next_path: nextPath,
+    pending_inbox_next_received_at: pendingInboxNextReceivedAt,
+    pending_inbox_next_age_seconds: pendingInboxNextAgeSeconds,
+    pending_inbox_next_age_bucket: pendingInboxNextAgeBucket,
     inbox_record: record,
     prompt,
     prompt_present: Boolean(prompt),

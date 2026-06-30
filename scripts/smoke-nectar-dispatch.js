@@ -88,7 +88,7 @@ async function main() {
   assert.ok(help.stdout.includes('--check-env'), 'Nectar bridge help documents config check mode');
   assert.ok(help.stdout.includes('--prompt-only'), 'Nectar bridge help documents prompt-only next-inbox mode');
   const checkEnvInbox = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-check-env-'));
-  fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator' }));
+  fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', received_at: new Date().toISOString() }));
   const checkEnv = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4800)) },
@@ -147,6 +147,9 @@ async function main() {
   assert.equal(nextInbox.pending_inbox_overflow_count, 0, 'next-inbox reports preview overflow count');
   assert.equal(nextInbox.pending_inbox_next_name, 'pending-check.json', 'next-inbox returns oldest pending record name');
   assert.ok(nextInbox.pending_inbox_next_path.endsWith('/pending-check.json'), 'next-inbox returns oldest pending record path');
+  assert.match(nextInbox.pending_inbox_next_received_at, /^\d{4}-\d{2}-\d{2}T/, 'next-inbox reports the pending record receive timestamp');
+  assert.equal(typeof nextInbox.pending_inbox_next_age_seconds, 'number', 'next-inbox reports pending record age seconds');
+  assert.ok(['fresh', 'waiting', 'stale'].includes(nextInbox.pending_inbox_next_age_bucket), 'next-inbox reports pending age bucket');
   assert.equal(nextInbox.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'next-inbox reports check-env command');
   assert.equal(nextInbox.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports its command');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
@@ -159,7 +162,7 @@ async function main() {
   });
   assert.equal(nextInboxCli.status, 0, 'Nectar bridge --next-inbox exits cleanly for readable local pending record');
   assert.equal(JSON.parse(nextInboxCli.stdout).pending_inbox_next_name, 'pending-check.json', '--next-inbox prints the next pending record as JSON');
-  fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', prompt: 'Hand this to local Nectar.' }));
+  fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', received_at: new Date().toISOString(), prompt: 'Hand this to local Nectar.' }));
   const nextInboxPromptOnly = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--prompt-only'], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4826)) },
