@@ -187,10 +187,16 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
   }
   const prompt = record && typeof record.prompt === 'string' ? record.prompt : null;
   const promptSha256 = record && typeof record.prompt_sha256 === 'string' ? record.prompt_sha256 : null;
+  const nextInboxStatus = errors.length
+    ? 'read_error'
+    : nextName
+      ? 'pending_local_operator'
+      : 'empty';
   return {
     ok: errors.length === 0,
     schema_version: 'baton.nectar_bridge.next_inbox.v1',
     safety_profile: SAFETY_PROFILE,
+    next_inbox_status: nextInboxStatus,
     generated_at: new Date().toISOString(),
     bridge_version: PACKAGE.version,
     inbox_dir: relativeInboxDir,

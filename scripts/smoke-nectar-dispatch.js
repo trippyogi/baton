@@ -139,6 +139,7 @@ async function main() {
   const nextInbox = readNextInboxRecord({ host: '127.0.0.1', port: randomPort(4821), token: '', inboxDir: checkEnvInbox, maxBodyBytes: MAX_BODY_BYTES });
   assert.equal(nextInbox.schema_version, 'baton.nectar_bridge.next_inbox.v1', 'next-inbox exposes stable schema');
   assert.equal(nextInbox.ok, true, 'next-inbox helper succeeds for readable local pending record');
+  assert.equal(nextInbox.next_inbox_status, 'pending_local_operator', 'next-inbox exposes a stable pending status');
   assert.equal(nextInbox.pending_inbox_count, 1, 'next-inbox reports pending local handoff count');
   assert.equal(nextInbox.pending_inbox_preview_limit, 5, 'next-inbox reports preview limit');
   assert.equal(nextInbox.pending_inbox_preview_count, 1, 'next-inbox reports preview count');
@@ -164,6 +165,7 @@ async function main() {
   });
   assert.equal(nextInboxCli.status, 0, 'Nectar bridge --next-inbox exits cleanly for readable local pending record');
   assert.equal(JSON.parse(nextInboxCli.stdout).pending_inbox_next_name, 'pending-check.json', '--next-inbox prints the next pending record as JSON');
+  assert.equal(JSON.parse(nextInboxCli.stdout).next_inbox_status, 'pending_local_operator', '--next-inbox prints stable status as JSON');
   fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', received_at: new Date().toISOString(), prompt: 'Hand this to local Nectar.' }));
   const nextInboxPromptOnly = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--prompt-only'], {
     cwd: path.join(__dirname, '..'),
