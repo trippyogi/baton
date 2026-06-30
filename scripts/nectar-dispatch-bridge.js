@@ -319,6 +319,7 @@ function startNectarDispatchBridge(config = {}) {
         verification_scope_count: 4,
         latest_activity_at: latestActivityAt,
         latest_activity_source: latestActivitySource({ startedAt, lastReceived, lastRejected }),
+        latest_activity_age_seconds: secondsSinceIso(latestActivityAt),
         started_at: startedAt.toISOString(),
         uptime_seconds: Math.floor((Date.now() - startedAt.getTime()) / 1000),
         received_count: received.length,

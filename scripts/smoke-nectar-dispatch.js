@@ -352,6 +352,8 @@ async function main() {
   assert.equal(initialHealthJson.verification_scope_count, 4, 'Nectar bridge health exposes verification scope count');
   assert.match(initialHealthJson.latest_activity_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes latest activity timestamp');
   assert.equal(initialHealthJson.latest_activity_source, 'rejected', 'Nectar bridge health exposes latest activity source after rejection');
+  assert.equal(typeof initialHealthJson.latest_activity_age_seconds, 'number', 'Nectar bridge health exposes latest activity age seconds');
+  assert.ok(initialHealthJson.latest_activity_age_seconds >= 0, 'Nectar bridge latest activity age is non-negative');
   assert.match(initialHealthJson.started_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes start timestamp');
   assert.equal(typeof initialHealthJson.uptime_seconds, 'number', 'Nectar bridge health exposes uptime seconds');
   assert.ok(initialHealthJson.uptime_seconds >= 0, 'Nectar bridge uptime is non-negative');
@@ -509,6 +511,7 @@ async function main() {
   assert.equal(finalHealthJson.bridge_status, 'ready_to_process', 'Nectar bridge health summarizes ready inbox state after dispatch');
   assert.match(finalHealthJson.latest_activity_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge final health exposes latest activity timestamp');
   assert.equal(finalHealthJson.latest_activity_source, 'rejected', 'Nectar bridge final health points at duplicate rejection as latest activity');
+  assert.equal(typeof finalHealthJson.latest_activity_age_seconds, 'number', 'Nectar bridge final health exposes latest activity age seconds');
   assert.equal(finalHealthJson.inbox_record_count, 1, 'Nectar bridge health updates inbox record count after dispatch');
   assert.equal(finalHealthJson.pending_inbox_count, 1, 'Nectar bridge health updates pending inbox count after dispatch');
   assert.equal(finalHealthJson.pending_inbox_attention_reason, 'pending_inbox_waiting', 'Nectar bridge health reports pending attention reason after dispatch');
