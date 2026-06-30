@@ -356,6 +356,7 @@ async function main() {
   assert.equal(initialHealthJson.dispatch_url, bridge.url, 'Nectar bridge health exposes full dispatch URL');
   assert.equal(initialHealthJson.token_required, true, 'Nectar bridge health exposes whether auth is required');
   assert.equal(initialHealthJson.bridge_status, 'needs_client_fix', 'Nectar bridge health summarizes rejected pre-dispatch state');
+  assert.equal(initialHealthJson.next_inbox_status, 'empty', 'Nectar bridge health exposes empty next-inbox status before dispatch');
   assert.deepEqual(initialHealthJson.verification_scope, ['service_status', 'auth_posture', 'inbox_status', 'handoff_traceability'], 'Nectar bridge health exposes verification scope');
   assert.equal(initialHealthJson.verification_scope_count, 4, 'Nectar bridge health exposes verification scope count');
   assert.match(initialHealthJson.latest_activity_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes latest activity timestamp');
@@ -519,6 +520,7 @@ async function main() {
   assert.equal(finalHealthJson.received_count, 1, 'Nectar bridge health updates received count after dispatch');
   assert.equal(finalHealthJson.rejected_count, 7, 'Nectar bridge health tracks duplicate rejection after dispatch');
   assert.equal(finalHealthJson.bridge_status, 'ready_to_process', 'Nectar bridge health summarizes ready inbox state after dispatch');
+  assert.equal(finalHealthJson.next_inbox_status, 'pending_local_operator', 'Nectar bridge health exposes pending next-inbox status after dispatch');
   assert.match(finalHealthJson.latest_activity_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge final health exposes latest activity timestamp');
   assert.equal(finalHealthJson.latest_activity_source, 'rejected', 'Nectar bridge final health points at duplicate rejection as latest activity');
   assert.equal(typeof finalHealthJson.latest_activity_age_seconds, 'number', 'Nectar bridge final health exposes latest activity age seconds');

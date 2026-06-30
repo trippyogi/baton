@@ -338,6 +338,7 @@ function startNectarDispatchBridge(config = {}) {
         next_inbox_command: 'node scripts/nectar-dispatch-bridge.js --next-inbox',
         token_required: Boolean(token),
         bridge_status: nectarBridgeStatus({ received, rejected, inboxDir }),
+        next_inbox_status: pendingInboxNames.length > 0 ? 'pending_local_operator' : 'empty',
         verification_scope: ['service_status', 'auth_posture', 'inbox_status', 'handoff_traceability'],
         verification_scope_count: 4,
         latest_activity_at: latestActivityAt,
