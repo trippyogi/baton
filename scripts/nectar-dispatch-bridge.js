@@ -175,9 +175,12 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
   const pendingInboxNextAgeSeconds = secondsSinceIso(pendingInboxNextReceivedAt);
   const pendingInboxNextAgeBucket = pendingAgeBucket(pendingInboxNextAgeSeconds);
   let record = null;
+  let inboxRecordSha256 = null;
   if (nextName) {
     try {
-      record = JSON.parse(fs.readFileSync(path.join(inboxDir, nextName), 'utf8'));
+      const rawRecord = fs.readFileSync(path.join(inboxDir, nextName), 'utf8');
+      inboxRecordSha256 = crypto.createHash('sha256').update(rawRecord).digest('hex');
+      record = JSON.parse(rawRecord);
     } catch (err) {
       errors.push(`failed_to_read_next_inbox_record: ${err.message}`);
     }
@@ -204,6 +207,8 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
     pending_inbox_next_age_seconds: pendingInboxNextAgeSeconds,
     pending_inbox_next_age_bucket: pendingInboxNextAgeBucket,
     inbox_record: record,
+    inbox_record_sha256: inboxRecordSha256,
+    inbox_record_hash_algorithm: inboxRecordSha256 ? 'sha256' : null,
     prompt,
     prompt_present: Boolean(prompt),
     prompt_length: prompt ? prompt.length : 0,

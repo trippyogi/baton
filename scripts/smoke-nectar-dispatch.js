@@ -152,6 +152,8 @@ async function main() {
   assert.ok(['fresh', 'waiting', 'stale'].includes(nextInbox.pending_inbox_next_age_bucket), 'next-inbox reports pending age bucket');
   assert.equal(nextInbox.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'next-inbox reports check-env command');
   assert.equal(nextInbox.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports its command');
+  assert.match(nextInbox.inbox_record_sha256, /^[0-9a-f]{64}$/, 'next-inbox reports a stable inbox record hash');
+  assert.equal(nextInbox.inbox_record_hash_algorithm, 'sha256', 'next-inbox reports inbox record hash algorithm');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
   assert.equal(nextInbox.prompt_present, false, 'next-inbox reports prompt presence explicitly');
   assert.equal(nextInbox.prompt_length, 0, 'next-inbox reports zero prompt length when no prompt exists');
