@@ -42,6 +42,17 @@ function bridgeConfigFromEnv(env = process.env) {
   };
 }
 
+function bridgeConfigFingerprint(config = bridgeConfigFromEnv()) {
+  const safeConfig = {
+    host: config.host,
+    port: config.port,
+    inboxDir: path.resolve(config.inboxDir || DEFAULT_INBOX),
+    maxBodyBytes: config.maxBodyBytes,
+    tokenRequired: Boolean(config.token),
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(safeConfig)).digest('hex');
+}
+
 function validateBridgeConfig(config = bridgeConfigFromEnv()) {
   const errors = [];
   if (!Number.isSafeInteger(config.port) || config.port < 1 || config.port > 65535) {
@@ -113,6 +124,8 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     generated_at: new Date().toISOString(),
     bridge_version: PACKAGE.version,
     bridge_instance_id: BRIDGE_INSTANCE_ID,
+    bridge_config_fingerprint: bridgeConfigFingerprint(config),
+    bridge_config_hash_algorithm: 'sha256',
     process_pid: process.pid,
     node_version: process.version,
     bind_host: config.host,
@@ -307,6 +320,8 @@ function startNectarDispatchBridge(config = {}) {
         health_schema_version: 'baton.nectar_bridge.health.v1',
         bridge_version: PACKAGE.version,
         bridge_instance_id: BRIDGE_INSTANCE_ID,
+        bridge_config_fingerprint: bridgeConfigFingerprint(resolvedConfig),
+        bridge_config_hash_algorithm: 'sha256',
         process_pid: process.pid,
         node_version: process.version,
         safety_profile: SAFETY_PROFILE,

@@ -126,6 +126,8 @@ async function main() {
   assert.deepEqual(checkEnvJson.verification_scope, ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'], 'check-env exposes verification scope');
   assert.equal(checkEnvJson.verification_scope_count, 4, 'check-env exposes verification scope count');
   assert.match(checkEnvJson.bridge_instance_id, /^nectar_bridge_/, 'check-env exposes bridge instance id for traceability');
+  assert.match(checkEnvJson.bridge_config_fingerprint, /^[a-f0-9]{64}$/, 'check-env exposes a stable safe config fingerprint');
+  assert.equal(checkEnvJson.bridge_config_hash_algorithm, 'sha256', 'check-env reports config fingerprint algorithm');
   assert.equal(typeof checkEnvJson.process_pid, 'number', 'check-env exposes bridge process pid for local traceability');
   assert.equal(checkEnvJson.node_version, process.version, 'check-env exposes Node runtime version for reproducibility');
   const envConfig = bridgeConfigFromEnv({
@@ -340,6 +342,8 @@ async function main() {
   assert.equal(initialHealthJson.health_schema_version, 'baton.nectar_bridge.health.v1', 'Nectar bridge health exposes stable health schema');
   assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
   assert.match(initialHealthJson.bridge_instance_id, /^nectar_bridge_/, 'Nectar bridge health exposes bridge instance id');
+  assert.match(initialHealthJson.bridge_config_fingerprint, /^[a-f0-9]{64}$/, 'Nectar bridge health exposes a safe config fingerprint');
+  assert.equal(initialHealthJson.bridge_config_hash_algorithm, 'sha256', 'Nectar bridge health reports config fingerprint algorithm');
   assert.equal(typeof initialHealthJson.process_pid, 'number', 'Nectar bridge health exposes bridge process pid');
   assert.equal(initialHealthJson.node_version, process.version, 'Nectar bridge health exposes Node runtime version');
   assert.equal(initialHealthJson.safety_profile, 'private_local_inbox_only', 'Nectar bridge health exposes safety profile');
