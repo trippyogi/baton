@@ -16,6 +16,7 @@ const PROMPT_HASH_ALGORITHM = 'sha256';
 const SAFETY_PROFILE = 'private_local_inbox_only';
 const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MAX_BODY_BYTES);
 const NEXT_INBOX_COMMAND = 'node scripts/nectar-dispatch-bridge.js --next-inbox';
+const NEXT_INBOX_PROMPT_COMMAND = 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only';
 const BRIDGE_INSTANCE_ID = `nectar_bridge_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 
 function bridgeRequestId() {
@@ -139,7 +140,9 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     check_env_command: 'node scripts/nectar-dispatch-bridge.js --check-env',
     start_command: 'node scripts/nectar-dispatch-bridge.js',
     next_inbox_command: NEXT_INBOX_COMMAND,
+    next_inbox_prompt_command: NEXT_INBOX_PROMPT_COMMAND,
     pending_inbox_review_command: firstPendingInboxPath ? NEXT_INBOX_COMMAND : null,
+    pending_inbox_prompt_command: firstPendingInboxPath ? NEXT_INBOX_PROMPT_COMMAND : null,
     token_required: Boolean(config.token),
     inbox_dir: checkInboxDir,
     inbox_parent_exists: inboxParentExists,
@@ -253,7 +256,9 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
       : 'no pending local Nectar handoff is waiting; use --check-env or GET /health after dispatch',
     check_env_command: 'node scripts/nectar-dispatch-bridge.js --check-env',
     next_inbox_command: NEXT_INBOX_COMMAND,
+    next_inbox_prompt_command: NEXT_INBOX_PROMPT_COMMAND,
     pending_inbox_review_command: nextPath ? NEXT_INBOX_COMMAND : null,
+    pending_inbox_prompt_command: nextPath ? NEXT_INBOX_PROMPT_COMMAND : null,
   };
 }
 
