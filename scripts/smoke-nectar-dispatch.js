@@ -103,6 +103,10 @@ async function main() {
   assert.equal(checkEnvJson.inbox_record_count, 1, 'check-env reports existing inbox records without starting bridge');
   assert.equal(checkEnvJson.pending_inbox_count, 1, 'check-env reports pending local operator records');
   assert.deepEqual(checkEnvJson.inbox_processing_status_counts, { pending_local_operator: 1 }, 'check-env reports inbox processing status counts');
+  assert.match(checkEnvJson.pending_inbox_next_received_at, /^\d{4}-\d{2}-\d{2}T/, 'check-env reports the next pending inbox timestamp');
+  assert.equal(typeof checkEnvJson.pending_inbox_next_age_seconds, 'number', 'check-env aliases next pending inbox age seconds');
+  assert.equal(typeof checkEnvJson.pending_inbox_next_age_minutes, 'number', 'check-env aliases next pending inbox age minutes');
+  assert.equal(checkEnvJson.pending_inbox_next_age_bucket, checkEnvJson.pending_inbox_oldest_age_bucket, 'check-env aliases next pending inbox age bucket');
   assert.equal(checkEnvJson.pending_inbox_attention_reason, 'pending_inbox_waiting', 'check-env reports why pending inbox needs attention');
   assert.equal(checkEnvJson.pending_inbox_attention_level, 'low', 'check-env reports machine-readable pending inbox attention level');
   assert.equal(pendingInboxAttentionLevel(0, 'none'), 'none', 'attention level helper stays clear with no pending records');
