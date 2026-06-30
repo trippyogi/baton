@@ -135,6 +135,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     pending_inbox_count: pendingInboxNames.length,
     pending_inbox_attention_required: pendingInboxNames.length > 0,
     pending_inbox_oldest_age_seconds: pendingInboxOldestAgeSeconds,
+    pending_inbox_oldest_age_minutes: minutesFromSeconds(pendingInboxOldestAgeSeconds),
     pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
     pending_inbox_attention_reason: attentionReason,
     pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
@@ -211,6 +212,7 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
     pending_inbox_next_path: nextPath,
     pending_inbox_next_received_at: pendingInboxNextReceivedAt,
     pending_inbox_next_age_seconds: pendingInboxNextAgeSeconds,
+    pending_inbox_next_age_minutes: minutesFromSeconds(pendingInboxNextAgeSeconds),
     pending_inbox_next_age_bucket: pendingInboxNextAgeBucket,
     inbox_record: record,
     inbox_record_sha256: inboxRecordSha256,
@@ -344,12 +346,14 @@ function startNectarDispatchBridge(config = {}) {
         pending_inbox_oldest_path: firstPendingInboxPath,
         pending_inbox_oldest_received_at: oldestPendingInboxReceivedAt,
         pending_inbox_oldest_age_seconds: oldestPendingInboxAgeSeconds,
+        pending_inbox_oldest_age_minutes: minutesFromSeconds(oldestPendingInboxAgeSeconds),
         pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
         pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket),
         pending_inbox_newest_name: newestPendingInboxName,
         pending_inbox_newest_path: newestPendingInboxPath,
         pending_inbox_newest_received_at: newestPendingInboxReceivedAt,
         pending_inbox_newest_age_seconds: newestPendingInboxAgeSeconds,
+        pending_inbox_newest_age_minutes: minutesFromSeconds(newestPendingInboxAgeSeconds),
         pending_inbox_newest_age_bucket: pendingInboxNewestAgeBucket,
         inbox_dir: healthInboxDir,
         inbox_record_schema_version: INBOX_RECORD_SCHEMA_VERSION,
@@ -740,6 +744,11 @@ function secondsSinceIso(value, now = Date.now()) {
   return Math.max(0, Math.floor((now - parsed) / 1000));
 }
 
+function minutesFromSeconds(value) {
+  if (value == null) return null;
+  return Math.floor(value / 60);
+}
+
 function pendingAgeBucket(ageSeconds) {
   if (ageSeconds == null) return 'none';
   if (ageSeconds < 15 * 60) return 'fresh';
@@ -893,4 +902,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, readNextInboxRecord, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, minutesFromSeconds, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, readNextInboxRecord, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
