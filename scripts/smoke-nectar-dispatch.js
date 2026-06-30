@@ -7,7 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { MAX_BODY_BYTES, bridgeConfigFromEnv, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionReason, pendingInboxRecordNames, readNextInboxRecord, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
+const { MAX_BODY_BYTES, bridgeConfigFromEnv, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionLevel, pendingInboxAttentionReason, pendingInboxRecordNames, readNextInboxRecord, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
 
 let baton = null;
 let bridge = null;
@@ -104,6 +104,10 @@ async function main() {
   assert.equal(checkEnvJson.pending_inbox_count, 1, 'check-env reports pending local operator records');
   assert.deepEqual(checkEnvJson.inbox_processing_status_counts, { pending_local_operator: 1 }, 'check-env reports inbox processing status counts');
   assert.equal(checkEnvJson.pending_inbox_attention_reason, 'pending_inbox_waiting', 'check-env reports why pending inbox needs attention');
+  assert.equal(checkEnvJson.pending_inbox_attention_level, 'low', 'check-env reports machine-readable pending inbox attention level');
+  assert.equal(pendingInboxAttentionLevel(0, 'none'), 'none', 'attention level helper stays clear with no pending records');
+  assert.equal(pendingInboxAttentionLevel(1, 'stale'), 'medium', 'attention level helper escalates stale pending records');
+  assert.equal(pendingInboxAttentionLevel(1, 'old'), 'high', 'attention level helper escalates old pending records');
   assert.deepEqual(checkEnvJson.pending_inbox_names, ['pending-check.json'], 'check-env previews pending inbox names');
   assert.equal(checkEnvJson.first_pending_inbox_name, 'pending-check.json', 'check-env reports first pending inbox name');
   assert.equal(checkEnvJson.pending_inbox_next_name, 'pending-check.json', 'check-env aliases next pending inbox name');
@@ -366,6 +370,7 @@ async function main() {
   assert.equal(initialHealthJson.inbox_record_count, 0, 'Nectar bridge health exposes inbox record count before dispatch');
   assert.equal(initialHealthJson.pending_inbox_count, 0, 'Nectar bridge health exposes pending inbox count before dispatch');
   assert.equal(initialHealthJson.pending_inbox_attention_reason, 'none', 'Nectar bridge health exposes pending inbox attention reason');
+  assert.equal(initialHealthJson.pending_inbox_attention_level, 'none', 'Nectar bridge health exposes pending inbox attention level');
   assert.deepEqual(initialHealthJson.inbox_processing_status_counts, {}, 'Nectar bridge health exposes empty inbox status counts before dispatch');
   assert.equal(initialHealthJson.pending_inbox_preview_limit, 5, 'Nectar bridge health exposes pending inbox preview limit');
   assert.equal(initialHealthJson.pending_inbox_preview_count, 0, 'Nectar bridge health exposes pending inbox preview count before dispatch');
@@ -466,6 +471,7 @@ async function main() {
   assert.equal(live.ack.pending_inbox_needs_operator, true, 'accepted bridge response flags pending local operator work');
   assert.equal(live.ack.pending_inbox_attention_required, true, 'accepted bridge response flags pending local attention');
   assert.equal(live.ack.pending_inbox_attention_reason, 'pending_inbox_waiting', 'accepted bridge response explains pending inbox attention');
+  assert.equal(live.ack.pending_inbox_attention_level, 'low', 'accepted bridge response exposes pending inbox attention level');
   assert.equal(live.ack.local_handoff_required, true, 'accepted bridge response flags local handoff requirement');
   assert.equal(live.ack.pending_inbox_preview_limit, 5, 'accepted bridge response exposes pending inbox preview limit');
   assert.equal(live.ack.pending_inbox_preview_count, 1, 'accepted bridge response exposes pending inbox preview count');

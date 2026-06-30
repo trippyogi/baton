@@ -116,6 +116,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     errors.push(`NECTAR_DISPATCH_INBOX is not writable or creatable from: ${writableTarget}`);
   }
   const attentionReason = pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket);
+  const attentionLevel = pendingInboxAttentionLevel(pendingInboxNames.length, pendingInboxOldestAgeBucket);
   return {
     ok: errors.length === 0,
     schema_version: 'baton.nectar_bridge.check_env.v1',
@@ -151,6 +152,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     pending_inbox_oldest_age_minutes: minutesFromSeconds(pendingInboxOldestAgeSeconds),
     pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
     pending_inbox_attention_reason: attentionReason,
+    pending_inbox_attention_level: attentionLevel,
     pending_inbox_preview_limit: PENDING_INBOX_PREVIEW_LIMIT,
     pending_inbox_preview_count: Math.min(pendingInboxNames.length, PENDING_INBOX_PREVIEW_LIMIT),
     pending_inbox_names: pendingInboxNames.slice(0, PENDING_INBOX_PREVIEW_LIMIT),
@@ -368,6 +370,7 @@ function startNectarDispatchBridge(config = {}) {
         pending_inbox_oldest_age_minutes: minutesFromSeconds(oldestPendingInboxAgeSeconds),
         pending_inbox_oldest_age_bucket: pendingInboxOldestAgeBucket,
         pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, pendingInboxOldestAgeBucket),
+        pending_inbox_attention_level: pendingInboxAttentionLevel(pendingInboxNames.length, pendingInboxOldestAgeBucket),
         pending_inbox_newest_name: newestPendingInboxName,
         pending_inbox_newest_path: newestPendingInboxPath,
         pending_inbox_newest_received_at: newestPendingInboxReceivedAt,
@@ -509,6 +512,7 @@ function startNectarDispatchBridge(config = {}) {
       pending_inbox_needs_operator: pendingInboxNames.length > 0,
       pending_inbox_attention_required: pendingInboxNames.length > 0,
       pending_inbox_attention_reason: pendingInboxAttentionReason(pendingInboxNames.length, oldestPendingInboxAgeBucket),
+      pending_inbox_attention_level: pendingInboxAttentionLevel(pendingInboxNames.length, oldestPendingInboxAgeBucket),
       local_handoff_required: pendingInboxNames.length > 0,
       first_pending_inbox_name: firstPendingInboxName,
       first_pending_inbox_path: firstPendingInboxPath,
@@ -782,6 +786,13 @@ function pendingInboxAttentionReason(count, oldestAgeBucket) {
   return 'pending_inbox_waiting';
 }
 
+function pendingInboxAttentionLevel(count, oldestAgeBucket) {
+  if (!count) return 'none';
+  if (oldestAgeBucket === 'old') return 'high';
+  if (oldestAgeBucket === 'stale') return 'medium';
+  return 'low';
+}
+
 function firstInboxRecordName(inboxDir) {
   return oldestInboxRecordName(inboxDir);
 }
@@ -921,4 +932,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, minutesFromSeconds, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, readNextInboxRecord, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, minutesFromSeconds, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionLevel, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, readNextInboxRecord, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
