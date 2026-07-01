@@ -133,7 +133,9 @@ async function main() {
   assert.equal(checkEnvJson.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'check-env reports its command');
   assert.equal(checkEnvJson.start_command, 'node scripts/nectar-dispatch-bridge.js', 'check-env reports bridge start command');
   assert.equal(checkEnvJson.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'check-env reports next-inbox command');
+  assert.equal(checkEnvJson.next_inbox_path_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --path-only', 'check-env reports path-only next-inbox command');
   assert.equal(checkEnvJson.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'check-env reports pending inbox review command when work is waiting');
+  assert.equal(checkEnvJson.pending_inbox_path_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --path-only', 'check-env reports path-only pending inbox command when work is waiting');
   assert.equal(checkEnvJson.pending_inbox_next_prompt_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only', 'check-env reports prompt-only command for next inbox handoff');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
   assert.deepEqual(checkEnvJson.verification_scope, ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'], 'check-env exposes verification scope');
@@ -168,7 +170,9 @@ async function main() {
   assert.ok(['fresh', 'waiting', 'stale'].includes(nextInbox.pending_inbox_next_age_bucket), 'next-inbox reports pending age bucket');
   assert.equal(nextInbox.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'next-inbox reports check-env command');
   assert.equal(nextInbox.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports its command');
+  assert.equal(nextInbox.next_inbox_path_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --path-only', 'next-inbox reports path-only command');
   assert.equal(nextInbox.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports review command when pending work exists');
+  assert.equal(nextInbox.pending_inbox_path_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --path-only', 'next-inbox reports path-only pending command when pending work exists');
   assert.match(nextInbox.inbox_record_sha256, /^[0-9a-f]{64}$/, 'next-inbox reports a stable inbox record hash');
   assert.equal(nextInbox.inbox_record_hash_algorithm, 'sha256', 'next-inbox reports inbox record hash algorithm');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
