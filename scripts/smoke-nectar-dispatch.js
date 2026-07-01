@@ -121,6 +121,7 @@ async function main() {
   assert.ok(checkEnvJson.operator_next_check.includes('pending-check.json'), 'check-env next check points at the pending local inbox record');
   assert.equal(checkEnvJson.pending_inbox_needs_operator, true, 'check-env flags pending operator work');
   assert.equal(checkEnvJson.pending_inbox_attention_required, true, 'check-env flags pending inbox attention');
+  assert.equal(checkEnvJson.next_inbox_status, 'pending_local_operator', 'check-env exposes next inbox status without requiring a live health probe');
   assert.equal(checkEnvJson.local_handoff_status, 'pending_local_operator', 'check-env exposes pending handoff status');
   assert.equal(checkEnvJson.local_handoff_required, true, 'check-env flags required local operator handoff');
   assert.equal(checkEnvJson.pending_inbox_preview_count, 1, 'check-env reports pending inbox preview count');

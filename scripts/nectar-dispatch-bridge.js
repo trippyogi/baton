@@ -152,6 +152,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     inbox_record_count: inboxRecordCount,
     inbox_processing_status_counts: inboxProcessingStatusCounts,
     pending_inbox_count: pendingInboxNames.length,
+    next_inbox_status: pendingInboxNames.length > 0 ? 'pending_local_operator' : 'empty',
     pending_inbox_attention_required: pendingInboxNames.length > 0,
     pending_inbox_oldest_age_seconds: pendingInboxOldestAgeSeconds,
     pending_inbox_oldest_age_minutes: minutesFromSeconds(pendingInboxOldestAgeSeconds),
