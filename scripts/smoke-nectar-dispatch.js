@@ -7,7 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
-const { MAX_BODY_BYTES, bridgeConfigFromEnv, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionLevel, pendingInboxAttentionReason, pendingInboxRecordNames, readNextInboxRecord, startNectarDispatchBridge } = require('./nectar-dispatch-bridge');
+const { MAX_BODY_BYTES, bridgeConfigFromEnv, inboxRecordProcessingStatusCounts, isLoopbackHost, pendingInboxAttentionLevel, pendingInboxAttentionReason, pendingInboxRecordNames, readNextInboxRecord, startNectarDispatchBridge, summarizeNextInboxRecord } = require('./nectar-dispatch-bridge');
 
 let baton = null;
 let bridge = null;
@@ -88,6 +88,7 @@ async function main() {
   assert.ok(help.stdout.includes('--check-env'), 'Nectar bridge help documents config check mode');
   assert.ok(help.stdout.includes('--prompt-only'), 'Nectar bridge help documents prompt-only next-inbox mode');
   assert.ok(help.stdout.includes('--path-only'), 'Nectar bridge help documents path-only next-inbox mode');
+  assert.ok(help.stdout.includes('--summary-only'), 'Nectar bridge help documents summary-only next-inbox mode');
   const checkEnvInbox = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-check-env-'));
   fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', received_at: new Date().toISOString() }));
   const checkEnv = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
@@ -173,6 +174,13 @@ async function main() {
   assert.equal(nextInbox.next_inbox_path_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --path-only', 'next-inbox reports path-only command');
   assert.equal(nextInbox.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'next-inbox reports review command when pending work exists');
   assert.equal(nextInbox.pending_inbox_path_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --path-only', 'next-inbox reports path-only pending command when pending work exists');
+  assert.equal(nextInbox.pending_inbox_summary_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --summary-only', 'next-inbox reports summary-only command when pending work exists');
+  const nextInboxSummary = summarizeNextInboxRecord(nextInbox);
+  assert.equal(nextInboxSummary.schema_version, 'baton.nectar_bridge.next_inbox_summary.v1', 'summary helper exposes safe summary schema');
+  assert.equal(nextInboxSummary.summary_only, true, 'summary helper marks summary-only output');
+  assert.equal(nextInboxSummary.prompt_present, false, 'summary keeps prompt presence metadata');
+  assert.ok(!Object.hasOwn(nextInboxSummary, 'prompt'), 'summary omits private prompt text');
+  assert.ok(!Object.hasOwn(nextInboxSummary, 'inbox_record'), 'summary omits private envelope record');
   assert.match(nextInbox.inbox_record_sha256, /^[0-9a-f]{64}$/, 'next-inbox reports a stable inbox record hash');
   assert.equal(nextInbox.inbox_record_hash_algorithm, 'sha256', 'next-inbox reports inbox record hash algorithm');
   assert.equal(nextInbox.prompt, null, 'next-inbox keeps missing prompt explicit instead of inventing content');
@@ -200,6 +208,16 @@ async function main() {
   });
   assert.equal(nextInboxMutuallyExclusive.status, 2, 'Nectar bridge rejects mutually exclusive next-inbox output modes');
   assert.ok(nextInboxMutuallyExclusive.stderr.includes('mutually exclusive'), 'mutually exclusive next-inbox output modes explain the error');
+  const nextInboxSummaryOnly = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--summary-only'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4829)) },
+    encoding: 'utf8',
+  });
+  assert.equal(nextInboxSummaryOnly.status, 0, 'Nectar bridge --next-inbox --summary-only exits cleanly');
+  const nextInboxSummaryOnlyJson = JSON.parse(nextInboxSummaryOnly.stdout);
+  assert.equal(nextInboxSummaryOnlyJson.schema_version, 'baton.nectar_bridge.next_inbox_summary.v1', '--summary-only prints safe summary schema');
+  assert.ok(!Object.hasOwn(nextInboxSummaryOnlyJson, 'prompt'), '--summary-only omits prompt text');
+  assert.ok(!Object.hasOwn(nextInboxSummaryOnlyJson, 'inbox_record'), '--summary-only omits private envelope');
   fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', received_at: new Date().toISOString(), prompt: 'Hand this to local Nectar.' }));
   const nextInboxPromptOnly = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--prompt-only'], {
     cwd: path.join(__dirname, '..'),

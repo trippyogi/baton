@@ -18,6 +18,7 @@ const MAX_BODY_BYTES = positiveIntEnv('NECTAR_BRIDGE_MAX_BODY_BYTES', DEFAULT_MA
 const NEXT_INBOX_COMMAND = 'node scripts/nectar-dispatch-bridge.js --next-inbox';
 const NEXT_INBOX_PROMPT_COMMAND = 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only';
 const NEXT_INBOX_PATH_COMMAND = 'node scripts/nectar-dispatch-bridge.js --next-inbox --path-only';
+const NEXT_INBOX_SUMMARY_COMMAND = 'node scripts/nectar-dispatch-bridge.js --next-inbox --summary-only';
 const BRIDGE_INSTANCE_ID = `nectar_bridge_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 
 function bridgeRequestId() {
@@ -147,6 +148,7 @@ function checkBridgeEnvironment(config = bridgeConfigFromEnv()) {
     pending_inbox_prompt_command: firstPendingInboxPath ? NEXT_INBOX_PROMPT_COMMAND : null,
     pending_inbox_path_command: firstPendingInboxPath ? NEXT_INBOX_PATH_COMMAND : null,
     pending_inbox_next_prompt_command: firstPendingInboxPath ? NEXT_INBOX_PROMPT_COMMAND : null,
+    pending_inbox_summary_command: firstPendingInboxPath ? NEXT_INBOX_SUMMARY_COMMAND : null,
     token_required: Boolean(config.token),
     inbox_dir: checkInboxDir,
     inbox_parent_exists: inboxParentExists,
@@ -267,6 +269,20 @@ function readNextInboxRecord(config = bridgeConfigFromEnv()) {
     pending_inbox_review_command: nextPath ? NEXT_INBOX_COMMAND : null,
     pending_inbox_prompt_command: nextPath ? NEXT_INBOX_PROMPT_COMMAND : null,
     pending_inbox_path_command: nextPath ? NEXT_INBOX_PATH_COMMAND : null,
+    pending_inbox_summary_command: nextPath ? NEXT_INBOX_SUMMARY_COMMAND : null,
+  };
+}
+
+function summarizeNextInboxRecord(result) {
+  const { inbox_record: _record, prompt: _prompt, ...summary } = result;
+  return {
+    ...summary,
+    schema_version: 'baton.nectar_bridge.next_inbox_summary.v1',
+    summary_only: true,
+    private_fields_omitted: ['inbox_record', 'prompt'],
+    private_field_omission_reason: 'summary_only avoids printing private dispatch envelope and prompt text',
+    next_inbox_command: NEXT_INBOX_COMMAND,
+    next_inbox_summary_command: NEXT_INBOX_SUMMARY_COMMAND,
   };
 }
 
@@ -917,7 +933,7 @@ function isInboxWritable(inboxDir) {
 }
 
 function usage() {
-  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env|--next-inbox [--prompt-only|--path-only]]
+  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env|--next-inbox [--prompt-only|--path-only|--summary-only]]
 
 Starts the local-only BATON -> Nectar dispatch bridge.
 
@@ -926,6 +942,7 @@ Options:
   --next-inbox                        Print the oldest pending local Nectar inbox record and prompt as JSON.
   --prompt-only                       With --next-inbox, print only the prompt text for easy local handoff.
   --path-only                         With --next-inbox, print only the relative inbox record path.
+  --summary-only                      With --next-inbox, print safe metadata without envelope or prompt text.
 
 Environment:
   NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; non-loopback binds require NECTAR_DISPATCH_TOKEN.
@@ -952,8 +969,9 @@ if (require.main === module) {
   }
   if (process.argv.includes('--next-inbox')) {
     const result = readNextInboxRecord();
-    if (process.argv.includes('--prompt-only') && process.argv.includes('--path-only')) {
-      console.error('--prompt-only and --path-only are mutually exclusive');
+    const nextInboxModes = ['--prompt-only', '--path-only', '--summary-only'].filter(flag => process.argv.includes(flag));
+    if (nextInboxModes.length > 1) {
+      console.error('--prompt-only, --path-only, and --summary-only are mutually exclusive');
       process.exit(2);
     }
     if (process.argv.includes('--prompt-only')) {
@@ -962,6 +980,8 @@ if (require.main === module) {
     } else if (process.argv.includes('--path-only')) {
       if (result.pending_inbox_next_path) process.stdout.write(`${result.pending_inbox_next_path}\n`);
       else process.stdout.write('');
+    } else if (process.argv.includes('--summary-only')) {
+      process.stdout.write(`${JSON.stringify(summarizeNextInboxRecord(result), null, 2)}\n`);
     } else {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     }
@@ -973,4 +993,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, minutesFromSeconds, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionLevel, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, readNextInboxRecord, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
+module.exports = { INBOX_RECORD_SCHEMA_VERSION, MAX_BODY_BYTES, bridgeConfigFromEnv, canCreateDirectory, checkBridgeEnvironment, checkEnvNextCheck, countInboxRecords, firstInboxRecordName, inboxRecordNames, inboxRecordProcessingStatus, inboxRecordProcessingStatusCounts, inboxRecordReceivedAt, isInboxWritable, isJsonRequest, isLoopbackHost, minutesFromSeconds, nearestExistingParent, oldestInboxRecordName, oldestPendingInboxRecordName, pendingAgeBucket, pendingInboxAttentionLevel, pendingInboxAttentionReason, pendingInboxRecordNames, positiveIntEnv, readNextInboxRecord, rejectionCodeFor, secondsSinceIso, startNectarDispatchBridge, summarizeNextInboxRecord, toOpenClawPrompt, usage, validateBridgeConfig, validateCallbackUrls, validateEnvelope };
