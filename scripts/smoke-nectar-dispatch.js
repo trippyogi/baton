@@ -390,6 +390,7 @@ async function main() {
   assert.equal(initialHealthJson.check_env_command, 'node scripts/nectar-dispatch-bridge.js --check-env', 'Nectar bridge health reports check-env command');
   assert.equal(initialHealthJson.start_command, 'node scripts/nectar-dispatch-bridge.js', 'Nectar bridge health reports start command');
   assert.equal(initialHealthJson.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'Nectar bridge health reports next-inbox command');
+  assert.equal(initialHealthJson.next_inbox_summary_command, null, 'Nectar bridge health omits summary command when no pending inbox work exists');
   assert.equal(initialHealthJson.pending_inbox_review_command, null, 'Nectar bridge health omits review command when no pending inbox work exists');
   assert.equal(initialHealthJson.health_schema_version, 'baton.nectar_bridge.health.v1', 'Nectar bridge health exposes stable health schema');
   assert.equal(initialHealthJson.bridge_version, '0.1.0', 'Nectar bridge health exposes package version');
@@ -550,6 +551,7 @@ async function main() {
   assert.equal(live.ack.pending_inbox_newest_age_bucket, 'fresh', 'accepted bridge response buckets fresh newest pending inbox age');
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.equal(live.ack.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'accepted bridge response reports next-inbox command');
+  assert.equal(live.ack.next_inbox_summary_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --summary-only', 'accepted bridge response reports safe summary command');
   assert.equal(live.ack.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'accepted bridge response reports pending inbox review command');
   assert.equal(live.ack.pending_inbox_next_prompt_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only', 'accepted bridge response reports prompt-only command for next inbox handoff');
   assert.match(live.ack.prompt_sha256, /^[a-f0-9]{64}$/, 'accepted bridge response exposes prompt sha256');
@@ -594,6 +596,7 @@ async function main() {
   assert.ok(finalHealthJson.first_pending_inbox_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes next pending inbox path');
   assert.equal(finalHealthJson.pending_inbox_next_name, live.ack.inbox_record_name, 'Nectar bridge health exposes explicit next pending inbox filename');
   assert.ok(finalHealthJson.pending_inbox_next_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes explicit next pending inbox path');
+  assert.equal(finalHealthJson.next_inbox_summary_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --summary-only', 'Nectar bridge health exposes safe summary command for next inbox handoff');
   assert.equal(finalHealthJson.pending_inbox_next_prompt_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only', 'Nectar bridge health exposes prompt-only command for next inbox handoff');
   assert.equal(finalHealthJson.pending_inbox_oldest_name, live.ack.inbox_record_name, 'Nectar bridge health exposes oldest pending inbox filename');
   assert.ok(finalHealthJson.pending_inbox_oldest_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes oldest pending inbox path');
