@@ -969,9 +969,14 @@ if (require.main === module) {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     process.exit(result.ok ? 0 : 2);
   }
+  const nextInboxModeFlags = ['--prompt-only', '--path-only', '--summary-only'];
+  const nextInboxModes = nextInboxModeFlags.filter(flag => process.argv.includes(flag));
+  if (nextInboxModes.length && !process.argv.includes('--next-inbox')) {
+    console.error('--prompt-only, --path-only, and --summary-only require --next-inbox');
+    process.exit(2);
+  }
   if (process.argv.includes('--next-inbox')) {
     const result = readNextInboxRecord();
-    const nextInboxModes = ['--prompt-only', '--path-only', '--summary-only'].filter(flag => process.argv.includes(flag));
     if (nextInboxModes.length > 1) {
       console.error('--prompt-only, --path-only, and --summary-only are mutually exclusive');
       process.exit(2);
