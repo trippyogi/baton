@@ -902,7 +902,7 @@ function isInboxWritable(inboxDir) {
 }
 
 function usage() {
-  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env|--next-inbox [--prompt-only]]
+  return `Usage: node scripts/nectar-dispatch-bridge.js [--check-env|--next-inbox [--prompt-only|--path-only]]
 
 Starts the local-only BATON -> Nectar dispatch bridge.
 
@@ -910,6 +910,7 @@ Options:
   --check-env                         Validate env/config and print JSON without starting a listener.
   --next-inbox                        Print the oldest pending local Nectar inbox record and prompt as JSON.
   --prompt-only                       With --next-inbox, print only the prompt text for easy local handoff.
+  --path-only                         With --next-inbox, print only the relative inbox record path.
 
 Environment:
   NECTAR_BRIDGE_HOST=127.0.0.1        Bind host; non-loopback binds require NECTAR_DISPATCH_TOKEN.
@@ -936,8 +937,15 @@ if (require.main === module) {
   }
   if (process.argv.includes('--next-inbox')) {
     const result = readNextInboxRecord();
+    if (process.argv.includes('--prompt-only') && process.argv.includes('--path-only')) {
+      console.error('--prompt-only and --path-only are mutually exclusive');
+      process.exit(2);
+    }
     if (process.argv.includes('--prompt-only')) {
       if (result.prompt_present) process.stdout.write(`${result.prompt}\n`);
+      else process.stdout.write('');
+    } else if (process.argv.includes('--path-only')) {
+      if (result.pending_inbox_next_path) process.stdout.write(`${result.pending_inbox_next_path}\n`);
       else process.stdout.write('');
     } else {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

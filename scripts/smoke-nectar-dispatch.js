@@ -87,6 +87,7 @@ async function main() {
   assert.ok(help.stdout.includes('non-loopback binds require NECTAR_DISPATCH_TOKEN'), 'Nectar bridge help documents non-loopback auth guard');
   assert.ok(help.stdout.includes('--check-env'), 'Nectar bridge help documents config check mode');
   assert.ok(help.stdout.includes('--prompt-only'), 'Nectar bridge help documents prompt-only next-inbox mode');
+  assert.ok(help.stdout.includes('--path-only'), 'Nectar bridge help documents path-only next-inbox mode');
   const checkEnvInbox = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-nectar-check-env-'));
   fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', received_at: new Date().toISOString() }));
   const checkEnv = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--check-env'], {
@@ -179,6 +180,20 @@ async function main() {
   assert.equal(nextInboxCli.status, 0, 'Nectar bridge --next-inbox exits cleanly for readable local pending record');
   assert.equal(JSON.parse(nextInboxCli.stdout).pending_inbox_next_name, 'pending-check.json', '--next-inbox prints the next pending record as JSON');
   assert.equal(JSON.parse(nextInboxCli.stdout).next_inbox_status, 'pending_local_operator', '--next-inbox prints stable status as JSON');
+  const nextInboxPathOnly = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--path-only'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4827)) },
+    encoding: 'utf8',
+  });
+  assert.equal(nextInboxPathOnly.status, 0, 'Nectar bridge --next-inbox --path-only exits cleanly');
+  assert.ok(nextInboxPathOnly.stdout.endsWith('/pending-check.json\n'), '--path-only prints the oldest pending inbox path');
+  const nextInboxMutuallyExclusive = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--prompt-only', '--path-only'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, NECTAR_DISPATCH_INBOX: checkEnvInbox, NECTAR_BRIDGE_PORT: String(randomPort(4828)) },
+    encoding: 'utf8',
+  });
+  assert.equal(nextInboxMutuallyExclusive.status, 2, 'Nectar bridge rejects mutually exclusive next-inbox output modes');
+  assert.ok(nextInboxMutuallyExclusive.stderr.includes('mutually exclusive'), 'mutually exclusive next-inbox output modes explain the error');
   fs.writeFileSync(path.join(checkEnvInbox, 'pending-check.json'), JSON.stringify({ processing_status: 'pending_local_operator', received_at: new Date().toISOString(), prompt: 'Hand this to local Nectar.' }));
   const nextInboxPromptOnly = spawnSync(process.execPath, ['scripts/nectar-dispatch-bridge.js', '--next-inbox', '--prompt-only'], {
     cwd: path.join(__dirname, '..'),
