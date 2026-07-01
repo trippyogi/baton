@@ -134,6 +134,7 @@ async function main() {
   assert.equal(checkEnvJson.start_command, 'node scripts/nectar-dispatch-bridge.js', 'check-env reports bridge start command');
   assert.equal(checkEnvJson.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'check-env reports next-inbox command');
   assert.equal(checkEnvJson.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'check-env reports pending inbox review command when work is waiting');
+  assert.equal(checkEnvJson.pending_inbox_next_prompt_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only', 'check-env reports prompt-only command for next inbox handoff');
   assert.equal(checkEnvJson.safety_profile, 'private_local_inbox_only', 'check-env reports bridge safety profile');
   assert.deepEqual(checkEnvJson.verification_scope, ['config', 'auth_posture', 'inbox_path', 'pending_local_handoffs'], 'check-env exposes verification scope');
   assert.equal(checkEnvJson.verification_scope_count, 4, 'check-env exposes verification scope count');
@@ -528,6 +529,7 @@ async function main() {
   assert.equal(live.ack.inbox_processing_status, 'pending_local_operator', 'accepted bridge response exposes inbox processing state');
   assert.equal(live.ack.next_inbox_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'accepted bridge response reports next-inbox command');
   assert.equal(live.ack.pending_inbox_review_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox', 'accepted bridge response reports pending inbox review command');
+  assert.equal(live.ack.pending_inbox_next_prompt_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only', 'accepted bridge response reports prompt-only command for next inbox handoff');
   assert.match(live.ack.prompt_sha256, /^[a-f0-9]{64}$/, 'accepted bridge response exposes prompt sha256');
   assert.equal(live.ack.prompt_hash_algorithm, 'sha256', 'accepted bridge response exposes prompt hash algorithm');
   assert.equal(live.ack.operator_next_check, 'open the inbox record or hand the generated prompt to local Nectar/OpenClaw for processing', 'accepted bridge response exposes next operator check');
@@ -570,6 +572,7 @@ async function main() {
   assert.ok(finalHealthJson.first_pending_inbox_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes next pending inbox path');
   assert.equal(finalHealthJson.pending_inbox_next_name, live.ack.inbox_record_name, 'Nectar bridge health exposes explicit next pending inbox filename');
   assert.ok(finalHealthJson.pending_inbox_next_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes explicit next pending inbox path');
+  assert.equal(finalHealthJson.pending_inbox_next_prompt_command, 'node scripts/nectar-dispatch-bridge.js --next-inbox --prompt-only', 'Nectar bridge health exposes prompt-only command for next inbox handoff');
   assert.equal(finalHealthJson.pending_inbox_oldest_name, live.ack.inbox_record_name, 'Nectar bridge health exposes oldest pending inbox filename');
   assert.ok(finalHealthJson.pending_inbox_oldest_path.endsWith(live.ack.inbox_record_name), 'Nectar bridge health exposes oldest pending inbox path');
   assert.match(finalHealthJson.pending_inbox_oldest_received_at, /^\d{4}-\d{2}-\d{2}T/, 'Nectar bridge health exposes oldest pending inbox timestamp');
