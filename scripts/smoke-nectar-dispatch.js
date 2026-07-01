@@ -158,6 +158,10 @@ async function main() {
   assert.equal(nextInbox.schema_version, 'baton.nectar_bridge.next_inbox.v1', 'next-inbox exposes stable schema');
   assert.equal(nextInbox.ok, true, 'next-inbox helper succeeds for readable local pending record');
   assert.equal(nextInbox.next_inbox_status, 'pending_local_operator', 'next-inbox exposes a stable pending status');
+  assert.equal(nextInbox.pending_inbox_attention_required, true, 'next-inbox flags pending work for local operator attention');
+  assert.equal(nextInbox.pending_inbox_needs_operator, true, 'next-inbox marks that local operator handoff is needed');
+  assert.equal(nextInbox.local_handoff_required, true, 'next-inbox exposes the local handoff requirement');
+  assert.equal(nextInbox.local_handoff_status, 'pending_local_operator', 'next-inbox reports local handoff status');
   assert.equal(nextInbox.pending_inbox_count, 1, 'next-inbox reports pending local handoff count');
   assert.equal(nextInbox.pending_inbox_preview_limit, 5, 'next-inbox reports preview limit');
   assert.equal(nextInbox.pending_inbox_preview_count, 1, 'next-inbox reports preview count');
