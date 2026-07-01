@@ -11,6 +11,7 @@ const TASK_STATUSES = ['inbox', 'ready', 'in_progress', 'waiting', 'review', 'do
 const TASK_PRIORITIES = ['low', 'medium', 'high', 'critical'];
 const RISK_LEVELS = ['low', 'medium', 'high', 'critical'];
 const AGENT_STATUSES = ['idle', 'running', 'blocked', 'failed', 'reviewing', 'paused', 'offline'];
+const VALID_TRANSPORTS = ['manual', 'webhook'];
 const DEFAULT_DOMAINS = ['revenue', 'product', 'code', 'content', 'personal_brand', 'relationships', 'health_life', 'creative_exploration', 'learning', 'fun', 'maintenance', 'admin'];
 const TASK_ARRAY_FIELDS = new Set(['tags', 'linked_run_ids']);
 const AGENT_ARRAY_FIELDS = new Set(['skills']);
@@ -175,6 +176,7 @@ function validateAgent(raw, index, opts) {
   for (const field of AGENT_ARRAY_FIELDS) agent[field] = validateStringArray(agent[field], `agents[${index}].${field}`);
   for (const field of AGENT_OBJECT_FIELDS) agent[field] = validateObject(agent[field], `agents[${index}].${field}`);
   agent.dispatch_enabled = Boolean(agent.dispatch_enabled);
+  if (!VALID_TRANSPORTS.includes(agent.dispatch_transport)) throw new Error(`agents[${index}].dispatch_transport is invalid`);
   if (agent.dispatch_enabled && (!agent.dispatch_transport || !agent.dispatch_target)) throw new Error(`agents[${index}] dispatch_enabled requires dispatch_transport and dispatch_target`);
   if (agent.dispatch_enabled && agent.dispatch_transport === 'webhook') {
     const target = String(agent.dispatch_target || '');
