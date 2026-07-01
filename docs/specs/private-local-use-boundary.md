@@ -736,15 +736,3 @@ http://127.0.0.1:4200/#/flow
 ```
 
 Then use BATON with real tasks locally while keeping the public repo clean.
-
-## 20. Build-agent handoff notes
-
-The build agent should keep this as one cohesive pass, but cut scope if necessary in this order:
-
-1. Must-have: `.gitignore`, audit script, docs, generic fixture, CI.
-2. Should-have: import local profile with dry-run and secret rejection.
-3. Should-have: redacted export.
-4. Nice-to-have: full test matrix for all validation edge cases.
-5. Nice-to-have: seed data gating instead of only sanitization.
-
-If time is tight, do not skip the audit script. The point of this pass is safety before real private usage.

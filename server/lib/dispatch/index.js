@@ -7,7 +7,7 @@ const { sendManual } = require('./transports/manual');
 const { transitionRun, isActive, isTerminal } = require('../runs/state-machine');
 
 function publicBaseUrl() {
-  return process.env.BATON_PUBLIC_BASE_URL || `http://127.0.0.1:${process.env.VMC_PORT || process.env.PORT || 4200}`;
+  return process.env.BATON_PUBLIC_BASE_URL || `http://127.0.0.1:${process.env.BATON_PORT || process.env.VMC_PORT || process.env.PORT || 4200}`;
 }
 
 function parseAgent(agent) {

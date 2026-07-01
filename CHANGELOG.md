@@ -4,6 +4,8 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-01
+
 ### Added
 
 - Nectar bridge health/ACK payloads now include explicit `pending_inbox_oldest_name` and `pending_inbox_oldest_path` aliases so local operators can process the private inbox FIFO without relying on UI wording.

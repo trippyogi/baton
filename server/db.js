@@ -209,7 +209,7 @@ function defaultAgentPermissions(agentId) {
 
 // Seed mock data if tables are empty
 const taskCount = db.prepare('SELECT COUNT(*) as n FROM tasks').get().n;
-if (taskCount === 0) {
+if (taskCount === 0 && process.env.BATON_SKIP_DEFAULT_SEED !== '1') {
   const id = () => require('crypto').randomUUID();
 
   const insertTask = db.prepare(`

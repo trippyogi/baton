@@ -8,7 +8,7 @@ const { rebuildTouches } = require('./lib/flow/rebuild');
 const { apiAuthMiddleware, shouldRequireApiToken } = require('./middleware/api-auth');
 
 const app  = express();
-const PORT = process.env.VMC_PORT || process.env.PORT || 4200;
+const PORT = process.env.BATON_PORT || process.env.VMC_PORT || process.env.PORT || 4200;
 const HOST = process.env.BATON_HOST || process.env.HOST || '127.0.0.1';
 
 app.use(express.json({

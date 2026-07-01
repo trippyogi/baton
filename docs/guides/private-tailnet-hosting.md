@@ -1,5 +1,7 @@
 # Private tailnet hosting
 
+Spectre-style webhook dispatch and local bridge workflows are reference integrations demonstrating the `baton.dispatch.v1` transport pattern; any agent can integrate by implementing the same webhook receiver and status callback.
+
 BATON defaults to local-only development:
 
 ```bash
@@ -15,7 +17,7 @@ Use environment variables:
 
 ```bash
 BATON_HOST=100.x.y.z
-VMC_PORT=4200
+BATON_PORT=4200
 BATON_PUBLIC_BASE_URL=http://100.x.y.z:4200
 BATON_API_TOKEN=replace-with-a-long-random-token
 ```
@@ -23,7 +25,7 @@ BATON_API_TOKEN=replace-with-a-long-random-token
 Notes:
 
 - `BATON_HOST` controls the interface Express listens on.
-- `VMC_PORT` controls the port.
+- `BATON_PORT` controls the port. `VMC_PORT` still works as a legacy fallback.
 - `BATON_PUBLIC_BASE_URL` is used by dispatch/callback flows when agents need a reachable base URL.
 - `BATON_API_TOKEN` is required for `/api/*` routes whenever BATON binds outside localhost. Send it as `Authorization: Bearer <token>`.
 - `/api/health` remains unauthenticated for readiness checks.
@@ -37,7 +39,7 @@ Create a private environment file outside the repository:
 ```ini
 # ~/.config/baton-dev.env
 BATON_HOST=100.x.y.z
-VMC_PORT=4200
+BATON_PORT=4200
 BATON_PUBLIC_BASE_URL=http://100.x.y.z:4200
 BATON_API_TOKEN=replace-with-a-long-random-token
 NODE_ENV=development

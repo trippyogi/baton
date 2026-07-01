@@ -1,5 +1,7 @@
 # Private local use
 
+Spectre-style webhook dispatch and the local Nectar bridge are reference integrations demonstrating the `baton.dispatch.v1` transport pattern; any agent can integrate by implementing the same webhook receiver and status callback.
+
 BATON is designed to be useful with real tasks and real agents while the public repository stays safe to publish.
 
 Use this guide when you want to run BATON with private operator data on your own machine.
