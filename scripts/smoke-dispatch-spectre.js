@@ -3,6 +3,7 @@
 
 const assert = require('assert/strict');
 const fs = require('fs');
+const net = require('net');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -40,13 +41,19 @@ async function waitFor(fn, label, timeoutMs = 10000) {
   throw new Error(`Timed out waiting for ${label}`);
 }
 
-function randomBatonPort() {
-  // Keep smoke tests away from Fetch's restricted port list, especially 6000.
-  return String(6200 + Math.floor(Math.random() * 400));
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      server.close(() => resolve(String(port)));
+    });
+  });
 }
 
 async function startBaton(extraEnv = {}) {
-  const port = randomBatonPort();
+  const port = await freePort();
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-dispatch-'));
   BASE = `http://127.0.0.1:${port}`;
   baton = spawn(process.execPath, ['server/index.js'], {
@@ -74,7 +81,7 @@ async function startBaton(extraEnv = {}) {
 }
 
 async function main() {
-  fake = await startFakeSpectre({ port: 4300 + Math.floor(Math.random() * 200), token: 'change-me', autoReview: true });
+  fake = await startFakeSpectre({ port: Number(await freePort()), token: 'change-me', autoReview: true });
   await startBaton();
 
   const spectre = (await request('/api/agents/spectre')).json;

@@ -4,6 +4,16 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ## [Unreleased]
 
+### Added
+
+- Fork quickstart guide for clone/install/demo/test onboarding.
+- `npm run doctor` readiness check for Node version, local writable paths, required docs, ignored private state, and SQLite native module loading.
+- Fork-friendly script aliases: `fake:agent`, `bridge:local`, `check:local-bridge`, and `smoke:local-bridge` while keeping existing compatibility script names.
+
+### Changed
+
+- README and environment example now present webhook/local bridge integrations in generic fork-friendly language first, with compatibility names called out separately.
+
 ## [0.3.0] - 2026-07-01
 
 ### Added

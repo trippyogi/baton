@@ -17,8 +17,9 @@ Built and used in production to run a real commerce company with a two-person te
 ```bash
 git clone https://github.com/trippyogi/baton.git
 cd baton
-nvm use # BATON pins Node 20 for better-sqlite3 stability
+nvm use # BATON recommends Node 20 for better-sqlite3 stability
 npm install
+npm run doctor # confirms runtime, docs, local dirs, and SQLite native module
 npm run demo # seeds realistic demo tasks, agents, runs, and touches
 npm start
 ```
@@ -26,6 +27,8 @@ npm start
 Open `http://127.0.0.1:4200/#/flow`. You'll see a ranked queue of human touches over a live demo workload: reviews waiting, an idle agent that could take ready work, a stale run that needs a nudge, each with a score and a plain-English reason it surfaced now.
 
 No API keys. No external services. SQLite on disk, Redis optional.
+
+If you are forking BATON, start with the dedicated [Fork Quickstart](docs/guides/fork-quickstart.md). It covers the full clone/install/demo/test path, local-state boundaries, and the safest way to connect your first real agent.
 
 ## Core concepts
 
@@ -63,8 +66,8 @@ BATON dispatches through a transport-neutral envelope, `baton.dispatch.v1`: prep
 
 Two reference integrations are included:
 
-- **Webhook orchestrator** (`npm run fake:spectre` + `npm run smoke:dispatch`): the full dispatch → ACK → review-packet → completion loop against a local fake agent.
-- **Local bridge** (`npm run bridge:nectar`): a private, ACK-only local handoff pattern for agents that a human operator drives by hand. See [docs/guides/private-local-use.md](docs/guides/private-local-use.md).
+- **Webhook agent** (`npm run fake:agent` + `npm run smoke:dispatch`): the full dispatch → ACK → review-packet → completion loop against a local fake agent. The older compatibility name is `npm run fake:spectre`.
+- **Local inbox bridge** (`npm run bridge:local`): a private, ACK-only local handoff pattern for agents that a human operator or local process drives by hand. The older compatibility name is `npm run bridge:nectar`. See [docs/guides/private-local-use.md](docs/guides/private-local-use.md).
 
 Adding your own agent means implementing one webhook receiver and one status callback.
 
@@ -99,6 +102,7 @@ BATON is **v0.3, pre-1.0, in daily personal production use**. APIs and schemas m
 ## Development
 
 ```bash
+npm run doctor # verifies your clone is ready for local development
 npm test # checks + smoke + adversarial loop
 npm run smoke:dispatch # full dispatch loop against a fake agent
 npm run audit:private # verifies no private data is tracked

@@ -11,8 +11,10 @@ git clone https://github.com/trippyogi/baton.git
 cd baton
 nvm use
 npm install
-# BATON currently requires Node 20 for native SQLite install consistency
+# BATON recommends Node 20 for native SQLite install consistency
 cp .env.example .env
+npm run doctor
+npm run demo
 npm start
 ```
 
@@ -23,6 +25,8 @@ http://127.0.0.1:4200/#/flow
 ```
 
 Redis is optional for local Flow development. Queue screens degrade when Redis is unavailable.
+
+For a fork-oriented walkthrough, see `docs/guides/fork-quickstart.md`.
 
 ## Checks before opening a PR
 
@@ -86,6 +90,7 @@ If you find a security issue, follow `SECURITY.md` instead of opening a public i
 - [ ] New endpoints validate input.
 - [ ] Docs updated if behavior changed.
 - [ ] CHANGELOG updated for user-visible changes.
+- [ ] `npm run doctor` passes on a fresh-ish local clone.
 - [ ] `npm run check:js` passes.
 - [ ] `npm run smoke` passes against a running server.
 - [ ] `npm run audit` passes or exception is documented.
