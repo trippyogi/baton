@@ -13,6 +13,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 ### Changed
 
 - README and environment example now present webhook/local bridge integrations in generic fork-friendly language first, with compatibility names called out separately.
+- Upgraded `better-sqlite3` to v12 for Node 22/24 prebuilt binaries, widened package engines to Node 20-24, and moved `.nvmrc` to Node 22.
 
 ## [0.3.0] - 2026-07-01
 

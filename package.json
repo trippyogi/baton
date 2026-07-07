@@ -14,7 +14,7 @@
     "import:local": "node scripts/import-local-profile.js",
     "export:redacted": "node scripts/export-redacted.js",
     "test": "npm run check:js && npm run smoke && npm run adversarial:loop",
-    "preinstall": "node -e \"const major=Number(process.versions.node.split('.')[0]); if(major < 20){ console.error('BATON requires Node 20+. Recommended: nvm use'); process.exit(1); } if(major !== 20){ console.warn('BATON is tested primarily on Node 20; continuing on '+process.version); }\"",
+    "preinstall": "node -e \"const major=Number(process.versions.node.split('.')[0]); if(major < 20){ console.error('BATON requires Node 20+. Recommended: nvm use'); process.exit(1); } console.warn('BATON is tested on Node 20/22; continuing on '+process.version);\"",
     "fake:spectre": "node scripts/fake-spectre.js",
     "fake:agent": "node scripts/fake-spectre.js",
     "bridge:nectar": "node scripts/nectar-dispatch-bridge.js",
@@ -29,7 +29,7 @@
     "demo:clean": "node scripts/seed-demo.js --clean"
   },
   "dependencies": {
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^12.11.1",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "ioredis": "^5.11.1"
@@ -44,6 +44,6 @@
   },
   "homepage": "https://github.com/trippyogi/baton#readme",
   "engines": {
-    "node": ">=20 <23"
+    "node": ">=20 <25"
   }
 }

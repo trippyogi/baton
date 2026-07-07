@@ -27,10 +27,10 @@ function exists(rel) {
 check('Node runtime', () => {
   const major = Number(process.versions.node.split('.')[0]);
   if (major < 20) {
-    throw new Error(`expected Node 20+; found ${process.version}. Run: nvm install 20 && nvm use`);
+    throw new Error(`expected Node 20+; found ${process.version}. Run: nvm install 22 && nvm use`);
   }
-  if (major !== 20) return `${process.version} (Node 20 is recommended and used by .nvmrc)`;
-  return process.version;
+  if (major > 24) return `${process.version} (BATON is tested on Node 20/22 and supports engines >=20 <25)`;
+  return `${process.version} (BATON is tested on Node 20/22)`;
 });
 
 check('npm lockfile', () => exists('package-lock.json'));

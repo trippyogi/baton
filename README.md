@@ -17,7 +17,7 @@ Built and used in production to run a real commerce company with a two-person te
 ```bash
 git clone https://github.com/trippyogi/baton.git
 cd baton
-nvm use # BATON recommends Node 20 for better-sqlite3 stability
+nvm use # Node 20+ (tested on 20 and 22)
 npm install
 npm run doctor # confirms runtime, docs, local dirs, and SQLite native module
 npm run demo # seeds realistic demo tasks, agents, runs, and touches
@@ -82,7 +82,7 @@ Task -> Run (state machine) -> dispatch envelope -> Agent
               Flow queue (you)
 ```
 
-- **Server**: Node 20, Express, better-sqlite3 (WAL), optional Redis for queue/webhook paths, degrades cleanly without it.
+- **Server**: Node 20+, Express, better-sqlite3 (WAL), optional Redis for queue/webhook paths, degrades cleanly without it.
 - **Client**: dependency-free vanilla JS SPA.
 - **Tests**: `npm test` runs JS checks, smoke flows, and an adversarial loop-integrity suite.
 
