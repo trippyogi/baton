@@ -7,6 +7,7 @@ function isLocalHost(host) {
 }
 
 function shouldRequireApiToken(host) {
+  if (process.env.BATON_ALLOW_PRIVATE_DEV_NO_AUTH === '1') return false;
   return Boolean(process.env.BATON_API_TOKEN) || !isLocalHost(host);
 }
 
