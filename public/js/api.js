@@ -1,9 +1,33 @@
 // api.js — fetch wrapper + SSE helper
 
 const BASE = '';
+const API_TOKEN_KEY = 'baton_api_token';
+
+function getApiToken() {
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get('baton_token') || params.get('api_token') || params.get('token');
+  if (urlToken) {
+    localStorage.setItem(API_TOKEN_KEY, urlToken.trim());
+    params.delete('baton_token');
+    params.delete('api_token');
+    params.delete('token');
+    const nextQuery = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`);
+    return urlToken.trim();
+  }
+  return localStorage.getItem(API_TOKEN_KEY) || '';
+}
+
+function apiHeaders(extra = {}) {
+  const token = getApiToken();
+  return {
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 export async function get(path) {
-  const r = await fetch(BASE + path);
+  const r = await fetch(BASE + path, { headers: apiHeaders() });
   if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
   return r.json();
 }
@@ -11,7 +35,7 @@ export async function get(path) {
 export async function post(path, body) {
   const r = await fetch(BASE + path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body)
   });
   if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
@@ -21,7 +45,7 @@ export async function post(path, body) {
 export async function patch(path, body) {
   const r = await fetch(BASE + path, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body)
   });
   if (!r.ok) throw new Error(`PATCH ${path} → ${r.status}`);
@@ -29,7 +53,7 @@ export async function patch(path, body) {
 }
 
 export async function del(path) {
-  const r = await fetch(BASE + path, { method: 'DELETE' });
+  const r = await fetch(BASE + path, { method: 'DELETE', headers: apiHeaders() });
   if (!r.ok) throw new Error(`DELETE ${path} → ${r.status}`);
   return r.json();
 }
