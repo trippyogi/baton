@@ -285,15 +285,16 @@ async function main() {
   })).json;
   assert.equal(folderDispatch.dispatch_status, 'queued_to_agent', 'folder dispatch queues to agent folder');
   assert.equal(folderDispatch.run.status, 'dispatched', 'folder dispatch does not fake running before agent result');
-  const inboxFile = path.join(agentDir, 'inbox', folderAgent.id, `run_${folderDispatch.run.id}.json`);
+  const inboxFile = path.join(agentDir, 'inbox', `run_${folderDispatch.run.id}.json`);
   assert.ok(fs.existsSync(inboxFile), 'folder dispatch writes inbox file');
   const inboxRecord = JSON.parse(fs.readFileSync(inboxFile, 'utf8'));
   assert.equal(inboxRecord.schema, 'baton.agent_task.v1', 'folder inbox file uses task schema');
   assert.equal(inboxRecord.run_id, folderDispatch.run.id, 'folder inbox file carries run id');
 
-  const outboxDir = path.join(agentDir, 'outbox', folderAgent.id);
+  const outboxDir = path.join(agentDir, 'outbox');
   fs.mkdirSync(outboxDir, { recursive: true });
-  fs.writeFileSync(path.join(outboxDir, `run_${folderDispatch.run.id}.result.json`), JSON.stringify({
+  const outboxFile = path.join(outboxDir, `run_${folderDispatch.run.id}.json`);
+  fs.writeFileSync(outboxFile, JSON.stringify({
     schema: 'baton.agent_result.v1',
     run_id: folderDispatch.run.id,
     status: 'review_ready',
@@ -315,6 +316,7 @@ async function main() {
   const folderRun = (await request(`/api/runs/${folderDispatch.run.id}`)).json;
   assert.equal(folderRun.status, 'review_ready', 'folder result sync moves run to review_ready');
   assert.equal(folderRun.dispatch_status, 'review_ready', 'folder result sync updates dispatch status');
+  assert.ok(fs.existsSync(`${outboxFile}.synced`), 'folder sync marks processed outbox result');
 
   const freshForSnooze = (await request('/api/flow')).json;
   const snoozeTarget = freshForSnooze.next_touches.find(t => (

@@ -3,9 +3,10 @@
 BATON should be the central attention ledger, not another agent runtime.
 
 The simplest broad-agent bridge is a private local folder contract. BATON writes
-task handoffs to per-agent inbox folders. Agent harnesses poll those folders on
-their own cron, claim work, and write result JSON back to outbox folders. BATON
-then syncs those results into runs, review packets, and Flow.
+task handoffs to one shared inbox folder. Agent harnesses poll that folder on
+their own cron, work on files assigned to their `agent_id`, and write result JSON
+back to one shared outbox folder. BATON then syncs those results into runs,
+review packets, and Flow.
 
 ## Critique of heavier setup
 
@@ -17,6 +18,7 @@ Avoid these as MVP requirements:
 - MCP: useful later for tool discovery, but not needed for dispatch.
 - Webhook servers per agent: good for mature integrations, but too much setup
   for broad local agent support.
+- Per-agent folders: useful later, but `agent_id` inside JSON is enough for v1.
 - Auto-routing: tempting, but human-directed routing is safer until the run
   ledger is trustworthy.
 
@@ -29,11 +31,8 @@ Default root:
 
 ```text
 local/agent-bridge/
-  inbox/<agent_id>/
-  claimed/<agent_id>/
-  outbox/<agent_id>/
-  done/<agent_id>/
-  failed/<agent_id>/
+  inbox/
+  outbox/
 ```
 
 Override the root with:
@@ -79,7 +78,7 @@ Create or import an agent with folder dispatch:
 When BATON passes work to this agent it writes:
 
 ```text
-local/agent-bridge/inbox/nectar/run_<run_id>.json
+local/agent-bridge/inbox/run_<run_id>.json
 ```
 
 ## Inbox task schema
@@ -102,15 +101,14 @@ local/agent-bridge/inbox/nectar/run_<run_id>.json
 }
 ```
 
-The agent should move the file to `claimed/<agent_id>/` while working so a human
-can see that it was picked up.
+The agent should process files where `agent_id` matches its identity.
 
 ## Outbox result schema
 
 Write one result file under:
 
 ```text
-local/agent-bridge/outbox/<agent_id>/run_<run_id>.result.json
+local/agent-bridge/outbox/run_<run_id>.json
 ```
 
 Example:
@@ -140,15 +138,14 @@ Run:
 npm run agent:sync
 ```
 
-Processed result files move to `done/<agent_id>/`. Invalid result files move to
-`failed/<agent_id>/` with an `.error.txt` file.
+Processed result files are renamed with a `.synced` suffix. Invalid result files
+are renamed with a `.failed` suffix and get an `.error.txt` file.
 
 ## Oversight model
 
 BATON should surface the most important human touches across agents:
 
-- unclaimed high-impact inbox work
-- claimed work with stale heartbeat or no result
+- queued high-impact inbox work
 - blocked runs needing a decision
 - review-ready results
 - failed runs that are cheap to retry

@@ -17,25 +17,18 @@ function safeSegment(value, fallback = 'agent') {
 
 function bridgePaths(agentId, config = {}) {
   const root = resolveAgentDir(config);
-  const safeAgentId = safeSegment(agentId, 'unassigned');
   return {
     root,
-    agentId: safeAgentId,
-    inboxDir: path.join(root, 'inbox', safeAgentId),
-    claimedDir: path.join(root, 'claimed', safeAgentId),
-    outboxDir: path.join(root, 'outbox', safeAgentId),
-    doneDir: path.join(root, 'done', safeAgentId),
-    failedDir: path.join(root, 'failed', safeAgentId),
+    agentId: safeSegment(agentId, 'unassigned'),
+    inboxDir: path.join(root, 'inbox'),
+    outboxDir: path.join(root, 'outbox'),
   };
 }
 
 async function sendFolder({ envelope, agent, config = {} }) {
   const paths = bridgePaths(envelope.agent_id || agent?.id, config);
   fs.mkdirSync(paths.inboxDir, { recursive: true });
-  fs.mkdirSync(paths.claimedDir, { recursive: true });
   fs.mkdirSync(paths.outboxDir, { recursive: true });
-  fs.mkdirSync(paths.doneDir, { recursive: true });
-  fs.mkdirSync(paths.failedDir, { recursive: true });
 
   const record = {
     schema: 'baton.agent_task.v1',
@@ -52,6 +45,23 @@ async function sendFolder({ envelope, agent, config = {} }) {
   };
   const name = `run_${safeSegment(envelope.run_id, 'unknown')}.json`;
   const target = path.join(paths.inboxDir, name);
+  if (fs.existsSync(target)) {
+    return {
+      ok: true,
+      dispatch_status: 'queued_to_agent',
+      ack: {
+        schema: 'baton.agent_folder_ack.v1',
+        status: 'queued_to_agent',
+        duplicate: true,
+        run_id: envelope.run_id,
+        task_id: envelope.task_id,
+        touch_id: envelope.touch_id,
+        agent_id: envelope.agent_id || agent?.id || null,
+        inbox_path: path.relative(ROOT, target).split(path.sep).join('/'),
+        outbox_dir: path.relative(ROOT, paths.outboxDir).split(path.sep).join('/'),
+      },
+    };
+  }
   const tmp = `${target}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, `${JSON.stringify(record, null, 2)}\n`, { flag: 'wx', mode: 0o600 });
   fs.renameSync(tmp, target);

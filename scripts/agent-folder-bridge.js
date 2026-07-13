@@ -9,7 +9,7 @@ const db = require('../server/db');
 const { transitionRun } = require('../server/lib/runs/state-machine');
 const { rebuildTouches } = require('../server/lib/flow/rebuild');
 const { id, stringifyJson } = require('../server/lib/flow/utils');
-const { bridgePaths, resolveAgentDir, safeSegment } = require('../server/lib/dispatch/transports/folder');
+const { bridgePaths, resolveAgentDir } = require('../server/lib/dispatch/transports/folder');
 
 const args = new Set(process.argv.slice(2));
 
@@ -29,7 +29,7 @@ if (args.has('--sync')) sync();
 
 function setup() {
   const root = resolveAgentDir();
-  for (const rel of ['inbox', 'claimed', 'outbox', 'done', 'failed']) {
+  for (const rel of ['inbox', 'outbox']) {
     fs.mkdirSync(path.join(root, rel), { recursive: true });
   }
   console.log('BATON folder bridge ready.');
@@ -40,7 +40,7 @@ function setup() {
   console.log('Cron example:');
   console.log(`* * * * * cd ${ROOT} && npm run agent:sync`);
   console.log('');
-  console.log('Agent contract: read inbox/<agent_id>/run_*.json, move claimed work to claimed/<agent_id>/, then write outbox/<agent_id>/run_<id>.result.json.');
+  console.log('Agent contract: read inbox/run_*.json assigned to your agent_id, then write outbox/run_<id>.json.');
 }
 
 function sync() {
@@ -56,11 +56,11 @@ function sync() {
       const raw = fs.readFileSync(resultPath, 'utf8');
       const result = JSON.parse(raw);
       applyResult(result, resultPath);
-      moveResult(resultPath, 'done');
+      markResult(resultPath, 'synced');
       processed += 1;
     } catch (err) {
       failed += 1;
-      moveResult(resultPath, 'failed', err.message);
+      markResult(resultPath, 'failed', err.message);
     }
   }
 
@@ -123,7 +123,7 @@ function transitionVia(runId, toStatus, event, payload) {
     return;
   }
   if (current === 'pending_dispatch' && ['review_ready', 'completed', 'failed', 'blocked'].includes(toStatus)) {
-    transitionRun({ db, runId, event: 'agent_folder_claimed', toStatus: 'dispatched', actor: 'agent-folder', payload });
+    transitionRun({ db, runId, event: 'agent_folder_seen_result', toStatus: 'dispatched', actor: 'agent-folder', payload });
     transitionRun({ db, runId, event: 'agent_folder_running', toStatus: 'running', actor: 'agent-folder', payload });
   } else if (current === 'dispatched' && ['review_ready', 'completed', 'blocked'].includes(toStatus)) {
     transitionRun({ db, runId, event: 'agent_folder_running', toStatus: 'running', actor: 'agent-folder', payload });
@@ -188,12 +188,8 @@ function listJson(dir) {
   return out.sort();
 }
 
-function moveResult(source, state, error = null) {
-  const parsed = path.parse(source);
-  const agentId = safeSegment(path.basename(path.dirname(source)), 'unassigned');
-  const targetDir = path.join(resolveAgentDir(), state, agentId);
-  fs.mkdirSync(targetDir, { recursive: true });
-  const target = path.join(targetDir, parsed.base);
+function markResult(source, state, error = null) {
+  const target = `${source}.${state}`;
   fs.renameSync(source, target);
   if (error) fs.writeFileSync(`${target}.error.txt`, `${error}\n`, { mode: 0o600 });
 }
