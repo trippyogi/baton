@@ -184,13 +184,6 @@ CREATE TABLE IF NOT EXISTS run_events (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_idempotency_key
-ON runs(idempotency_key)
-WHERE idempotency_key IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_runs_touch_status ON runs(touch_id, status);
-CREATE INDEX IF NOT EXISTS idx_runs_agent_status ON runs(agent_id, status);
-
 INSERT OR IGNORE INTO flow_settings (id, current_mode)
 VALUES ('default', 'triage');
 
