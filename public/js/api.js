@@ -64,14 +64,20 @@ export function createSSE(path, handlers = {}) {
   let retryMs = 1000;
 
   function connect() {
+    if (handlers.connecting) handlers.connecting();
     es = new EventSource(path);
-    es.onopen = () => { retryMs = 1000; };
+    es.onopen = () => {
+      retryMs = 1000;
+      if (handlers.open) handlers.open();
+    };
     es.onerror = () => {
+      if (handlers.error) handlers.error();
       es.close();
       setTimeout(connect, retryMs);
       retryMs = Math.min(retryMs * 2, 30000);
     };
     for (const [event, fn] of Object.entries(handlers)) {
+      if (['connecting', 'open', 'error', 'message'].includes(event)) continue;
       es.addEventListener(event, (e) => fn(JSON.parse(e.data)));
     }
     es.onmessage = (e) => {

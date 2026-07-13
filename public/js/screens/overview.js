@@ -262,8 +262,8 @@ export async function renderOverview() {
   <div class="card" style="margin-bottom:var(--gap)">
     <div class="card-header">
       <span class="card-title">Recent Runs</span>
-      <span id="live-badge" style="font-size:11px;color:var(--color-lime);display:flex;align-items:center;gap:4px">
-        <span class="status-dot healthy live-dot"></span> Live
+      <span id="live-badge" style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:4px">
+        <span class="status-dot loading"></span> Connecting…
       </span>
     </div>
     <!-- Table header -->
@@ -286,6 +286,9 @@ export async function renderOverview() {
     // SSE for live run updates
     if (sseConn) sseConn.close();
     sseConn = createSSE('/api/runs/stream', {
+      connecting: () => setLiveBadge('connecting'),
+      open:       () => setLiveBadge('live'),
+      error:      () => setLiveBadge('degraded'),
       run_updated: () => refreshRecentRuns(),
       snapshot:    () => {}
     });
@@ -328,6 +331,15 @@ export async function renderOverview() {
   } catch (err) {
     el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error loading command deck: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+function setLiveBadge(state) {
+  const badge = document.getElementById('live-badge');
+  if (!badge) return;
+  const dot = state === 'live' ? 'healthy' : state === 'degraded' ? 'degraded' : 'loading';
+  const label = state === 'live' ? 'Live' : state === 'degraded' ? 'Degraded' : 'Connecting…';
+  badge.style.color = state === 'live' ? 'var(--color-lime)' : state === 'degraded' ? 'var(--color-ember)' : 'var(--text-secondary)';
+  badge.innerHTML = `<span class="status-dot ${dot}"></span> ${label}`;
 }
 
 // ── Run row renderer ──────────────────────────────────

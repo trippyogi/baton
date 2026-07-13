@@ -89,6 +89,12 @@ db.exec(schema);
   if (!packetCols.includes('artifacts'))      db.exec("ALTER TABLE review_packets ADD COLUMN artifacts TEXT DEFAULT '[]'");
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS app_metadata (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS strategy_packets (
       id TEXT PRIMARY KEY,
       goal TEXT NOT NULL,

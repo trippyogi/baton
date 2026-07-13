@@ -269,6 +269,17 @@
   color: var(--text-secondary);
 }
 
+.demo-data-chip {
+  border: 1px solid color-mix(in srgb, var(--color-ember) 45%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--color-ember);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -514,10 +525,6 @@ tr:last-child td { border-bottom: none; }
   gap: 8px;
 }
 .empty-state-icon { font-size: 32px; opacity: 0.4; }
-
-/* ── Pulse animation for live indicator ──────────────── */
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.live-dot { animation: pulse 1.5s infinite; }
 
 /* ── Modal ───────────────────────────────────────────── */
 .modal-backdrop {

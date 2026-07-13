@@ -33,6 +33,7 @@ function cleanDemo() {
     db.prepare(`DELETE FROM runs WHERE id LIKE 'demo-%' OR task_id LIKE 'demo-%' OR agent_id LIKE 'demo-%'`).run();
     db.prepare(`DELETE FROM tasks WHERE id LIKE 'demo-%'`).run();
     db.prepare(`DELETE FROM agents WHERE id LIKE 'demo-%'`).run();
+    db.prepare(`DELETE FROM app_metadata WHERE key = 'demo_data' AND value = 'seed-demo'`).run();
   });
   tx();
   const after = counts();
@@ -359,6 +360,11 @@ function seedDemo() {
     created.runs = seedRuns();
     created.review_packets = seedReviewPackets();
     seedRunEvents();
+    db.prepare(`
+      INSERT INTO app_metadata (key, value, updated_at)
+      VALUES ('demo_data', 'seed-demo', datetime('now'))
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
+    `).run();
     db.prepare(`UPDATE flow_settings SET current_mode = 'triage', updated_at = datetime('now') WHERE id = 'default'`).run();
   });
   tx();

@@ -26,7 +26,8 @@
     "smoke:local-bridge": "node scripts/smoke-nectar-dispatch.js",
     "adversarial:loop": "node scripts/adversarial/loop-integrity.js",
     "demo": "node scripts/seed-demo.js",
-    "demo:clean": "node scripts/seed-demo.js --clean"
+    "demo:clean": "node scripts/seed-demo.js --clean",
+    "reset": "node scripts/reset.js"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",

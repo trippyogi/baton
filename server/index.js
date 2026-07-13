@@ -14,6 +14,12 @@ const HOST = process.env.BATON_HOST || process.env.HOST || '127.0.0.1';
 app.use(express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }));
+app.get('/js/runtime-config.js', (_req, res) => {
+  const showPhase2Nav = ['1', 'true', 'yes'].includes(String(process.env.BATON_SHOW_PHASE2_NAV || '').toLowerCase());
+  res.type('application/javascript').send(
+    `window.BATON_UI_FLAGS = Object.assign({}, window.BATON_UI_FLAGS, { showPhase2Nav: ${showPhase2Nav} });`
+  );
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api', apiAuthMiddleware(HOST));
 

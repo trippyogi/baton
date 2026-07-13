@@ -1,5 +1,5 @@
-import { renderNav }      from './components/nav.js';
-import { renderTopbar }   from './components/topbar.js';
+import { renderNav, isRouteVisible } from './components/nav.js';
+import { renderTopbar, updateHealthDot } from './components/topbar.js';
 import { renderOverview } from './screens/overview.js';
 import { renderFlow, destroyFlow } from './screens/flow.js';
 import { renderTasks }    from './screens/tasks.js';
@@ -34,7 +34,7 @@ const SCREENS = {
 
 function getRoute() {
   const hash = location.hash.replace('#/', '') || 'flow';
-  return SCREENS[hash] ? hash : 'flow';
+  return SCREENS[hash] && isRouteVisible(hash) ? hash : 'flow';
 }
 
 function navigate(route) {
@@ -64,9 +64,31 @@ function navigate(route) {
 }
 
 function init() {
-  renderTopbar('loading');
+  renderTopbar('connecting');
   navigate(getRoute());
   window.addEventListener('hashchange', () => navigate(getRoute()));
+  startHealthPolling();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+function startHealthPolling() {
+  let firstCheck = true;
+
+  async function checkHealth() {
+    if (firstCheck) updateHealthDot('connecting');
+    try {
+      const response = await fetch('/api/health', { cache: 'no-store' });
+      const body = response.ok ? await response.json() : {};
+      const healthy = response.ok && body.ok === true && body.db === true;
+      updateHealthDot(healthy ? 'healthy' : 'degraded', { demoData: body.demo_data === true });
+    } catch (_) {
+      updateHealthDot('degraded');
+    } finally {
+      firstCheck = false;
+    }
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 15000);
+}

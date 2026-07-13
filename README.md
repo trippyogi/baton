@@ -17,7 +17,7 @@ Built and used in production to run a real commerce company with a two-person te
 ```bash
 git clone https://github.com/trippyogi/baton.git
 cd baton
-nvm use # Node 20+ (tested on 20 and 22)
+nvm use 22
 npm install
 npm run doctor # confirms runtime, docs, local dirs, and SQLite native module
 npm run demo # seeds realistic demo tasks, agents, runs, and touches
@@ -27,6 +27,10 @@ npm start
 Open `http://127.0.0.1:4200/#/flow`. You'll see a ranked queue of human touches over a live demo workload: reviews waiting, an idle agent that could take ready work, a stale run that needs a nudge, each with a score and a plain-English reason it surfaced now.
 
 No API keys. No external services. SQLite on disk, Redis optional.
+
+## Real use
+
+`npm run reset` wipes the local SQLite database after a y/N prompt and prints what it deleted.
 
 If you are forking BATON, start with the dedicated [Fork Quickstart](docs/guides/fork-quickstart.md). It covers the full clone/install/demo/test path, local-state boundaries, and the safest way to connect your first real agent.
 

@@ -36,8 +36,8 @@ export async function renderRuns() {
           <div class="screen-title">Runs</div>
           <div class="screen-subtitle">${total} total runs</div>
         </div>
-        <span style="font-size:11px;color:var(--color-lime);display:flex;align-items:center;gap:4px">
-          <span class="status-dot healthy live-dot"></span> Live
+        <span id="runs-live-badge" style="font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:4px">
+          <span class="status-dot loading"></span> Connecting…
         </span>
       </div>
 
@@ -94,6 +94,9 @@ export async function renderRuns() {
     // SSE live updates
     if (sseConn) sseConn.close();
     sseConn = createSSE('/api/runs/stream', {
+      connecting: () => setRunsLiveBadge('connecting'),
+      open:       () => setRunsLiveBadge('live'),
+      error:      () => setRunsLiveBadge('degraded'),
       run_updated: (run) => updateRunRow(run),
       snapshot:    () => {},
     });
@@ -105,6 +108,15 @@ export async function renderRuns() {
   } catch(err) {
     el.innerHTML = `<div class="loading" style="color:var(--color-red)">Error: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+function setRunsLiveBadge(state) {
+  const badge = document.getElementById('runs-live-badge');
+  if (!badge) return;
+  const dot = state === 'live' ? 'healthy' : state === 'degraded' ? 'degraded' : 'loading';
+  const label = state === 'live' ? 'Live' : state === 'degraded' ? 'Degraded' : 'Connecting…';
+  badge.style.color = state === 'live' ? 'var(--color-lime)' : state === 'degraded' ? 'var(--color-ember)' : 'var(--text-secondary)';
+  badge.innerHTML = `<span class="status-dot ${dot}"></span> ${label}`;
 }
 
 function runRow(r) {

@@ -86,6 +86,12 @@ CREATE TABLE IF NOT EXISTS builds (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS app_metadata (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS flow_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
   current_mode TEXT NOT NULL DEFAULT 'triage',
