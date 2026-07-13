@@ -51,7 +51,7 @@ router.patch('/:id/action', async (req, res) => {
       const result = await dispatchRun({ db, runId, intent: action === 'send_to_evaluator' ? 'evaluate' : 'orchestrate', instructions: instructionsFromBody(req.body) });
       const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(touch.id));
       const updatedTask = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
-      return res.json({ touch: updatedTouch, task: updatedTask, run: result.run, dispatch_status: result.dispatch_status, message: result.message, error: result.error || null });
+      return res.json({ touch: updatedTouch, task: updatedTask, run: result.run, dispatch_status: result.dispatch_status, ack: result.ack || null, message: result.message, error: result.error || null });
     }
 
     const tx = db.transaction(() => {

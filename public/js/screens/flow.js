@@ -215,8 +215,16 @@ async function runAction(id, action, extra = {}) {
   feedbackDrafts.delete(id);
   await renderFlow({ force: true });
   const resultEl = document.getElementById('flow-command-result');
-  commandResult = result.message || 'Done.';
+  commandResult = actionResultMessage(result);
   if (resultEl) resultEl.textContent = commandResult;
+}
+
+function actionResultMessage(result) {
+  const parts = [result?.message || 'Done.'];
+  const inboxPath = result?.ack?.inbox_path || result?.ack?.path;
+  if (result?.run?.id) parts.push(`Run ${result.run.id}`);
+  if (inboxPath) parts.push(inboxPath);
+  return parts.join(' · ');
 }
 
 function handleKeys(event) {

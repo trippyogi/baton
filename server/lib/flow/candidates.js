@@ -90,13 +90,19 @@ function generateCandidates(db, context = {}) {
     SELECT DISTINCT task_id FROM baton_touches
     WHERE status = 'prepared' AND task_id IS NOT NULL
   `).all().map(row => row.task_id));
+  const activeRunTaskIds = new Set(db.prepare(`
+    SELECT DISTINCT task_id FROM runs
+    WHERE task_id IS NOT NULL
+      AND status IN ('pending_dispatch', 'dispatched', 'running', 'blocked')
+      AND COALESCE(dispatch_status, '') NOT IN ('not_configured', 'prepared')
+  `).all().map(row => row.task_id));
 
   const idleAssignmentCandidates = [];
   const assignedTaskIds = new Set();
   const idleAgents = db.prepare(`SELECT * FROM agents WHERE status = 'idle'`).all()
     .sort((a, b) => ownedReadyCount(b, readyTasks) - ownedReadyCount(a, readyTasks));
   for (const agent of idleAgents) {
-    const availableTasks = readyTasks.filter(task => !assignedTaskIds.has(task.id) && !preparedTaskIds.has(task.id));
+    const availableTasks = readyTasks.filter(task => !assignedTaskIds.has(task.id) && !preparedTaskIds.has(task.id) && !activeRunTaskIds.has(task.id));
     const match = bestReadyTaskForAgent(agent, availableTasks);
     if (!match) continue;
     assignedTaskIds.add(match.task.id);
@@ -166,7 +172,7 @@ function generateCandidates(db, context = {}) {
         candidates.push(candidate);
       }
     } else if (task.status === 'ready') {
-      if (!assignedTaskIds.has(task.id)) {
+      if (!assignedTaskIds.has(task.id) && !activeRunTaskIds.has(task.id)) {
         candidates.push(candidateFromTask(task, {
           type: 'delegate',
           primary_action: 'delegate',

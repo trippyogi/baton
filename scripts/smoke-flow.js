@@ -285,11 +285,22 @@ async function main() {
   })).json;
   assert.equal(folderDispatch.dispatch_status, 'queued_to_agent', 'folder dispatch queues to agent folder');
   assert.equal(folderDispatch.run.status, 'dispatched', 'folder dispatch does not fake running before agent result');
+  assert.ok(folderDispatch.ack?.inbox_path, 'folder dispatch response exposes inbox path');
   const inboxFile = path.join(agentDir, 'inbox', `run_${folderDispatch.run.id}.json`);
   assert.ok(fs.existsSync(inboxFile), 'folder dispatch writes inbox file');
   const inboxRecord = JSON.parse(fs.readFileSync(inboxFile, 'utf8'));
   assert.equal(inboxRecord.schema, 'baton.agent_task.v1', 'folder inbox file uses task schema');
   assert.equal(inboxRecord.run_id, folderDispatch.run.id, 'folder inbox file carries run id');
+  const afterFolderDispatch = (await request('/api/flow')).json;
+  assert.equal(
+    afterFolderDispatch.next_touches.filter(t => (
+      t.task_id === folderDelegate.created.task_id
+      && ['pending', 'active'].includes(t.status)
+      && ['assign', 'delegate'].includes(t.primary_action)
+    )).length,
+    0,
+    'folder dispatch does not regenerate duplicate pass touch while run is active'
+  );
 
   const outboxDir = path.join(agentDir, 'outbox');
   fs.mkdirSync(outboxDir, { recursive: true });
