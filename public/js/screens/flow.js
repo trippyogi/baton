@@ -196,6 +196,9 @@ async function submitCommand(el) {
 function primaryAction(id) {
   const touch = (currentData.next_touches || []).find(t => t.id === id);
   if (!touch) return;
+  if (['assign', 'delegate'].includes(touch.primary_action) && touch.agent_id) {
+    return runAction(id, touch.primary_action);
+  }
   if (touch.type === 'review' || ['refine', 'delegate', 'assign', 'answer', 'decide', 'send_to_evaluator'].includes(touch.primary_action)) {
     const card = document.querySelector(`.touch-card[data-touch-id="${id}"]`);
     const detail = card?.querySelector('.touch-detail');
