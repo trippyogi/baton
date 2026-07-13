@@ -5,12 +5,13 @@ const assert = require('assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 let BASE = process.env.BATON_BASE_URL || process.env.BASE_URL || '';
 const stamp = Date.now();
 let child = null;
 let tempDir = null;
+let dbPath = null;
 let childOut = '';
 let childErr = '';
 
@@ -49,7 +50,7 @@ async function startServerIfNeeded() {
   if (BASE) return;
   const port = String(4800 + Math.floor(Math.random() * 1000));
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-smoke-'));
-  const dbPath = path.join(tempDir, 'smoke.db');
+  dbPath = path.join(tempDir, 'smoke.db');
   BASE = `http://127.0.0.1:${port}`;
   child = spawn(process.execPath, ['server/index.js'], {
     cwd: path.join(__dirname, '..'),
@@ -57,6 +58,7 @@ async function startServerIfNeeded() {
       ...process.env,
       VMC_PORT: port,
       BATON_DB_PATH: dbPath,
+      BATON_AGENT_DIR: path.join(tempDir, 'agent-bridge'),
       REDIS_URL: 'redis://127.0.0.1:0',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -256,6 +258,63 @@ async function main() {
   assert.equal(preparedDelegate.task.status, 'ready', 'unconfigured delegate does not mark task airborne');
   const afterPrepare = (await request('/api/flow?limit=50')).json;
   assert.ok(afterPrepare.next_touches.some(t => t.id === delegate.created.touch_id), 'unconfigured touch stays in next touches');
+
+  const agentDir = tempDir ? path.join(tempDir, 'agent-bridge') : fs.mkdtempSync(path.join(os.tmpdir(), 'baton-agent-bridge-'));
+  const folderAgent = (await request('/api/agents', {
+    method: 'POST',
+    body: {
+      id: `smoke-folder-agent-${stamp}`,
+      name: 'Smoke Folder Agent',
+      type: 'local',
+      skills: ['filesystem'],
+      dispatch_enabled: true,
+      dispatch_transport: 'folder',
+      dispatch_target: 'local-agent-folder',
+      dispatch_config: { transport: 'folder' },
+    },
+  })).json;
+  assert.equal(folderAgent.dispatch_transport, 'folder', 'agent create allows folder dispatch');
+
+  const folderDelegate = (await request('/api/flow/command', {
+    method: 'POST',
+    body: { input: `delegate smoke folder dispatch ${stamp}` },
+  })).json;
+  const folderDispatch = (await request(`/api/touches/${folderDelegate.created.touch_id}/action`, {
+    method: 'PATCH',
+    body: { action: 'delegate', agent_id: folderAgent.id },
+  })).json;
+  assert.equal(folderDispatch.dispatch_status, 'queued_to_agent', 'folder dispatch queues to agent folder');
+  assert.equal(folderDispatch.run.status, 'dispatched', 'folder dispatch does not fake running before agent result');
+  const inboxFile = path.join(agentDir, 'inbox', folderAgent.id, `run_${folderDispatch.run.id}.json`);
+  assert.ok(fs.existsSync(inboxFile), 'folder dispatch writes inbox file');
+  const inboxRecord = JSON.parse(fs.readFileSync(inboxFile, 'utf8'));
+  assert.equal(inboxRecord.schema, 'baton.agent_task.v1', 'folder inbox file uses task schema');
+  assert.equal(inboxRecord.run_id, folderDispatch.run.id, 'folder inbox file carries run id');
+
+  const outboxDir = path.join(agentDir, 'outbox', folderAgent.id);
+  fs.mkdirSync(outboxDir, { recursive: true });
+  fs.writeFileSync(path.join(outboxDir, `run_${folderDispatch.run.id}.result.json`), JSON.stringify({
+    schema: 'baton.agent_result.v1',
+    run_id: folderDispatch.run.id,
+    status: 'review_ready',
+    summary: 'Smoke folder agent finished a reviewable result.',
+    next_action: 'Review the folder result.',
+    artifacts: [],
+  }, null, 2));
+  const sync = spawnSync(process.execPath, ['scripts/agent-folder-bridge.js', '--sync'], {
+    cwd: path.join(__dirname, '..'),
+    env: {
+      ...process.env,
+      BATON_DB_PATH: dbPath || '',
+      BATON_AGENT_DIR: agentDir,
+      BATON_SKIP_DEFAULT_SEED: '1',
+    },
+    encoding: 'utf8',
+  });
+  assert.equal(sync.status, 0, `folder sync exits cleanly: ${sync.stderr || sync.stdout}`);
+  const folderRun = (await request(`/api/runs/${folderDispatch.run.id}`)).json;
+  assert.equal(folderRun.status, 'review_ready', 'folder result sync moves run to review_ready');
+  assert.equal(folderRun.dispatch_status, 'review_ready', 'folder result sync updates dispatch status');
 
   const freshForSnooze = (await request('/api/flow')).json;
   const snoozeTarget = freshForSnooze.next_touches.find(t => (

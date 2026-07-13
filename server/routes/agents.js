@@ -6,7 +6,7 @@ const { rebuildTouches } = require('../lib/flow/rebuild');
 
 const router = express.Router();
 const VALID_STATUSES = ['idle', 'running', 'blocked', 'failed', 'reviewing', 'paused', 'offline'];
-const VALID_TRANSPORTS = ['manual', 'webhook'];
+const VALID_TRANSPORTS = ['manual', 'webhook', 'folder'];
 const JSON_FIELDS = ['skills', 'permissions', 'cost_profile', 'dispatch_config'];
 const ALLOWED = ['name', 'type', 'status', 'skills', 'permissions', 'current_task_id', 'current_run_id', 'cost_profile', 'dispatch_enabled', 'dispatch_transport', 'dispatch_target', 'dispatch_config', 'quality_score', 'reliability_score', 'last_activity_at'];
 const DEFAULT_AGENT = {
@@ -117,6 +117,10 @@ function normalizeAgent(raw, { partial, existing = {} }) {
   if (effective.dispatch_enabled && effective.dispatch_transport === 'webhook') {
     const target = String(effective.dispatch_target || '');
     if (!isEnvRef(target) && !isLocalhostUrl(target)) throw new Error('webhook dispatch_target must be an env var name or localhost URL');
+  }
+  if (effective.dispatch_enabled && effective.dispatch_transport === 'folder') {
+    const target = String(effective.dispatch_target || '');
+    if (!/^[a-zA-Z0-9_.\/-]+$/.test(target)) throw new Error('folder dispatch_target must be a safe local folder hint');
   }
   for (const key of ['quality_score', 'reliability_score']) {
     if (key in out) out[key] = finiteNumber(out[key], 0, 1, key);

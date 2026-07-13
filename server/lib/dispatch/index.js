@@ -3,6 +3,7 @@ const { stringifyJson, parseJson } = require('../flow/utils');
 const { loadSettings, rebuildTouches } = require('../flow/rebuild');
 const { buildDispatchEnvelope } = require('./envelope');
 const { sendWebhook } = require('./transports/webhook');
+const { sendFolder } = require('./transports/folder');
 const { sendManual } = require('./transports/manual');
 const { transitionRun, isActive, isTerminal } = require('../runs/state-machine');
 
@@ -70,7 +71,16 @@ async function dispatchRun({ db, runId, intent = 'orchestrate', instructions = [
   db.prepare(`UPDATE runs SET dispatch_status = 'sent', last_status_at = datetime('now') WHERE id = ?`).run(runId);
   const result = dispatch.transport === 'webhook'
     ? await sendWebhook({ url: dispatch.url, token: dispatch.token, envelope, timeoutMs: dispatch.timeoutMs })
+    : dispatch.transport === 'folder'
+      ? await sendFolder({ envelope, agent, config: dispatch.config })
     : await sendManual();
+
+  if (result.ok && result.dispatch_status === 'queued_to_agent') {
+    db.prepare(`UPDATE runs SET dispatch_status = 'queued_to_agent', last_status_at = datetime('now') WHERE id = ?`).run(runId);
+    if (run.touch_id) db.prepare(`UPDATE baton_touches SET status = 'active', run_id = ?, updated_at = datetime('now') WHERE id = ?`).run(runId, run.touch_id);
+    rebuildTouches(db);
+    return { ok: true, dispatch_status: 'queued_to_agent', run: loadRun(db, runId), envelope, ack: result.ack, message: `Queued for ${agent.name}.` };
+  }
 
   if (result.ok) {
     applyAccepted(db, { runId, taskId: run.task_id, touchId: run.touch_id, agentId: run.agent_id, externalRunId: result.ack?.external_run_id || null });

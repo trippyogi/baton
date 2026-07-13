@@ -13,6 +13,8 @@
     "check:private": "npm run audit:private && npm run import:local -- scripts/fixtures/private-local-profile.example.json --dry-run && npm run import:local -- scripts/fixtures/nectar-local-agent.example.json --dry-run",
     "import:local": "node scripts/import-local-profile.js",
     "export:redacted": "node scripts/export-redacted.js",
+    "agent:setup": "node scripts/agent-folder-bridge.js --setup",
+    "agent:sync": "node scripts/agent-folder-bridge.js --sync",
     "test": "npm run check:js && npm run smoke && npm run adversarial:loop",
     "preinstall": "node -e \"const major=Number(process.versions.node.split('.')[0]); if(major < 20){ console.error('BATON requires Node 20+. Recommended: nvm use'); process.exit(1); } console.warn('BATON is tested on Node 20/22; continuing on '+process.version);\"",
     "fake:spectre": "node scripts/fake-spectre.js",

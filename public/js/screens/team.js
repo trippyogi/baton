@@ -207,6 +207,9 @@ function dispatchSummary(agent) {
     const targetType = /^[A-Z0-9_]+$/.test(target) ? 'environment variable' : (target.includes('localhost') || target.includes('127.0.0.1') ? 'local URL' : 'configured target');
     return { badge: 'queued', label: 'webhook', detail: `Webhook dispatch enabled via ${targetType}; secret values are not shown.` };
   }
+  if (transport === 'folder') {
+    return { badge: 'queued', label: 'folder', detail: 'Folder bridge dispatch enabled; BATON writes local inbox files and waits for outbox results.' };
+  }
   return { badge: 'queued', label: transport, detail: `${transport} dispatch enabled; target details are intentionally summarized.` };
 }
 
