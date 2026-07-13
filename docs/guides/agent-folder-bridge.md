@@ -92,8 +92,8 @@ local/agent-bridge/inbox/run_<run_id>.json
   "run_id": "run_123",
   "touch_id": "touch_abc",
   "task_id": "task_xyz",
-  "title": "Facelift trippyogi.com",
-  "objective": "Improve landing page for job-search positioning.",
+  "title": "Improve public landing page",
+  "objective": "Tighten the landing page narrative for a job-search positioning project.",
   "instructions": ["Return a concise result."],
   "envelope": {
     "schema": "baton.dispatch.v1"
