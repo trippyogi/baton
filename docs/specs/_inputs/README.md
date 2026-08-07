@@ -4,7 +4,7 @@ Files in this directory are **non-authoritative**. They preserve upstream design
 
 | File | Role |
 |---|---|
-| `baton-ts-rust-design-spec-v1.1.md` | Frozen TypeScript/Rust design input (2026-08-07). Useful for contract detail, adversarial tests, and `batond` sketches. Superseded wherever it conflicts with the control-plane-overhaul feature specs. |
+| `baton-ts-rust-design-spec-v1.1.md` | Frozen TypeScript/Rust design input (2026-08-07). Useful for contract detail, adversarial tests, and `batond` sketches. Superseded wherever it conflicts with the control-plane-overhaul feature specs. Private project markers were scrubbed on import (`ExampleCorp`); public GitHub identity strings may remain for topology discussion. |
 
 **Authoritative sources (in order):**
 

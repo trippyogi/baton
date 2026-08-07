@@ -47,12 +47,28 @@ try {
 }
 
 // Load internal extension if present. This must be before SPA fallback.
+// Missing extension is optional; a broken extension must fail startup.
+let internalExtension = null;
 try {
-  const ext = require('../baton-internal/extension');
-  ext.register(app, db);
-  console.log('[baton] Internal extension loaded');
-} catch (e) {
-  console.log('[baton] Running without internal extension');
+  internalExtension = require('../baton-internal/extension');
+} catch (err) {
+  const missingExtension = err && err.code === 'MODULE_NOT_FOUND'
+    && /baton-internal[\\/]+extension/.test(String(err.message || ''));
+  if (missingExtension) {
+    console.log('[baton] Running without internal extension');
+  } else {
+    console.error('[baton] Internal extension failed to load:', err);
+    process.exit(1);
+  }
+}
+if (internalExtension) {
+  try {
+    internalExtension.register(app, db);
+    console.log('[baton] Internal extension loaded');
+  } catch (err) {
+    console.error('[baton] Internal extension register failed:', err);
+    process.exit(1);
+  }
 }
 
 // SPA fallback must be last.

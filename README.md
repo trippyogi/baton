@@ -1,15 +1,22 @@
 # BATON
 
-BATON is the human-touch layer for agent swarms.
+BATON is the human-attention control plane for agent swarms.
 
-It helps an operator keep valuable agent work in motion by answering:
+It helps a solo operator keep valuable agent work in motion by answering:
 
 - What should I touch next?
 - Why now?
 - What action sends this work back into motion?
 - Can this touch be automated next time?
 
-The primary daily surface is **Flow**: a ranked next-touch queue plus a command box. Existing overview, board, runs, queue, cost, memory, and diagnostics screens remain available as secondary views.
+**Canonical repository:** [`trippyogi/baton`](https://github.com/trippyogi/baton). This repo is the source of truth (not a generated mirror of a parent app). See `docs/specs/control-plane-overhaul/phase-0-evidence.md`.
+
+The primary daily surface is a ranked **touch** queue (Flow UI) plus a command box. Overview, board, runs, queue, cost, memory, and diagnostics remain secondary views.
+
+Governing Spec Kit artifacts for the control-plane overhaul (BATON v1 = Phases 0–4):
+
+- `.specify/constitution.md`
+- `docs/specs/control-plane-overhaul/`
 
 ## Current build status
 
@@ -222,10 +229,10 @@ Existing routes remain available for tasks, runs, overview, queue, costs, perfor
 ## Command box examples
 
 ```text
-capture improve onboarding copy for MetaTravelers
+capture improve onboarding copy for the demo product
 idea make review packets mandatory before human review
 delegate audit checkout funnel copy
-delegate Spectre review MetaTravelers launch plan
+delegate Spectre review launch plan draft
 mode launch
 mode review
 review next

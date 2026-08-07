@@ -8,14 +8,14 @@ Normative references: `constitution.md` (`.specify/`), `spec.md`, `design.md`, `
 
 ## Phase 0 — Authority & boundary
 
-- [ ] **T0.1** Inventory sync/subtree/parent references (`vector-mission-control`, `baton-core`, scripts, CI, docs).
-- [ ] **T0.2** Prove or eliminate overwrite paths; write `phase-0-evidence.md` with findings.
-- [ ] **T0.3** Update README/CONTRIBUTING: `trippyogi/baton` canonical; supersede parent-load topology.
-- [ ] **T0.4** Diff current `main` vs historical v1.1 Phase 0; list only residual gaps.
-- [ ] **T0.5** Enforce public/private boundary in CI/docs; quarantine remaining private core leaks.
-- [ ] **T0.6** Fix residual baseline defects only (deps/config/auth/webhook/health/contracts).
-- [ ] **T0.7** Ensure `npm test`, `smoke:dispatch`, `audit`, `audit:private` green.
-- [ ] **T0.8** Phase 0 review packet / exit gate — **hard stop before TS port**.
+- [x] **T0.1** Inventory sync/subtree/parent references (`vector-mission-control`, `baton-core`, scripts, CI, docs).
+- [x] **T0.2** Prove or eliminate overwrite paths; write `phase-0-evidence.md` with findings.
+- [x] **T0.3** Update README/CONTRIBUTING: `trippyogi/baton` canonical; supersede parent-load topology.
+- [x] **T0.4** Diff current `main` vs historical v1.1 Phase 0; list only residual gaps.
+- [x] **T0.5** Enforce public/private boundary in CI/docs; quarantine remaining private core leaks.
+- [x] **T0.6** Fix residual baseline defects only (extension missing-vs-broken; generic README examples).
+- [x] **T0.7** Ensure `npm test`, `smoke:dispatch`, `audit`, `audit:private` green.
+- [x] **T0.8** Phase 0 review packet / exit gate — **hard stop before TS port**.
 
 ## Phase 1 — TypeScript API (Node 24)
 

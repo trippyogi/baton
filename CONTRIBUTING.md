@@ -2,7 +2,9 @@
 
 Thanks for helping improve BATON.
 
-BATON is intentionally not a generic project-management app. The product center is the **Next-Touch Engine**: a ranked queue of the smallest human touches that unlock valuable agent motion.
+**Canonical repository:** `trippyogi/baton` is the source of truth. Do not assume a parent `vector-mission-control` / `baton-core` sync will overwrite this tree.
+
+BATON is intentionally not a generic project-management app. The product center is the ranked **BatonTouch** attention queue. Workflow truth lives in Task / Run / Dispatch / Review / Blocker / DecisionRequest; touches are durable attention projections. See `.specify/constitution.md` and `docs/specs/control-plane-overhaul/`.
 
 ## Development setup
 
@@ -53,13 +55,14 @@ Do not combine state-machine changes with styling-only changes.
 
 Changes should preserve these invariants:
 
-1. Flow is the default daily route.
+1. The ranked touch queue is the default daily surface (Flow UI is a thin client over touches).
 2. Board/Kanban is a secondary map, not the primary work surface.
-3. No fake uptime: do not mark work running unless a real run/dispatch exists.
-4. Touches are the unit of human attention.
-5. Manual human overrides should survive refreshes.
+3. No fake uptime: do not mark work running without a real ACK’d run/dispatch.
+4. Touches are the unit of human attention; they must not independently own task/run/review truth.
+5. Manual human overrides (snooze, rank boost, mode hints) should survive refreshes.
 6. Review touches require valid review packets.
-7. Unsafe actions must be blocked by touch type.
+7. Unsafe actions must be blocked by touch type / domain command rules.
+8. Public core stays free of private operator credentials, paths, and business-specific seed data.
 
 ## Security and privacy
 

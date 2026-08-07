@@ -154,7 +154,7 @@ This is a good candidate for incremental migration. It is not large enough to ju
 |---|---|---|---|
 | P0 | Repository source of truth | The current README describes this repo as `baton-core` loaded and synchronized from a parent `vector-mission-control` repository. Editing only the public mirror may be overwritten by the existing sync path. | Phase 0 must document the canonical source, sync direction, and release path. Implement in the canonical source and regenerate/sync the mirror; never maintain two divergent copies manually. |
 | P0 | Extension loading | `server/index.js` calls `ext.register(app, db)` without importing `db`. The broad `try/catch` hides the failure and reports that no extension is present. | Import dependencies explicitly. Only ignore a true optional-module-not-found error. Fail startup on extension initialization errors. |
-| P0 | Public/private boundary | The public core contains hard-coded names, Discord IDs, session keys, host paths, account behavior, and MetaTravelers-specific seed data. | Move private behavior into a typed extension or external configuration. Replace seeds with generic fixtures. Add an automated public-safe audit. |
+| P0 | Public/private boundary | The public core contains hard-coded names, Discord IDs, session keys, host paths, account behavior, and ExampleCorp-specific seed data. | Move private behavior into a typed extension or external configuration. Replace seeds with generic fixtures. Add an automated public-safe audit. |
 | P0 | State integrity | Run and task updates are direct SQL mutations without a transition service. Terminal states can be overwritten. `running` has no ACK requirement. | Introduce canonical state machines and require all mutations through domain services. |
 | P1 | Dependencies | `package.json` does not declare every imported runtime package, including `dotenv` and `ioredis`. | Reconcile imports against dependencies and make `npm ci` the required install path. |
 | P1 | Frontend/API contract drift | The Runs screen calls `GET /api/runs`, `GET /api/runs/:id`, and `/api/runs/stream`; the reviewed Runs router implements only POST and PATCH. Overview also opens the missing run stream. | Inventory every browser request, add the missing read/SSE routes or intentionally remove the unsupported UI behavior, and lock parity with contract tests before porting. |
@@ -1935,7 +1935,7 @@ The following current behavior belongs in an extension or example integration:
 - Host memory-file route.
 - Hard-coded agent roster, Discord IDs, models, paths, and session keys.
 - Personal shared-request user allowlists.
-- MetaTravelers-specific seeds and alerts.
+- ExampleCorp-specific seeds and alerts.
 
 The public core may ship generic examples, but no private values.
 

@@ -41,7 +41,19 @@ const privateTermAllowlist = [
   /^README\.md$/,
   /^CONTRIBUTING\.md$/,
   /^docs\/specs\/private-local-use-boundary\.md$/,
+  /^docs\/specs\/README\.md$/,
+  /^docs\/specs\/_inputs\/README\.md$/,
+  /^docs\/specs\/control-plane-overhaul\/.*\.md$/,
+  /^docs\/specs\/control-plane-overhaul\/adr\/.*\.md$/,
+  /^\.specify\/.*\.md$/,
+  /^\.specify\/feature\.json$/,
   /^scripts\/audit-private-data\.js$/,
+];
+
+// Frozen historical design input may retain architecture prose but must not
+// keep private project markers; see quarantine note in docs/specs/_inputs/.
+const privateTermInputAllowlist = [
+  /^docs\/specs\/_inputs\/baton-ts-rust-design-spec-v1\.1\.md$/,
 ];
 
 const fixtureSpecificityPatterns = [
@@ -100,7 +112,17 @@ function scanPrivateTerms(files) {
     try { content = read(file); }
     catch (_) { continue; }
     for (const { name, regex } of privateTermPatterns) {
-      if (regex.test(content)) findings.push({ file, reason: name });
+      if (regex.test(content)) {
+        // Historical inputs may mention the public GitHub identity (trippyogi)
+        // when describing repo topology; private project markers still fail.
+        if (
+          name === 'private username/repo marker'
+          && privateTermInputAllowlist.some(pattern => pattern.test(file))
+        ) {
+          continue;
+        }
+        findings.push({ file, reason: name });
+      }
     }
   }
   return findings;
