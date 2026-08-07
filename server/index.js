@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const fs      = require('fs');
 const path    = require('path');
 const db      = require('./db');
 const { rebuildTouches } = require('./lib/flow/rebuild');
@@ -47,26 +48,21 @@ try {
 }
 
 // Load internal extension if present. This must be before SPA fallback.
-// Missing extension is optional; a broken extension must fail startup.
-let internalExtension = null;
-try {
-  internalExtension = require('../baton-internal/extension');
-} catch (err) {
-  const missingExtension = err && err.code === 'MODULE_NOT_FOUND'
-    && /baton-internal[\\/]+extension/.test(String(err.message || ''));
-  if (missingExtension) {
-    console.log('[baton] Running without internal extension');
-  } else {
-    console.error('[baton] Internal extension failed to load:', err);
-    process.exit(1);
-  }
-}
-if (internalExtension) {
+// Presence is decided by the filesystem; any load/register failure is fatal.
+const internalExtensionPaths = [
+  path.join(__dirname, '..', 'baton-internal', 'extension.js'),
+  path.join(__dirname, '..', 'baton-internal', 'extension', 'index.js'),
+];
+const internalExtensionPresent = internalExtensionPaths.some((candidate) => fs.existsSync(candidate));
+if (!internalExtensionPresent) {
+  console.log('[baton] Running without internal extension');
+} else {
   try {
+    const internalExtension = require('../baton-internal/extension');
     internalExtension.register(app, db);
     console.log('[baton] Internal extension loaded');
   } catch (err) {
-    console.error('[baton] Internal extension register failed:', err);
+    console.error('[baton] Internal extension failed to load:', err);
     process.exit(1);
   }
 }
