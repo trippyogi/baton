@@ -1,0 +1,9 @@
+{
+  "feature": "control-plane-overhaul",
+  "directory": "docs/specs/control-plane-overhaul",
+  "status": "specified",
+  "baseline_commit": "2adc35b0bc5a85c8c0d69cb2cbb41d18b0acaa7c",
+  "historical_input": "docs/specs/_inputs/baton-ts-rust-design-spec-v1.1.md",
+  "v1_ends_at_phase": 4,
+  "deferred_feature": "batond-runtime"
+}
