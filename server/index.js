@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const express = require('express');
 const fs      = require('fs');
 const path    = require('path');
@@ -88,9 +90,14 @@ function startServer(options = {}) {
 
   const shutdown = (sig) => {
     console.log(`\n${sig} — shutting down...`);
-    try { db.close(); } catch (_) { /* already closed */ }
-    server.close(() => { process.exit(0); });
-    setTimeout(() => process.exit(1), 5000);
+    server.close(() => {
+      try { db.close(); } catch (_) { /* already closed */ }
+      process.exit(0);
+    });
+    setTimeout(() => {
+      try { db.close(); } catch (_) { /* already closed */ }
+      process.exit(1);
+    }, 5000);
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT',  () => shutdown('SIGINT'));
@@ -99,7 +106,6 @@ function startServer(options = {}) {
 }
 
 if (require.main === module) {
-  require('dotenv').config();
   startServer();
 }
 
