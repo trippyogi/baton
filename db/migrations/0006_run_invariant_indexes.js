@@ -103,7 +103,7 @@ module.exports = function enforceRunInvariants(db) {
       WHERE parent_run_id IS NOT NULL;
   `);
 
-  // Realign current_run_id when it points at a missing/cancelled surplus run.
+  // Realign current_run_id when it points at a missing run or the wrong active run.
   const tasks = db
     .prepare(
       `SELECT t.id AS task_id, t.current_run_id AS current_run_id
@@ -125,10 +125,18 @@ module.exports = function enforceRunInvariants(db) {
          LIMIT 1`
       )
       .get(task.task_id);
-    if (!pointed || (active && pointed.id !== active.id)) {
+
+    let nextId = task.current_run_id;
+    if (!pointed) {
+      nextId = active ? active.id : null;
+    } else if (active && pointed.id !== active.id) {
+      nextId = active.id;
+    }
+
+    if (nextId !== task.current_run_id) {
       db.prepare(
         `UPDATE tasks SET current_run_id = ?, updated_at = datetime('now') WHERE id = ?`
-      ).run(active ? active.id : task.current_run_id, task.task_id);
+      ).run(nextId, task.task_id);
     }
   }
 };
