@@ -7,6 +7,12 @@
     "rootDir": "src",
     "noEmit": false
   },
-  "include": ["src/middleware/**/*.ts", "src/routes/**/*.ts"],
+  "include": [
+    "src/middleware/**/*.ts",
+    "src/routes/**/*.ts",
+    "src/domain/**/*.ts",
+    "src/services/**/*.ts",
+    "src/repositories/**/*.ts"
+  ],
   "exclude": ["src/**/*.test.ts", "src/server.ts"]
 }

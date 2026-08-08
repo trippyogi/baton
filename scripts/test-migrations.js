@@ -14,15 +14,8 @@ const FIXTURE = path.join(ROOT, 'db', 'fixtures', 'legacy-pre-phase3.sql');
 function withTempDb(run) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-migrate-'));
   const dbPath = path.join(dir, 'test.db');
-  try {
-    return run(dbPath, dir);
-  } finally {
-    try {
-      fs.rmSync(dir, { recursive: true, force: true });
-    } catch (_) {
-      /* ignore */
-    }
-  }
+  // Intentionally leave temp dirs; deleting open WAL-backed DBs aborts better-sqlite3 on Windows.
+  return run(dbPath, dir);
 }
 
 function testLegacyFixtureMigration() {
@@ -142,10 +135,50 @@ function testSchemaSqlThenLegacyUpgradePath() {
   });
 }
 
+function testRunInvariantIndexes() {
+  withTempDb((dbPath) => {
+    const db = new Database(dbPath);
+    db.pragma('foreign_keys = ON');
+    db.exec(fs.readFileSync(path.join(ROOT, 'server', 'schema.sql'), 'utf8'));
+    applyMigrations(db, { dbPath, backup: false });
+
+    db.prepare(
+      `INSERT INTO tasks (id, title, status, version, objective, acceptance_criteria_json, why_now_json, legacy_payload_json)
+       VALUES ('t-dup', 'Dup', 'in_progress', 1, 'o', '[]', '{}', '{}')`
+    ).run();
+    // Pre-index path: insert two non-terminal runs then re-apply 0006 cleanup by simulating
+    // the cleanup SQL already ran as part of migration — verify unique index exists.
+    const idx = db
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_runs_one_nonterminal_per_task'`
+      )
+      .get();
+    assert.ok(idx, 'unique non-terminal run index exists');
+    const linear = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_runs_linear_parent'`)
+      .get();
+    assert.ok(linear, 'linear parent unique index exists');
+
+    db.prepare(
+      `INSERT INTO runs (id, task_id, status, attempt_number, kind, input_snapshot_json, policy_json, version, created_at, updated_at)
+       VALUES ('r-a', 't-dup', 'running', 1, 'execute', '{}', '{}', 1, datetime('now'), datetime('now'))`
+    ).run();
+    assert.throws(() => {
+      db.prepare(
+        `INSERT INTO runs (id, task_id, status, attempt_number, kind, input_snapshot_json, policy_json, version, created_at, updated_at)
+         VALUES ('r-b', 't-dup', 'pending_dispatch', 1, 'execute', '{}', '{}', 1, datetime('now'), datetime('now'))`
+      ).run();
+    });
+
+    db.close();
+  });
+}
+
 function main() {
   testLegacyFixtureMigration();
   testGreenfieldSchemaThenMigrate();
   testSchemaSqlThenLegacyUpgradePath();
+  testRunInvariantIndexes();
   console.log('migration tests passed');
 }
 

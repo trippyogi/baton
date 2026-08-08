@@ -43,8 +43,8 @@ Normative references: `constitution.md` (`.specify/`), `spec.md`, `design.md`, `
 
 - [x] **T3.1** DB migrations for Task/Run/Dispatch/DispatchAttempt/Event/Artifact/Review/Blocker/DecisionRequest. *(`db/migrations` 0001–0004; legacy Flow touches → `flow_touches`; evolve tasks/runs/review_packets)*
 - [x] **T3.2** `baton_touches` table + indexes + unique `dedupe_key`. *(migration 0005; empty projection until T3.8)*
-- [ ] **T3.3** Transition services + invariants (terminal immutability, one active run, linear lineage, versions).
-- [ ] **T3.4** DecisionRequest CRUD + status machine (small).
+- [x] **T3.3** Transition services + invariants (terminal immutability, one active run, linear lineage, versions). *(`apps/api` domain/services; migration 0006 unique indexes after cleanup)*
+- [x] **T3.4** DecisionRequest CRUD + status machine (small). *(`services/decision-requests`; open→answered|cancelled)*
 - [ ] **T3.5** Idempotent touch projection service (create/update/resolve/supersede/cancel).
 - [ ] **T3.6** Touch ranking service + persisted `why_now` / `openedSnapshot`.
 - [ ] **T3.7** `/api/v1` domain + touch attention endpoints (no generic resolve-via-PATCH).
