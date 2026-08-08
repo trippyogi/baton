@@ -42,14 +42,25 @@ export const LEGACY_RUN_STATUS_MAP: Record<string, RunStatus> = {
   validating_result: 'validating_result',
   cancelling: 'cancelling',
   completed: 'completed',
+  success: 'completed',
+  succeeded: 'completed',
   blocked: 'blocked',
   invalid_output: 'invalid_output',
   dispatch_failed: 'dispatch_failed',
   failed: 'failed',
+  error: 'failed',
   lost: 'lost',
   timed_out: 'timed_out',
   cancelled: 'cancelled',
 };
+
+/** Status strings that count as terminal in SQL filters (canonical + legacy aliases). */
+export const SQL_TERMINAL_RUN_STATUSES = [
+  ...TERMINAL_RUN_STATUSES,
+  'success',
+  'succeeded',
+  'error',
+] as const;
 
 const ALLOWED: Record<RunStatus, readonly RunStatus[]> = {
   pending_dispatch: ['dispatching', 'cancelled', 'dispatch_failed'],

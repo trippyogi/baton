@@ -13,7 +13,7 @@ module.exports = function enforceRunInvariants(db) {
        WHERE task_id IS NOT NULL
          AND status NOT IN (
            'completed','blocked','invalid_output','dispatch_failed',
-           'failed','lost','timed_out','cancelled'
+           'failed','lost','timed_out','cancelled','success','succeeded','error'
          )
        GROUP BY task_id
        HAVING n > 1`
@@ -37,7 +37,7 @@ module.exports = function enforceRunInvariants(db) {
          WHERE task_id = ?
            AND status NOT IN (
              'completed','blocked','invalid_output','dispatch_failed',
-             'failed','lost','timed_out','cancelled'
+             'failed','lost','timed_out','cancelled','success','succeeded','error'
            )
          ORDER BY datetime(COALESCE(created_at, updated_at, '1970-01-01')) DESC, rowid DESC`
       )
@@ -98,7 +98,10 @@ module.exports = function enforceRunInvariants(db) {
           'failed',
           'lost',
           'timed_out',
-          'cancelled'
+          'cancelled',
+          'success',
+          'succeeded',
+          'error'
         );
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_linear_parent
@@ -122,7 +125,7 @@ module.exports = function enforceRunInvariants(db) {
          WHERE task_id = ?
            AND status NOT IN (
              'completed','blocked','invalid_output','dispatch_failed',
-             'failed','lost','timed_out','cancelled'
+             'failed','lost','timed_out','cancelled','success','succeeded','error'
            )
          ORDER BY datetime(COALESCE(created_at, updated_at, '1970-01-01')) DESC, rowid DESC
          LIMIT 1`

@@ -1,5 +1,5 @@
 import { ConflictError, NotFoundError } from '../domain/errors';
-import { TERMINAL_RUN_STATUSES, normalizeRunStatus } from '../domain/run-status';
+import { SQL_TERMINAL_RUN_STATUSES, normalizeRunStatus } from '../domain/run-status';
 import type { DbLike } from '../domain/types';
 import { newId, nowIso } from '../domain/types';
 
@@ -14,7 +14,7 @@ export type RunRow = {
   current_dispatch_id?: string | null;
 };
 
-const TERMINAL_LIST = [...TERMINAL_RUN_STATUSES].map((s) => `'${s}'`).join(', ');
+const TERMINAL_LIST = [...SQL_TERMINAL_RUN_STATUSES].map((s) => `'${s}'`).join(', ');
 
 export function getRun(db: DbLike, runId: string): RunRow {
   const row = db.prepare('SELECT * FROM runs WHERE id = ?').get(runId) as RunRow | undefined;

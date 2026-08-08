@@ -10,6 +10,13 @@ import {
 } from '../repositories/tasks';
 import { listNonTerminalRunsForTask } from '../repositories/runs';
 
+function runTx<T>(db: DbLike, fn: () => T): T {
+  if (typeof db.transaction !== 'function') {
+    throw new ConflictError('Database transaction support is required for domain writes');
+  }
+  return db.transaction(fn)();
+}
+
 export type TransitionTaskInput = {
   taskId: string;
   toStatus: string;
@@ -17,31 +24,33 @@ export type TransitionTaskInput = {
 };
 
 export function transitionTask(db: DbLike, input: TransitionTaskInput): TaskRow {
-  const task = getTask(db, input.taskId);
-  assertTaskVersion(task, input.expectedVersion);
-  if (task.archived_at) {
-    throw new InvalidTransitionError('Archived tasks cannot change execution status', {
-      taskId: task.id,
-      archivedAt: task.archived_at,
-    });
-  }
-  const from = normalizeTaskStatus(task.status);
-  const next = assertTaskTransition(task.status, input.toStatus);
-  if (from === next && String(task.status) === next) {
-    return task;
-  }
-  if (next === 'done' || next === 'cancelled') {
-    const active = listNonTerminalRunsForTask(db, task.id);
-    if (active.length > 0) {
-      throw new ConflictError('Cannot complete/cancel task with a non-terminal run', {
+  return runTx(db, () => {
+    const task = getTask(db, input.taskId);
+    assertTaskVersion(task, input.expectedVersion);
+    if (task.archived_at) {
+      throw new InvalidTransitionError('Archived tasks cannot change execution status', {
         taskId: task.id,
-        toStatus: next,
-        activeRunIds: active.map((r) => r.id),
+        archivedAt: task.archived_at,
       });
     }
-  }
-  const version = Number(task.version || 1);
-  return updateTaskStatus(db, task.id, next, version);
+    const from = normalizeTaskStatus(task.status);
+    const next = assertTaskTransition(task.status, input.toStatus);
+    if (from === next && String(task.status) === next) {
+      return task;
+    }
+    if (next === 'done' || next === 'cancelled') {
+      const active = listNonTerminalRunsForTask(db, task.id);
+      if (active.length > 0) {
+        throw new ConflictError('Cannot complete/cancel task with a non-terminal run', {
+          taskId: task.id,
+          toStatus: next,
+          activeRunIds: active.map((r) => r.id),
+        });
+      }
+    }
+    const version = Number(task.version || 1);
+    return updateTaskStatus(db, task.id, next, version);
+  });
 }
 
 export type ArchiveTaskInput = {
