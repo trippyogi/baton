@@ -58,10 +58,10 @@ export function isTerminalTaskStatus(status: string): boolean {
 export function assertTaskTransition(fromRaw: string, toRaw: string): TaskStatus {
   const from = normalizeTaskStatus(fromRaw);
   const to = normalizeTaskStatus(toRaw);
-  if (from === to) return to;
   if (TERMINAL_TASK_STATUSES.has(from)) {
     throw new InvalidTransitionError(`Terminal task status ${from} is immutable`, { from, to });
   }
+  if (from === to) return to;
   if (!ALLOWED[from].includes(to)) {
     throw new InvalidTransitionError(`Task transition ${from} → ${to} is not allowed`, { from, to });
   }

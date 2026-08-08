@@ -19,13 +19,17 @@ export type TransitionTaskInput = {
 export function transitionTask(db: DbLike, input: TransitionTaskInput): TaskRow {
   const task = getTask(db, input.taskId);
   assertTaskVersion(task, input.expectedVersion);
-  if (task.archived_at && input.toStatus !== String(task.status)) {
+  if (task.archived_at) {
     throw new InvalidTransitionError('Archived tasks cannot change execution status', {
       taskId: task.id,
       archivedAt: task.archived_at,
     });
   }
+  const from = normalizeTaskStatus(task.status);
   const next = assertTaskTransition(task.status, input.toStatus);
+  if (from === next && String(task.status) === next) {
+    return task;
+  }
   const version = Number(task.version || 1);
   return updateTaskStatus(db, task.id, next, version);
 }

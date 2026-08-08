@@ -84,10 +84,10 @@ export function isTerminalRunStatus(status: string): boolean {
 export function assertRunTransition(fromRaw: string, toRaw: string): RunStatus {
   const from = normalizeRunStatus(fromRaw);
   const to = normalizeRunStatus(toRaw);
-  if (from === to) return to;
   if (TERMINAL_RUN_STATUSES.has(from)) {
     throw new InvalidTransitionError(`Terminal run status ${from} is immutable`, { from, to });
   }
+  if (from === to) return to;
   if (!ALLOWED[from].includes(to)) {
     throw new InvalidTransitionError(`Run transition ${from} → ${to} is not allowed`, { from, to });
   }

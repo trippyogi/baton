@@ -20,6 +20,7 @@ describe('task-status', () => {
 
   it('rejects terminal reopen', () => {
     expect(() => assertTaskTransition('done', 'ready')).toThrow(InvalidTransitionError);
+    expect(() => assertTaskTransition('done', 'done')).toThrow(InvalidTransitionError);
     expect(isTerminalTaskStatus('cancelled')).toBe(true);
   });
 });
@@ -33,6 +34,7 @@ describe('run-status', () => {
 
   it('rejects terminal reopen', () => {
     expect(() => assertRunTransition('completed', 'running')).toThrow(InvalidTransitionError);
+    expect(() => assertRunTransition('completed', 'completed')).toThrow(InvalidTransitionError);
     expect(isTerminalRunStatus('failed')).toBe(true);
   });
 });
@@ -42,5 +44,6 @@ describe('decision-request status', () => {
     expect(assertDecisionTransition('open', 'answered')).toBe('answered');
     expect(assertDecisionTransition('open', 'cancelled')).toBe('cancelled');
     expect(() => assertDecisionTransition('answered', 'open')).toThrow(InvalidTransitionError);
+    expect(() => assertDecisionTransition('answered', 'answered')).toThrow(InvalidTransitionError);
   });
 });

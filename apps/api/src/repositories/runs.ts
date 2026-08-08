@@ -95,8 +95,7 @@ export function insertChildRun(
   const id = newId('run');
   const createdAt = nowIso();
   const kind = opts.kind || 'refine';
-  const status = opts.status || 'pending_dispatch';
-  normalizeRunStatus(status);
+  const status = normalizeRunStatus(opts.status || 'pending_dispatch');
   db.prepare(
     `INSERT INTO runs (
        id, task_id, parent_run_id, attempt_number, kind, status,

@@ -36,7 +36,9 @@ export function transitionRun(db: DbLike, input: TransitionRunInput): RunRow {
   return runTx(db, () => {
     const run = getRun(db, input.runId);
     assertRunVersion(run, input.expectedVersion);
+    const from = normalizeRunStatus(run.status);
     const next = assertRunTransition(run.status, input.toStatus);
+    if (from === next) return run;
     const endedAt = isTerminalRunStatus(next) ? nowIso() : null;
     return updateRunStatus(db, run.id, next, Number(run.version || 1), {
       endedAt,

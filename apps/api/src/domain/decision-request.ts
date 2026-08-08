@@ -26,10 +26,10 @@ export function assertDecisionTransition(
   if (!(DECISION_REQUEST_STATUSES as readonly string[]).includes(to)) {
     throw new InvalidTransitionError(`Unknown decision status: ${to}`, { from, to });
   }
-  if (from === to) return to;
   if (TERMINAL_DECISION_STATUSES.has(from)) {
     throw new InvalidTransitionError(`Terminal decision status ${from} is immutable`, { from, to });
   }
+  if (from === to) return to;
   if (!ALLOWED[from].includes(to)) {
     throw new InvalidTransitionError(`Decision transition ${from} → ${to} is not allowed`, {
       from,
