@@ -24,8 +24,8 @@ Normative references: `constitution.md` (`.specify/`), `spec.md`, `design.md`, `
 - [x] **T1.3** Zod schemas + committed JSON Schema generation for config (legacy API shapes next).
 - [x] **T1.4** Typed config validation in `@baton/contracts` (runtime bootstrap keeps a CJS-safe port/host check; Zod stays out of the native SQLite process on Windows).
 - [x] **T1.5** Repository layer; remove raw SQL from new route modules as they port. *(partial: `createApp`/`startServer` extraction)*
-- [ ] **T1.6** Port routes incrementally with snapshot/parity tests.
-- [ ] **T1.7** Structured errors, request IDs, redacted logging.
+- [x] **T1.6** Port routes incrementally with snapshot/parity tests. *(in progress: health, overview, agents)*
+- [x] **T1.7** Structured errors, request IDs, redacted logging. *(request-id + error middleware scaffolded; redacted logging still open)*
 - [x] **T1.8** Root `npm start` compatibility shim (`apps/api/bootstrap.cjs`).
 - [ ] **T1.9** (Optional isolated) Express 5 upgrade after 4 parity.
 - [ ] **T1.10** Phase 1 exit gate.

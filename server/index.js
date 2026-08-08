@@ -7,28 +7,16 @@ const fs      = require('fs');
 const path    = require('path');
 const db      = require('./db');
 const { rebuildTouches } = require('./lib/flow/rebuild');
+const { parseJson, stringifyJson } = require('./lib/flow/utils');
+const { loadTypedApi } = require('./lib/typed-api');
 const { apiAuthMiddleware, shouldRequireApiToken } = require('./middleware/api-auth');
 
 function createApp(options = {}) {
   const host = options.host || process.env.BATON_HOST || process.env.HOST || '127.0.0.1';
   const app = express();
+  const typed = loadTypedApi();
 
-  const typedApiDist = path.join(__dirname, '..', 'apps', 'api', 'dist');
-  let requestIdMiddleware = null;
-  let errorMiddleware = null;
-  let createHealthRouter = null;
-  try {
-    requestIdMiddleware = require(path.join(typedApiDist, 'middleware', 'request-id.js')).requestIdMiddleware;
-    errorMiddleware = require(path.join(typedApiDist, 'middleware', 'errors.js')).errorMiddleware;
-    createHealthRouter = require(path.join(typedApiDist, 'routes', 'health.js')).createHealthRouter;
-  } catch (err) {
-    const healthDist = path.join(typedApiDist, 'routes', 'health.js');
-    if (fs.existsSync(healthDist)) {
-      console.error('[baton] Failed to load typed API dist; using legacy routes:', err);
-    }
-  }
-
-  if (requestIdMiddleware) app.use(requestIdMiddleware);
+  if (typed?.requestIdMiddleware) app.use(typed.requestIdMiddleware);
 
   app.use(express.json({
     verify: (req, _res, buf) => { req.rawBody = buf; },
@@ -36,12 +24,16 @@ function createApp(options = {}) {
   app.use(express.static(path.join(__dirname, '..', 'public')));
   app.use('/api', apiAuthMiddleware(host));
 
-  if (createHealthRouter) {
-    app.use('/api/health', createHealthRouter(db));
+  if (typed?.createHealthRouter) {
+    app.use('/api/health', typed.createHealthRouter(db));
   } else {
     app.use('/api/health', require('./routes/health'));
   }
-  app.use('/api/overview', require('./routes/overview'));
+  if (typed?.createOverviewRouter) {
+    app.use('/api/overview', typed.createOverviewRouter(db));
+  } else {
+    app.use('/api/overview', require('./routes/overview'));
+  }
   app.use('/api/tasks',    require('./routes/tasks'));
   app.use('/api/runs',     require('./routes/runs'));
   app.use('/api/alerts',   require('./routes/alerts'));
@@ -52,7 +44,16 @@ function createApp(options = {}) {
   app.use('/api/team',        require('./routes/team'));
   app.use('/api/flow',        require('./routes/flow'));
   app.use('/api/touches',     require('./routes/touches'));
-  app.use('/api/agents',      require('./routes/agents'));
+  if (typed?.createAgentsRouter) {
+    app.use('/api/agents', typed.createAgentsRouter({
+      db,
+      parseJson,
+      stringifyJson,
+      rebuildTouches,
+    }));
+  } else {
+    app.use('/api/agents', require('./routes/agents'));
+  }
   app.use('/api/review-packets', require('./routes/review-packets'));
   app.use('/api/strategy-packets', require('./routes/strategy-packets'));
   app.use('/api/queue',       require('./routes/queue'));
@@ -91,7 +92,7 @@ function createApp(options = {}) {
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
   });
 
-  if (errorMiddleware) app.use(errorMiddleware);
+  if (typed?.errorMiddleware) app.use(typed.errorMiddleware);
 
   return app;
 }
