@@ -1,0 +1,46 @@
+:root {
+  /* Foundation */
+  --color-void:       #070A12;
+  --color-ink:        #0D1222;
+  --color-deep-slate: #111933;
+  --color-slate:      #1A2240;
+  --color-mist:       #E7ECFF;
+  --color-ash:        #AAB3D6;
+
+  /* Accents */
+  --color-teal:       #4DE1D3;
+  --color-violet:     #8B7CFF;
+  --color-lime:       #78F0A6;
+  --color-ember:      #FFB454;
+  --color-red:        #FF4D6D;
+
+  /* Semantic */
+  --bg-base:     var(--color-void);
+  --bg-surface:  var(--color-ink);
+  --bg-card:     var(--color-deep-slate);
+  --border:      var(--color-slate);
+  --text-primary: var(--color-mist);
+  --text-secondary: var(--color-ash);
+  --accent:      var(--color-teal);
+  --accent-alt:  var(--color-violet);
+
+  /* Typography */
+  --font-ui:         'Inter', 'SF Pro Display', -apple-system, sans-serif;
+  --font-instrument: 'Space Grotesk', monospace;
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-bold:    700;
+
+  /* Sizing */
+  --rail-width:     240px;
+  --topbar-height:  56px;
+  --radius:         8px;
+  --radius-sm:      4px;
+  --radius-card:    14px;
+  --gap:            16px;
+  --gap-lg:         24px;
+
+  /* KPI typography */
+  --kpi-size:  44px;
+  --kpi-hero:  52px;
+}

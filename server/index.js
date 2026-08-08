@@ -45,7 +45,13 @@ function createApp(options = {}) {
   app.use(express.json({
     verify: (req, _res, buf) => { req.rawBody = buf; },
   }));
-  app.use(express.static(path.join(__dirname, '..', 'public')));
+  const webDist = path.join(__dirname, '..', 'apps', 'web', 'dist');
+  const publicDir = path.join(__dirname, '..', 'public');
+  const useWebDist = fs.existsSync(path.join(webDist, 'index.html'));
+  if (useWebDist) {
+    app.use(express.static(webDist));
+  }
+  app.use(express.static(publicDir));
   app.use('/api', apiAuthMiddleware(host));
 
   if (typed?.createHealthRouter) {
@@ -237,7 +243,8 @@ function createApp(options = {}) {
   }
 
   app.get('*', (_req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    const webIndex = path.join(webDist, 'index.html');
+    res.sendFile(useWebDist ? webIndex : path.join(publicDir, 'index.html'));
   });
 
   if (typed?.errorMiddleware) app.use(typed.errorMiddleware);

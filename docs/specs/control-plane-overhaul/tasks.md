@@ -23,18 +23,18 @@ Normative references: `constitution.md` (`.specify/`), `spec.md`, `design.md`, `
 - [x] **T1.2** Create workspaces: `apps/api`, `packages/contracts`, `packages/sdk` (stub ok).
 - [x] **T1.3** Zod schemas + committed JSON Schema generation for config (legacy API shapes next).
 - [x] **T1.4** Typed config validation in `@baton/contracts` (runtime bootstrap keeps a CJS-safe port/host check; Zod stays out of the native SQLite process on Windows).
-- [x] **T1.5** Repository layer; remove raw SQL from new route modules as they port. *(partial: `createApp`/`startServer` extraction)*
+- [x] **T1.5** Repository layer; remove raw SQL from new route modules as they port. *(partial: factories + injected deps; full repos deferred to Phase 3 domain services)*
 - [x] **T1.6** Port routes incrementally with snapshot/parity tests. *(done for public control-plane routes; Meta `costs`/`performance` remain legacy JS by design)*
 - [x] **T1.7** Structured errors, request IDs, redacted logging. *(request-id, request log, error middleware with redaction)*
 - [x] **T1.8** Root `npm start` compatibility shim (`apps/api/bootstrap.cjs`).
 - [ ] **T1.9** (Optional isolated) Express 5 upgrade after 4 parity.
-- [ ] **T1.10** Phase 1 exit gate.
+- [x] **T1.10** Phase 1 exit gate. *(typed route factories + CJS bootstrap; Node 24; typecheck/CI green; Express 5 optional deferred)*
 
 ## Phase 2 — TypeScript web
 
-- [ ] **T2.1** Vite `apps/web` vanilla TS.
-- [ ] **T2.2** Typed SDK for fetch/SSE.
-- [ ] **T2.3** Port screens; Flow UI as thin queue client (modes = soft hints).
+- [x] **T2.1** Vite `apps/web` vanilla TS. *(scaffold + screen port from `public/js`; production build served when `apps/web/dist` exists)*
+- [x] **T2.2** Typed SDK for fetch/SSE. *(`@baton/sdk`)*
+- [ ] **T2.3** Port screens; Flow UI as thin queue client (modes = soft hints). *(screens moved; Flow still talks to legacy `/api/flow` until Phase 3)*
 - [ ] **T2.4** Lifecycle badge affordances for future dispatch states.
 - [ ] **T2.5** Playwright smoke.
 - [ ] **T2.6** Phase 2 exit gate.
