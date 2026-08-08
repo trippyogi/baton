@@ -6,15 +6,32 @@ const express = require('express');
 const fs      = require('fs');
 const path    = require('path');
 const db      = require('./db');
-const { rebuildTouches, loadSettings, parseTouch, rankOpenTouches } = require('./lib/flow/rebuild');
+const { rebuildTouches, loadSettings, parseTouch, rankOpenTouches, listOpenTouches } = require('./lib/flow/rebuild');
 const { parseJson, stringifyJson, id } = require('./lib/flow/utils');
 const { sqliteDateTimeAfterMs, toSqliteDateTime } = require('./lib/flow/time');
 const { isActionAllowed } = require('./lib/flow/actions');
 const { markDomainTouched } = require('./lib/flow/portfolio');
+const { VALID_MODES, normalizeMode } = require('./lib/flow/modes');
+const { executeCommand } = require('./lib/flow/commands');
+const { validateReviewPacket, normalizeList } = require('./lib/flow/quality');
 const { loadTypedApi } = require('./lib/typed-api');
-const { applyAccepted, applyFailed, publicBaseUrl, dispatchRun } = require('./lib/dispatch');
+const { applyAccepted, applyFailed, publicBaseUrl, dispatchRun, resolveDispatch } = require('./lib/dispatch');
 const { buildDispatchEnvelope } = require('./lib/dispatch/envelope');
 const { apiAuthMiddleware, shouldRequireApiToken } = require('./middleware/api-auth');
+
+function createQueueRedis() {
+  const Redis = require('ioredis');
+  const redis = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    enableOfflineQueue: false,
+    connectTimeout: 250,
+  });
+  redis.on('error', () => {
+    // Queue status is diagnostic only.
+  });
+  return redis;
+}
 
 function createApp(options = {}) {
   const host = options.host || process.env.BATON_HOST || process.env.HOST || '127.0.0.1';
@@ -78,8 +95,25 @@ function createApp(options = {}) {
   app.use('/api/costs',       require('./routes/costs'));
   app.use('/api/performance', require('./routes/performance'));
   app.use('/api/memory',      require('./routes/memory'));
-  app.use('/api/team',        require('./routes/team'));
-  app.use('/api/flow',        require('./routes/flow'));
+  if (typed?.createTeamRouter) {
+    app.use('/api/team', typed.createTeamRouter());
+  } else {
+    app.use('/api/team', require('./routes/team'));
+  }
+  if (typed?.createFlowRouter) {
+    app.use('/api/flow', typed.createFlowRouter({
+      db,
+      VALID_MODES,
+      normalizeMode,
+      loadSettings,
+      rebuildTouches,
+      listOpenTouches,
+      rankOpenTouches,
+      executeCommand,
+    }));
+  } else {
+    app.use('/api/flow', require('./routes/flow'));
+  }
   if (typed?.createTouchesRouter) {
     app.use('/api/touches', typed.createTouchesRouter({
       db,
@@ -107,10 +141,41 @@ function createApp(options = {}) {
   } else {
     app.use('/api/agents', require('./routes/agents'));
   }
-  app.use('/api/review-packets', require('./routes/review-packets'));
+  if (typed?.createReviewPacketsRouter) {
+    app.use('/api/review-packets', typed.createReviewPacketsRouter({
+      db,
+      id,
+      stringifyJson,
+      parseJson,
+      validateReviewPacket,
+      normalizeList,
+      rebuildTouches,
+    }));
+  } else {
+    app.use('/api/review-packets', require('./routes/review-packets'));
+  }
   app.use('/api/strategy-packets', require('./routes/strategy-packets'));
-  app.use('/api/queue',       require('./routes/queue'));
-  app.use('/api/dispatch',    require('./routes/dispatch'));
+  if (typed?.createQueueRouter) {
+    app.use('/api/queue', typed.createQueueRouter({
+      db,
+      redis: createQueueRedis(),
+    }));
+  } else {
+    app.use('/api/queue', require('./routes/queue'));
+  }
+  if (typed?.createDispatchRouter) {
+    app.use('/api/dispatch', typed.createDispatchRouter({
+      db,
+      id,
+      loadSettings,
+      buildDispatchEnvelope,
+      resolveDispatch,
+      dispatchRun,
+      publicBaseUrl,
+    }));
+  } else {
+    app.use('/api/dispatch', require('./routes/dispatch'));
+  }
   app.use('/api/webhook/github',   require('./routes/webhook'));
   app.use('/api/shared-requests', require('./routes/shared-requests'));
   app.use('/api/creatives',      require('./routes/creatives'));
