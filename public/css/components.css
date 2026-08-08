@@ -328,6 +328,29 @@
 .badge-failed   { background: color-mix(in srgb, var(--color-red) 18%, transparent);    color: var(--color-red); }
 .badge-pending  { background: color-mix(in srgb, var(--color-ash) 12%, transparent);    color: var(--color-ash); }
 
+/* Lifecycle affordances (touch / run / dispatch) */
+.badge-lifecycle { letter-spacing: 0.02em; }
+.badge-kind-touch { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 35%, transparent); }
+.badge-kind-dispatch { border-style: dashed; border-width: 1px; border-color: color-mix(in srgb, currentColor 45%, transparent); }
+.badge-kind-run { font-variant: all-small-caps; }
+.badge-active,
+.badge-prepared,
+.badge-queued,
+.badge-accepted,
+.badge-pending_dispatch { background: color-mix(in srgb, var(--color-violet) 14%, transparent); color: var(--color-violet); }
+.badge-snoozed,
+.badge-passed,
+.badge-review_ready { background: color-mix(in srgb, var(--color-ember) 14%, transparent); color: var(--color-ember); }
+.badge-resolved,
+.badge-success { background: color-mix(in srgb, var(--color-lime) 14%, transparent); color: var(--color-lime); }
+.badge-archived,
+.badge-superseded,
+.badge-cancelled,
+.badge-not_configured { background: color-mix(in srgb, var(--color-ash) 14%, transparent); color: var(--color-ash); }
+.badge-rejected,
+.badge-timed_out,
+.badge-error { background: color-mix(in srgb, var(--color-red) 18%, transparent); color: var(--color-red); }
+
 /* ── Table ───────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
