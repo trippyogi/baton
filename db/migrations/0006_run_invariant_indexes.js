@@ -41,8 +41,17 @@ module.exports = function enforceRunInvariants(db) {
          ORDER BY datetime(COALESCE(created_at, updated_at, '1970-01-01')) DESC, rowid DESC`
       )
       .all(row.task_id);
+    const keepId = runs[0]?.id || null;
     for (const extra of runs.slice(1)) {
       cancel.run(extra.id);
+    }
+    if (keepId) {
+      db.prepare(
+        `UPDATE tasks
+         SET current_run_id = ?, updated_at = datetime('now')
+         WHERE id = ?
+           AND (current_run_id IS NULL OR current_run_id != ?)`
+      ).run(keepId, row.task_id, keepId);
     }
   }
 
@@ -93,4 +102,33 @@ module.exports = function enforceRunInvariants(db) {
       ON runs(parent_run_id)
       WHERE parent_run_id IS NOT NULL;
   `);
+
+  // Realign current_run_id when it points at a missing/cancelled surplus run.
+  const tasks = db
+    .prepare(
+      `SELECT t.id AS task_id, t.current_run_id AS current_run_id
+       FROM tasks t
+       WHERE t.current_run_id IS NOT NULL`
+    )
+    .all();
+  for (const task of tasks) {
+    const pointed = db.prepare('SELECT id, status FROM runs WHERE id = ?').get(task.current_run_id);
+    const active = db
+      .prepare(
+        `SELECT id FROM runs
+         WHERE task_id = ?
+           AND status NOT IN (
+             'completed','blocked','invalid_output','dispatch_failed',
+             'failed','lost','timed_out','cancelled'
+           )
+         ORDER BY datetime(COALESCE(created_at, updated_at, '1970-01-01')) DESC, rowid DESC
+         LIMIT 1`
+      )
+      .get(task.task_id);
+    if (!pointed || (active && pointed.id !== active.id)) {
+      db.prepare(
+        `UPDATE tasks SET current_run_id = ?, updated_at = datetime('now') WHERE id = ?`
+      ).run(active ? active.id : task.current_run_id, task.task_id);
+    }
+  }
 };

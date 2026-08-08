@@ -1,5 +1,5 @@
 import { ConflictError, InvalidTransitionError } from '../domain/errors';
-import { assertTaskTransition, isTerminalTaskStatus } from '../domain/task-status';
+import { assertTaskTransition, normalizeTaskStatus } from '../domain/task-status';
 import type { DbLike } from '../domain/types';
 import {
   assertTaskVersion,
@@ -48,14 +48,13 @@ export function setTaskArchived(db: DbLike, input: ArchiveTaskInput): TaskRow {
         activeRunIds: active.map((r) => r.id),
       });
     }
-    if (!isTerminalTaskStatus(task.status) && task.status !== 'ready' && task.status !== 'triage') {
-      // Allow archive of idle-ish states; block mid-flight canonical states.
-      if (['in_progress', 'blocked', 'human_review'].includes(String(task.status))) {
-        throw new ConflictError('Cannot archive an active task; cancel or complete first', {
-          taskId: task.id,
-          status: task.status,
-        });
-      }
+    const normalized = normalizeTaskStatus(task.status);
+    if (['in_progress', 'blocked', 'human_review'].includes(normalized)) {
+      throw new ConflictError('Cannot archive an active task; cancel or complete first', {
+        taskId: task.id,
+        status: task.status,
+        normalizedStatus: normalized,
+      });
     }
   }
   const updatedAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
