@@ -12,7 +12,8 @@
     "src/routes/**/*.ts",
     "src/domain/**/*.ts",
     "src/services/**/*.ts",
-    "src/repositories/**/*.ts"
+    "src/repositories/**/*.ts",
+    "src/adapters/**/*.ts"
   ],
   "exclude": ["src/**/*.test.ts", "src/server.ts"]
 }

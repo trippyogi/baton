@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
+import { listAttentionTouches } from '../repositories/baton-touches';
+import { mergeCanonicalAndLegacyTouches } from '../adapters/flow-touch-map';
+import type { BatonTouchRow } from '../repositories/baton-touches';
 
 type Stmt = {
   all: (...params: unknown[]) => unknown[];
@@ -62,6 +65,14 @@ export function createFlowRouter(deps: FlowDeps): Router {
       rankOpenTouches(db);
       const settings = loadSettings(db);
       const limit = Number(req.query.limit || settings.max_visible_touches || 7);
+      const legacy = (listOpenTouches(db, limit) as Record<string, unknown>[]) || [];
+      let canonical: BatonTouchRow[] = [];
+      try {
+        canonical = listAttentionTouches(db as never, { limit });
+      } catch (_) {
+        canonical = [];
+      }
+      const merged = mergeCanonicalAndLegacyTouches(canonical, legacy, limit);
       res.json({
         mode: settings.current_mode,
         settings: {
@@ -72,7 +83,7 @@ export function createFlowRouter(deps: FlowDeps): Router {
           active_project_key: settings.active_project_key,
         },
         airspace: getAirspace(),
-        next_touches: listOpenTouches(db, limit),
+        next_touches: merged,
       });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'flow overview failed' });

@@ -45,12 +45,12 @@ Normative references: `constitution.md` (`.specify/`), `spec.md`, `design.md`, `
 - [x] **T3.2** `baton_touches` table + indexes + unique `dedupe_key`. *(migration 0005; empty projection until T3.8)*
 - [x] **T3.3** Transition services + invariants (terminal immutability, one active run, linear lineage, versions). *(`apps/api` domain/services; migration 0006 unique indexes after cleanup)*
 - [x] **T3.4** DecisionRequest CRUD + status machine (small). *(`services/decision-requests`; open→answered|cancelled)*
-- [ ] **T3.5** Idempotent touch projection service (create/update/resolve/supersede/cancel).
-- [ ] **T3.6** Touch ranking service + persisted `why_now` / `openedSnapshot`.
-- [ ] **T3.7** `/api/v1` domain + touch attention endpoints (no generic resolve-via-PATCH).
-- [ ] **T3.8** Legacy Flow/touch adapters (read/compatibility); one-way data migration tests.
-- [ ] **T3.9** Adversarial domain/touch tests.
-- [ ] **T3.10** Phase 3 exit gate.
+- [x] **T3.5** Idempotent touch projection service (create/update/resolve/supersede/cancel). *(`services/touch-projection`)*
+- [x] **T3.6** Touch ranking service + persisted `why_now` / `openedSnapshot`. *(`touch-rank-v1`; `rank_explanation_json` + write-once snapshot)*
+- [x] **T3.7** `/api/v1` domain + touch attention endpoints (no generic resolve-via-PATCH). *(`routes/v1`; mounted in `server/index.js`)*
+- [x] **T3.8** Legacy Flow/touch adapters (read/compatibility); one-way data migration tests. *(`0007` + Flow merge adapter)*
+- [x] **T3.9** Adversarial domain/touch tests. *(`phase3.test.ts`)*
+- [x] **T3.10** Phase 3 exit gate. *(projection + ranking + `/api/v1` + adapters + migration fixtures green)*
 
 ## Phase 4 — Dispatch + v1 release
 

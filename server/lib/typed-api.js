@@ -31,6 +31,7 @@ function loadTypedApi() {
       createStrategyPacketsRouter: require(path.join(typedApiDist, 'routes', 'strategy-packets.js')).createStrategyPacketsRouter,
       createSharedRequestsRouter: require(path.join(typedApiDist, 'routes', 'shared-requests.js')).createSharedRequestsRouter,
       createWebhookRouter: require(path.join(typedApiDist, 'routes', 'webhook.js')).createWebhookRouter,
+      createV1Router: require(path.join(typedApiDist, 'routes', 'v1', 'index.js')).createV1Router,
       requestLogMiddleware: require(path.join(typedApiDist, 'middleware', 'errors.js')).requestLogMiddleware,
     };
   } catch (err) {

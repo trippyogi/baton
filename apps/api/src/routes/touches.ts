@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
+import { listAttentionTouches } from '../repositories/baton-touches';
+import { mergeCanonicalAndLegacyTouches } from '../adapters/flow-touch-map';
+import type { BatonTouchRow } from '../repositories/baton-touches';
 
 type Stmt = {
   all: (...params: unknown[]) => unknown[];
@@ -156,8 +159,38 @@ export function createTouchesRouter(deps: TouchesDeps): Router {
       if (typeof req.query.project_key === 'string') { sql += ' AND project_key = ?'; params.push(req.query.project_key); }
       if (req.query.include_archived !== 'true') sql += " AND status NOT IN ('archived', 'resolved')";
       sql += ' ORDER BY score DESC, created_at ASC LIMIT ?';
-      params.push(Number(req.query.limit || 50));
-      res.json(db.prepare(sql).all(...params).map((row) => parseTouch(row as Record<string, unknown>)));
+      const limit = Number(req.query.limit || 50);
+      params.push(limit);
+      const legacy = db.prepare(sql).all(...params).map((row) =>
+        parseTouch(row as Record<string, unknown>)
+      );
+      let canonical: BatonTouchRow[] = [];
+      // Only merge canonical when not filtering to a Flow-only facet or non-open status.
+      const statusFilter =
+        typeof req.query.status === 'string' ? String(req.query.status) : '';
+      const statusAllowsCanonical =
+        !statusFilter || statusFilter === 'pending' || statusFilter === 'snoozed';
+      if (
+        statusAllowsCanonical &&
+        !req.query.type &&
+        !req.query.domain &&
+        !req.query.project_key
+      ) {
+        try {
+          canonical = listAttentionTouches(db as never, {
+            includeSnoozed: statusFilter !== 'pending',
+            limit,
+          });
+          if (statusFilter === 'pending') {
+            canonical = canonical.filter((t) => String(t.status) === 'open');
+          } else if (statusFilter === 'snoozed') {
+            canonical = canonical.filter((t) => String(t.status) === 'snoozed');
+          }
+        } catch (_) {
+          canonical = [];
+        }
+      }
+      res.json(mergeCanonicalAndLegacyTouches(canonical, legacy, limit));
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'touches list failed' });
     }
