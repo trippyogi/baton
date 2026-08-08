@@ -18,6 +18,8 @@ function loadTypedApi() {
       createAgentsRouter: require(path.join(typedApiDist, 'routes', 'agents.js')).createAgentsRouter,
       createAlertsRouter: require(path.join(typedApiDist, 'routes', 'alerts.js')).createAlertsRouter,
       createRunsRouter: require(path.join(typedApiDist, 'routes', 'runs.js')).createRunsRouter,
+      createTasksRouter: require(path.join(typedApiDist, 'routes', 'tasks.js')).createTasksRouter,
+      createBuildsRouter: require(path.join(typedApiDist, 'routes', 'builds.js')).createBuildsRouter,
     };
   } catch (err) {
     const healthDist = path.join(typedApiDist, 'routes', 'health.js');
