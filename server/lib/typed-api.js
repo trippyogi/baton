@@ -21,6 +21,11 @@ function loadTypedApi() {
       createTasksRouter: require(path.join(typedApiDist, 'routes', 'tasks.js')).createTasksRouter,
       createBuildsRouter: require(path.join(typedApiDist, 'routes', 'builds.js')).createBuildsRouter,
       createTouchesRouter: require(path.join(typedApiDist, 'routes', 'touches.js')).createTouchesRouter,
+      createFlowRouter: require(path.join(typedApiDist, 'routes', 'flow.js')).createFlowRouter,
+      createDispatchRouter: require(path.join(typedApiDist, 'routes', 'dispatch.js')).createDispatchRouter,
+      createTeamRouter: require(path.join(typedApiDist, 'routes', 'team.js')).createTeamRouter,
+      createReviewPacketsRouter: require(path.join(typedApiDist, 'routes', 'review-packets.js')).createReviewPacketsRouter,
+      createQueueRouter: require(path.join(typedApiDist, 'routes', 'queue.js')).createQueueRouter,
     };
   } catch (err) {
     const healthDist = path.join(typedApiDist, 'routes', 'health.js');

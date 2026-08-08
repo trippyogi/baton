@@ -1,0 +1,37 @@
+import { Router } from 'express';
+import type { Request, Response } from 'express';
+
+const AGENTS = [
+  {
+    id: '1473837171055263785',
+    name: 'BATON Ops',
+    emoji: '🧭',
+    role: 'Primary Orchestrator / Product Owner',
+    description: 'Strategic partner, executes builds, manages analytics, content, research, and scheduling. Product decisions, creative direction, business context.',
+    workspace: '/home/ubuntu/clawd',
+    sessionKey: 'agent:main:discord:channel:1465111349578436609',
+    model: 'claude-sonnet-4-6',
+    status: 'online',
+    channel: 'discord',
+  },
+  {
+    id: '1474534966770532415',
+    name: 'Circuit',
+    emoji: '⚡',
+    role: 'Lead Systems Architect / Developer',
+    description: 'API design, backend architecture, frontend structure, refactoring, debug strategy, test design. Receives tasks from BATON Ops, returns structured implementation plans and code.',
+    workspace: '/home/ubuntu/circuit',
+    sessionKey: 'agent:circuit:discord:channel:1465111349578436609',
+    model: 'claude-sonnet-4-6',
+    status: 'online',
+    channel: 'discord',
+  },
+];
+
+export function createTeamRouter(): Router {
+  const router = Router();
+  router.get('/', (_req: Request, res: Response) => {
+    res.json({ agents: AGENTS });
+  });
+  return router;
+}
