@@ -21,8 +21,11 @@ function createApp(options = {}) {
     requestIdMiddleware = require(path.join(typedApiDist, 'middleware', 'request-id.js')).requestIdMiddleware;
     errorMiddleware = require(path.join(typedApiDist, 'middleware', 'errors.js')).errorMiddleware;
     createHealthRouter = require(path.join(typedApiDist, 'routes', 'health.js')).createHealthRouter;
-  } catch (_) {
-    // Typed API build optional until `npm run build` has produced apps/api/dist.
+  } catch (err) {
+    const healthDist = path.join(typedApiDist, 'routes', 'health.js');
+    if (fs.existsSync(healthDist)) {
+      console.error('[baton] Failed to load typed API dist; using legacy routes:', err);
+    }
   }
 
   if (requestIdMiddleware) app.use(requestIdMiddleware);
