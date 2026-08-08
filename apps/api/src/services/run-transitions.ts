@@ -4,6 +4,7 @@ import {
   isTerminalRunStatus,
   normalizeRunStatus,
 } from '../domain/run-status';
+import { assertTaskTransition, normalizeTaskStatus } from '../domain/task-status';
 import type { DbLike } from '../domain/types';
 import { nowIso } from '../domain/types';
 import {
@@ -15,7 +16,7 @@ import {
   updateRunStatus,
   type RunRow,
 } from '../repositories/runs';
-import { getTask, setTaskCurrentRun } from '../repositories/tasks';
+import { getTask, setTaskCurrentRun, updateTaskStatus } from '../repositories/tasks';
 
 function runTx<T>(db: DbLike, fn: () => T): T {
   if (typeof db.transaction !== 'function') {
@@ -92,6 +93,14 @@ export function createChildRun(db: DbLike, input: CreateChildRunInput): {
       });
     }
 
+    const task = getTask(db, parent.task_id);
+    if (task.archived_at) {
+      throw new InvalidTransitionError('Cannot create child runs for archived tasks', {
+        taskId: task.id,
+        archivedAt: task.archived_at,
+      });
+    }
+
     if (!isTerminalRunStatus(parent.status)) {
       if (input.requireTerminalParent !== false && !input.parentTerminalStatus) {
         throw new InvalidTransitionError(
@@ -110,8 +119,14 @@ export function createChildRun(db: DbLike, input: CreateChildRunInput): {
     }
 
     const child = insertChildRun(db, parent, { kind: input.kind });
-    const task = getTask(db, parent.task_id);
-    setTaskCurrentRun(db, task.id, child.id, Number(task.version || 1));
+    let taskVersion = Number(task.version || 1);
+    const taskStatus = normalizeTaskStatus(task.status);
+    if (taskStatus !== 'in_progress' && taskStatus !== 'human_review' && taskStatus !== 'blocked') {
+      assertTaskTransition(task.status, 'in_progress');
+      updateTaskStatus(db, task.id, 'in_progress', taskVersion);
+      taskVersion += 1;
+    }
+    setTaskCurrentRun(db, task.id, child.id, taskVersion);
     return { parent: getRun(db, parent.id), child };
   });
 }

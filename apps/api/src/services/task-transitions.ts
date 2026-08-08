@@ -30,6 +30,16 @@ export function transitionTask(db: DbLike, input: TransitionTaskInput): TaskRow 
   if (from === next && String(task.status) === next) {
     return task;
   }
+  if (next === 'done' || next === 'cancelled') {
+    const active = listNonTerminalRunsForTask(db, task.id);
+    if (active.length > 0) {
+      throw new ConflictError('Cannot complete/cancel task with a non-terminal run', {
+        taskId: task.id,
+        toStatus: next,
+        activeRunIds: active.map((r) => r.id),
+      });
+    }
+  }
   const version = Number(task.version || 1);
   return updateTaskStatus(db, task.id, next, version);
 }
