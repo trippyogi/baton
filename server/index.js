@@ -13,13 +13,31 @@ function createApp(options = {}) {
   const host = options.host || process.env.BATON_HOST || process.env.HOST || '127.0.0.1';
   const app = express();
 
+  const typedApiDist = path.join(__dirname, '..', 'apps', 'api', 'dist');
+  let requestIdMiddleware = null;
+  let errorMiddleware = null;
+  let createHealthRouter = null;
+  try {
+    requestIdMiddleware = require(path.join(typedApiDist, 'middleware', 'request-id.js')).requestIdMiddleware;
+    errorMiddleware = require(path.join(typedApiDist, 'middleware', 'errors.js')).errorMiddleware;
+    createHealthRouter = require(path.join(typedApiDist, 'routes', 'health.js')).createHealthRouter;
+  } catch (_) {
+    // Typed API build optional until `npm run build` has produced apps/api/dist.
+  }
+
+  if (requestIdMiddleware) app.use(requestIdMiddleware);
+
   app.use(express.json({
     verify: (req, _res, buf) => { req.rawBody = buf; },
   }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
   app.use('/api', apiAuthMiddleware(host));
 
-  app.use('/api/health',   require('./routes/health'));
+  if (createHealthRouter) {
+    app.use('/api/health', createHealthRouter(db));
+  } else {
+    app.use('/api/health', require('./routes/health'));
+  }
   app.use('/api/overview', require('./routes/overview'));
   app.use('/api/tasks',    require('./routes/tasks'));
   app.use('/api/runs',     require('./routes/runs'));
@@ -69,6 +87,8 @@ function createApp(options = {}) {
   app.get('*', (_req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
   });
+
+  if (errorMiddleware) app.use(errorMiddleware);
 
   return app;
 }

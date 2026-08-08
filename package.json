@@ -12,7 +12,7 @@
     "start": "node apps/api/bootstrap.cjs",
     "start:legacy": "node server/index.js",
     "dev": "node apps/api/bootstrap.cjs",
-    "build": "npm run build -w @baton/contracts",
+    "build": "npm run build -w @baton/contracts && npm run build -w @baton/api",
     "typecheck": "npm run typecheck -w @baton/contracts && npm run typecheck -w @baton/api",
     "check:js": "node scripts/check-js.js",
     "smoke": "node scripts/smoke-flow.js",

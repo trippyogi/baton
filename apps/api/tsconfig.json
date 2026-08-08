@@ -1,10 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "outDir": "dist",
     "rootDir": "src",
-    "noEmit": true
+    "noEmit": false
   },
-  "include": ["src/**/*.ts"],
-  "references": [{ "path": "../../packages/contracts" }]
+  "include": ["src/middleware/**/*.ts", "src/routes/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "src/server.ts"]
 }
