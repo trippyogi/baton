@@ -9,6 +9,7 @@ const db      = require('./db');
 const { rebuildTouches } = require('./lib/flow/rebuild');
 const { parseJson, stringifyJson } = require('./lib/flow/utils');
 const { loadTypedApi } = require('./lib/typed-api');
+const { applyAccepted, applyFailed } = require('./lib/dispatch');
 const { apiAuthMiddleware, shouldRequireApiToken } = require('./middleware/api-auth');
 
 function createApp(options = {}) {
@@ -35,8 +36,23 @@ function createApp(options = {}) {
     app.use('/api/overview', require('./routes/overview'));
   }
   app.use('/api/tasks',    require('./routes/tasks'));
-  app.use('/api/runs',     require('./routes/runs'));
-  app.use('/api/alerts',   require('./routes/alerts'));
+  if (typed?.createRunsRouter) {
+    app.use('/api/runs', typed.createRunsRouter({
+      db,
+      parseJson,
+      stringifyJson,
+      rebuildTouches,
+      applyAccepted,
+      applyFailed,
+    }));
+  } else {
+    app.use('/api/runs', require('./routes/runs'));
+  }
+  if (typed?.createAlertsRouter) {
+    app.use('/api/alerts', typed.createAlertsRouter(db));
+  } else {
+    app.use('/api/alerts', require('./routes/alerts'));
+  }
   app.use('/api/builds',      require('./routes/builds'));
   app.use('/api/costs',       require('./routes/costs'));
   app.use('/api/performance', require('./routes/performance'));
