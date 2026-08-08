@@ -6,10 +6,13 @@ const express = require('express');
 const fs      = require('fs');
 const path    = require('path');
 const db      = require('./db');
-const { rebuildTouches, loadSettings, parseTouch } = require('./lib/flow/rebuild');
-const { parseJson, stringifyJson } = require('./lib/flow/utils');
+const { rebuildTouches, loadSettings, parseTouch, rankOpenTouches } = require('./lib/flow/rebuild');
+const { parseJson, stringifyJson, id } = require('./lib/flow/utils');
+const { sqliteDateTimeAfterMs, toSqliteDateTime } = require('./lib/flow/time');
+const { isActionAllowed } = require('./lib/flow/actions');
+const { markDomainTouched } = require('./lib/flow/portfolio');
 const { loadTypedApi } = require('./lib/typed-api');
-const { applyAccepted, applyFailed, publicBaseUrl } = require('./lib/dispatch');
+const { applyAccepted, applyFailed, publicBaseUrl, dispatchRun } = require('./lib/dispatch');
 const { buildDispatchEnvelope } = require('./lib/dispatch/envelope');
 const { apiAuthMiddleware, shouldRequireApiToken } = require('./middleware/api-auth');
 
@@ -77,7 +80,23 @@ function createApp(options = {}) {
   app.use('/api/memory',      require('./routes/memory'));
   app.use('/api/team',        require('./routes/team'));
   app.use('/api/flow',        require('./routes/flow'));
-  app.use('/api/touches',     require('./routes/touches'));
+  if (typed?.createTouchesRouter) {
+    app.use('/api/touches', typed.createTouchesRouter({
+      db,
+      id,
+      stringifyJson,
+      sqliteDateTimeAfterMs,
+      toSqliteDateTime,
+      isActionAllowed,
+      rebuildTouches,
+      parseTouch,
+      rankOpenTouches,
+      markDomainTouched,
+      dispatchRun,
+    }));
+  } else {
+    app.use('/api/touches', require('./routes/touches'));
+  }
   if (typed?.createAgentsRouter) {
     app.use('/api/agents', typed.createAgentsRouter({
       db,
