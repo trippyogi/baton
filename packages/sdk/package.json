@@ -1,0 +1,17 @@
+{
+  "name": "@baton/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Typed BATON client SDK (Phase 2)",
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@baton/contracts": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}

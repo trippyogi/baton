@@ -1,0 +1,110 @@
+{
+  "$ref": "#/definitions/BatonConfig",
+  "definitions": {
+    "BatonConfig": {
+      "type": "object",
+      "properties": {
+        "nodeEnv": {
+          "type": "string",
+          "enum": [
+            "development",
+            "test",
+            "production"
+          ],
+          "default": "development"
+        },
+        "port": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "apiToken": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sshHint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "publicBaseUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "callbackToken": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "githubWebhookSecret": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "githubWorkerToken": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "redisUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sharedRequestsToken": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spectreDispatchTransport": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spectreWebhookUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spectreDispatchToken": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "port",
+        "host",
+        "apiToken",
+        "sshHint",
+        "publicBaseUrl",
+        "callbackToken",
+        "githubWebhookSecret",
+        "githubWorkerToken",
+        "redisUrl",
+        "sharedRequestsToken",
+        "spectreDispatchTransport",
+        "spectreWebhookUrl",
+        "spectreDispatchToken"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
