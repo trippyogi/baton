@@ -1,8 +1,9 @@
 // @ts-nocheck
 import { get, post, patch } from '@baton/sdk';
 import { escapeHtml, escapeAttr } from '../lib/html';
+import { lifecycleBadge } from '../lib/lifecycle';
 
-const MODES = ['deep_build','triage','review','strategy_creative','launch','admin','cleanup','recovery'];
+const MODES = ['deep_build', 'triage', 'review', 'strategy_creative', 'launch', 'admin', 'cleanup', 'recovery'];
 let pollTimer = null;
 let selectedIndex = 0;
 let currentData = null;
@@ -12,9 +13,14 @@ export async function renderFlow(options = {}) {
   const el = document.getElementById('screen-flow');
   if (!el) return;
   if (!force && document.activeElement?.id === 'flow-command-input') return;
-  el.innerHTML = `<div class="loading">Loading Flow…</div>`;
+  el.innerHTML = `<div class="loading">Loading attention queue…</div>`;
   try {
-    currentData = await get('/api/flow');
+    const flow = await get('/api/flow');
+    currentData = {
+      ...flow,
+      workMode: flow.mode || null,
+      next_touches: flow.next_touches || [],
+    };
     selectedIndex = Math.min(selectedIndex, Math.max((currentData.next_touches || []).length - 1, 0));
     el.innerHTML = flowMarkup(currentData);
     wireFlow(el);
@@ -40,17 +46,18 @@ function resetPoll() {
 }
 
 function flowMarkup(data) {
+  const workMode = data.workMode || data.mode || 'triage';
   return `
     <div class="flow-shell">
       <section class="flow-header">
         <div>
-          <div class="screen-title">Flow</div>
-          <div class="screen-subtitle">Keep the swarm moving. Touch only what matters.</div>
+          <div class="screen-title">Attention queue</div>
+          <div class="screen-subtitle">Thin client over open touches. Work mode is a soft ranking hint only.</div>
         </div>
         <div class="flow-mode">
-          <label for="flow-mode-select">Mode</label>
-          <select id="flow-mode-select" class="mode-select">
-            ${MODES.map(mode => `<option value="${mode}"${mode === data.mode ? ' selected' : ''}>${labelMode(mode)}</option>`).join('')}
+          <label for="flow-mode-select">Work mode hint</label>
+          <select id="flow-mode-select" class="mode-select" title="Soft bias for ranking/UI — does not change workflow truth">
+            ${MODES.map((mode) => `<option value="${mode}"${mode === workMode ? ' selected' : ''}>${labelMode(mode)}</option>`).join('')}
           </select>
         </div>
       </section>
@@ -58,15 +65,15 @@ function flowMarkup(data) {
       <section class="flow-airspace card">
         <div class="flow-airspace-title">Airspace</div>
         <div class="flow-airspace-grid">
-          ${airspaceItem('Airborne', data.airspace.running)}
-          ${airspaceItem('Need touch', data.airspace.needs_touch)}
-          ${airspaceItem('Review', data.airspace.review)}
-          ${airspaceItem('Idle', data.airspace.idle)}
-          ${airspaceItem('Stale', data.airspace.stale)}
-          ${airspaceItem('Failed', data.airspace.failed)}
-          ${airspaceItem('Ready', data.airspace.ready_to_pass)}
-          ${airspaceItem('Prepared', data.airspace.prepared)}
-          ${airspaceItem('Inbox', data.airspace.inbox)}
+          ${airspaceItem('Airborne', data.airspace?.running)}
+          ${airspaceItem('Need touch', data.airspace?.needs_touch)}
+          ${airspaceItem('Review', data.airspace?.review)}
+          ${airspaceItem('Idle', data.airspace?.idle)}
+          ${airspaceItem('Stale', data.airspace?.stale)}
+          ${airspaceItem('Failed', data.airspace?.failed)}
+          ${airspaceItem('Ready', data.airspace?.ready_to_pass)}
+          ${airspaceItem('Prepared', data.airspace?.prepared)}
+          ${airspaceItem('Inbox', data.airspace?.inbox)}
         </div>
       </section>
 
@@ -81,11 +88,11 @@ function flowMarkup(data) {
 
       <section class="flow-next">
         <div class="flow-section-title">
-          <span>Next Touches</span>
+          <span>Open touches</span>
           <a href="#/board" class="flow-board-link">Airspace map →</a>
         </div>
         <div id="flow-touch-list">
-          ${(data.next_touches || []).length ? data.next_touches.map((touch, idx) => touchCard(touch, idx)).join('') : emptyState()}
+          ${(data.next_touches || []).length ? data.next_touches.map((touch, idx) => touchCard(touch, idx, workMode)).join('') : emptyState()}
         </div>
       </section>
     </div>`;
@@ -95,8 +102,9 @@ function airspaceItem(label, value) {
   return `<div class="flow-airspace-item"><div class="flow-airspace-value">${value ?? 0}</div><div class="flow-airspace-label">${label}</div></div>`;
 }
 
-function touchCard(touch, idx) {
+function touchCard(touch, idx, workMode) {
   const active = idx === selectedIndex ? ' touch-card-active' : '';
+  const why = touch.why_now || `Open in attention queue (work mode hint: ${labelMode(workMode)}).`;
   return `
     <article class="touch-card${active}" data-touch-id="${escapeAttr(touch.id)}" data-index="${escapeAttr(idx)}">
       <div class="touch-rank">#${touch.rank || idx + 1}</div>
@@ -104,13 +112,16 @@ function touchCard(touch, idx) {
         <div class="touch-title">${escapeHtml(touch.title)}</div>
         <div class="touch-meta">
           <span class="badge badge-${escapeAttr(touch.type)}">${escapeHtml(touch.type)}</span>
+          ${lifecycleBadge(touch.status, { kind: 'touch', title: 'Touch attention status' })}
+          ${touch.dispatch_status ? lifecycleBadge(touch.dispatch_status, { kind: 'dispatch' }) : ''}
+          ${touch.run_status ? lifecycleBadge(touch.run_status, { kind: 'run' }) : ''}
           <span>${escapeHtml(touch.domain || 'product')}</span>
           <span>~${touch.human_touch_minutes || 5}m</span>
           <span>${escapeHtml(touch.risk_level || 'low')} risk</span>
           <span>L${touch.autonomy_level || 1}</span>
           ${touch.agent_id ? `<span>Agent: ${escapeHtml(touch.agent_id)}</span>` : ''}
         </div>
-        <div class="touch-why">${escapeHtml(touch.why_now || 'Ranks well for current mode.')}</div>
+        <div class="touch-why">${escapeHtml(why)}</div>
         <div class="touch-detail" hidden>
           <div><strong>Summary</strong><br>${escapeHtml(touch.description || 'No extra context yet.')}</div>
           ${touch.agent_id ? `<div><strong>Dispatch</strong><br>Agent: ${escapeHtml(touch.agent_id)} · Action: Prepare</div>` : ''}
@@ -130,7 +141,7 @@ function touchCard(touch, idx) {
 }
 
 function emptyState() {
-  return `<div class="card flow-empty">No touches need the operator right now. Capture an idea or delegate ready work to seed the queue.</div>`;
+  return `<div class="card flow-empty">No touches need the operator right now. Capture an idea or prepare ready work to seed the queue.</div>`;
 }
 
 function wireFlow(el) {
@@ -150,7 +161,7 @@ function wireFlow(el) {
   });
   el.querySelector('#flow-command-submit').onclick = () => submitCommand(el);
 
-  el.querySelectorAll('.touch-card').forEach(card => {
+  el.querySelectorAll('.touch-card').forEach((card) => {
     card.onclick = (event) => {
       if (event.target.closest('button') || event.target.closest('textarea')) return;
       selectedIndex = Number(card.dataset.index || 0);
@@ -163,7 +174,9 @@ function wireFlow(el) {
     card.querySelector('.touch-submit-feedback').onclick = () => {
       const touch = currentData.next_touches[Number(card.dataset.index || 0)];
       const feedback = card.querySelector('.touch-feedback').value;
-      const action = ['delegate', 'assign', 'answer', 'process', 'send_to_evaluator'].includes(touch.primary_action) ? touch.primary_action : 'refine';
+      const action = ['delegate', 'assign', 'answer', 'process', 'send_to_evaluator'].includes(touch.primary_action)
+        ? touch.primary_action
+        : 'refine';
       runAction(card.dataset.touchId, action, { feedback, instructions: feedback });
     };
   });
@@ -182,7 +195,7 @@ async function submitCommand(el) {
 }
 
 function primaryAction(id) {
-  const touch = (currentData.next_touches || []).find(t => t.id === id);
+  const touch = (currentData.next_touches || []).find((t) => t.id === id);
   if (!touch) return;
   if (touch.type === 'review' || ['refine', 'delegate', 'assign', 'answer', 'decide', 'send_to_evaluator'].includes(touch.primary_action)) {
     const card = document.querySelector(`.touch-card[data-touch-id="${id}"]`);
@@ -194,7 +207,7 @@ function primaryAction(id) {
 }
 
 async function runAction(id, action, extra = {}) {
-  const touch = (currentData?.next_touches || []).find(t => t.id === id);
+  const touch = (currentData?.next_touches || []).find((t) => t.id === id);
   if (touch && !allows(touch, action)) return;
   const result = await patch(`/api/touches/${id}/action`, { action, ...extra });
   await renderFlow({ force: true });
@@ -248,11 +261,11 @@ function openSelected() {
 }
 
 function labelMode(mode) {
-  return mode.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return String(mode || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function labelAction(action) {
-  return String(action || 'open').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return String(action || 'open').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function primaryLabel(touch) {

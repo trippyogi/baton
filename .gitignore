@@ -8,6 +8,10 @@ data/backups/
 .env
 *.log
 .DS_Store
+test-results/
+playwright-report/
+apps/web/test-results/
+apps/web/playwright-report/
 
 # Private local operator state. Keep real tasks, agents, dispatch targets,
 # local profiles, and redacted bug-report exports out of the public repo.

@@ -26,7 +26,8 @@
     "generate:json-schema": "npm run generate:json-schema -w @baton/contracts",
     "preinstall": "node -e \"const major=process.versions.node.split('.')[0]; if(major !== '24'){ console.error('BATON requires Node 24. Run: nvm use'); process.exit(1); }\"",
     "fake:spectre": "node scripts/fake-spectre.js",
-    "smoke:dispatch": "node scripts/smoke-dispatch-spectre.js"
+    "smoke:dispatch": "node scripts/smoke-dispatch-spectre.js",
+    "test:e2e": "node scripts/e2e-web.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

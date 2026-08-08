@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { get, patch, createSSE, timeAgo, fmtCost, fmtTokens } from '@baton/sdk';
 import { escapeHtml, escapeAttr } from '../lib/html';
+import { lifecycleBadge } from '../lib/lifecycle';
 
 let sseConn     = null;
 let activeFilter = { worker_type: '', status: '' };
@@ -115,7 +116,7 @@ function runRow(r) {
   return `<tr data-run-id="${escapeAttr(r.id)}">
     <td>${escapeHtml(r.agent_name)}</td>
     <td>${workerBadge(r.worker_type)}</td>
-    <td><span class="badge badge-${escapeAttr(r.status)}">${escapeHtml(r.status)}</span></td>
+    <td>${lifecycleBadge(r.status, { kind: 'run' })}</td>
     <td style="font-family:var(--font-instrument)">${fmtTokens(r.tokens)}</td>
     <td style="font-family:var(--font-instrument)">${fmtCost(r.cost)}</td>
     <td style="font-size:12px;color:var(--text-secondary)">${escapeHtml(timeAgo(r.started_at))}</td>
@@ -150,8 +151,8 @@ async function showRunDetail(id, cached) {
         <button class="btn btn-ghost btn-sm" id="close-detail">Close</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px">
-        <div><div class="kpi-label">Status</div><span class="badge badge-${escapeAttr(run.status)}">${escapeHtml(run.status)}</span></div>
-        <div><div class="kpi-label">Dispatch</div><span class="badge badge-${escapeAttr(run.dispatch_status || 'not_configured')}">${escapeHtml(run.dispatch_status || 'not_configured')}</span></div>
+        <div><div class="kpi-label">Status</div>${lifecycleBadge(run.status, { kind: 'run' })}</div>
+        <div><div class="kpi-label">Dispatch</div>${lifecycleBadge(run.dispatch_status || 'not_configured', { kind: 'dispatch' })}</div>
         <div><div class="kpi-label">Agent ID</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.agent_id || '—')}</div></div>
         <div><div class="kpi-label">Task ID</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.task_id || '—')}</div></div>
         <div><div class="kpi-label">External</div><div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(run.external_run_id || '—')}</div></div>

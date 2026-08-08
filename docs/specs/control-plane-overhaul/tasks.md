@@ -34,10 +34,10 @@ Normative references: `constitution.md` (`.specify/`), `spec.md`, `design.md`, `
 
 - [x] **T2.1** Vite `apps/web` vanilla TS. *(scaffold + screen port from `public/js`; production build served when `apps/web/dist` exists)*
 - [x] **T2.2** Typed SDK for fetch/SSE. *(`@baton/sdk`)*
-- [ ] **T2.3** Port screens; Flow UI as thin queue client (modes = soft hints). *(screens moved; Flow still talks to legacy `/api/flow` until Phase 3)*
-- [ ] **T2.4** Lifecycle badge affordances for future dispatch states.
-- [ ] **T2.5** Playwright smoke.
-- [ ] **T2.6** Phase 2 exit gate.
+- [x] **T2.3** Port screens; Flow UI as thin queue client (modes = soft hints). *(Attention screen; work mode soft hint; ranked `next_touches` from `/api/flow`)*
+- [x] **T2.4** Lifecycle badge affordances for future dispatch states. *(`lifecycleBadge` for touch/run/dispatch)*
+- [x] **T2.5** Playwright smoke. *(`npm run test:e2e` / CI chromium)*
+- [x] **T2.6** Phase 2 exit gate. *(Vite web + SDK + attention-queue Flow + Playwright green)*
 
 ## Phase 3 — Canonical domain + BatonTouch
 

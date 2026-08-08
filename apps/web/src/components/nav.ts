@@ -1,6 +1,6 @@
 // @ts-nocheck
 const NAV_ITEMS = [
-  { id: 'flow',         icon: '↯', label: 'Flow' },
+  { id: 'flow',         icon: '↯', label: 'Attention' },
   { id: 'overview',     icon: '⬡', label: 'Overview' },
   { id: 'tasks',        icon: '✓', label: 'Tasks' },
   { id: 'board',        icon: '⊞', label: 'Board' },
@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { id: 'workshop',     icon: '⚗', label: 'Workshop' },
   { id: 'costs',        icon: '◇', label: 'Costs' },
   { id: 'performance',  icon: '◎', label: 'Performance' },
-  { id: 'queue',        icon: '⧖', label: 'Queue' },
+  { id: 'queue',        icon: '⧖', label: 'Streams' },
   { id: 'creatives',   icon: '◈', label: 'Creatives' },
 ];
 
