@@ -121,7 +121,8 @@ export function createChildRun(db: DbLike, input: CreateChildRunInput): {
     const child = insertChildRun(db, parent, { kind: input.kind });
     let taskVersion = Number(task.version || 1);
     const taskStatus = normalizeTaskStatus(task.status);
-    if (taskStatus !== 'in_progress' && taskStatus !== 'human_review' && taskStatus !== 'blocked') {
+    if (taskStatus !== 'in_progress') {
+      // request_changes / refinement: leave human_review|blocked|ready|… → in_progress
       assertTaskTransition(task.status, 'in_progress');
       updateTaskStatus(db, task.id, 'in_progress', taskVersion);
       taskVersion += 1;

@@ -25,6 +25,7 @@ module.exports = function enforceRunInvariants(db) {
      SET status = 'cancelled',
          failure_message = COALESCE(failure_message, 'migration: duplicate active run cleanup'),
          ended_at = COALESCE(ended_at, datetime('now')),
+         version = version + 1,
          updated_at = datetime('now')
      WHERE id = ?`
   );
@@ -48,7 +49,9 @@ module.exports = function enforceRunInvariants(db) {
     if (keepId) {
       db.prepare(
         `UPDATE tasks
-         SET current_run_id = ?, updated_at = datetime('now')
+         SET current_run_id = ?,
+             version = version + 1,
+             updated_at = datetime('now')
          WHERE id = ?
            AND (current_run_id IS NULL OR current_run_id != ?)`
       ).run(keepId, row.task_id, keepId);
@@ -135,7 +138,11 @@ module.exports = function enforceRunInvariants(db) {
 
     if (nextId !== task.current_run_id) {
       db.prepare(
-        `UPDATE tasks SET current_run_id = ?, updated_at = datetime('now') WHERE id = ?`
+        `UPDATE tasks
+         SET current_run_id = ?,
+             version = version + 1,
+             updated_at = datetime('now')
+         WHERE id = ?`
       ).run(nextId, task.task_id);
     }
   }
