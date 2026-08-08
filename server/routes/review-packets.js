@@ -101,7 +101,7 @@ router.post('/', (req, res) => {
     const rebuild = rebuildTouches(db);
     const saved = parsePacket(db.prepare('SELECT * FROM review_packets WHERE id = ?').get(packet.id));
     const touch = packet.task_id
-      ? db.prepare(`SELECT * FROM baton_touches WHERE review_packet_id = ? AND status NOT IN ('archived','resolved') ORDER BY created_at DESC, rowid DESC LIMIT 1`).get(packet.id)
+      ? db.prepare(`SELECT * FROM flow_touches WHERE review_packet_id = ? AND status NOT IN ('archived','resolved') ORDER BY created_at DESC, rowid DESC LIMIT 1`).get(packet.id)
       : null;
     const reviewTouchId = validation.valid ? touch?.id || null : null;
     const refineTouchId = validation.valid ? null : touch?.id || null;

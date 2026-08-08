@@ -148,7 +148,7 @@ export function createTouchesRouter(deps: TouchesDeps): Router {
 
   router.get('/', (req: Request, res: Response) => {
     try {
-      let sql = 'SELECT * FROM baton_touches WHERE 1=1';
+      let sql = 'SELECT * FROM flow_touches WHERE 1=1';
       const params: unknown[] = [];
       if (typeof req.query.status === 'string') { sql += ' AND status = ?'; params.push(req.query.status); }
       if (typeof req.query.type === 'string') { sql += ' AND type = ?'; params.push(req.query.type); }
@@ -173,7 +173,7 @@ export function createTouchesRouter(deps: TouchesDeps): Router {
 
   router.patch('/:id/action', async (req: Request, res: Response) => {
     try {
-      const touch = db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(req.params.id);
+      const touch = db.prepare('SELECT * FROM flow_touches WHERE id = ?').get(req.params.id);
       if (!touch) return res.status(404).json({ error: 'Not found' });
       const body = (req.body || {}) as Record<string, unknown>;
       const action = body.action;
@@ -194,7 +194,7 @@ export function createTouchesRouter(deps: TouchesDeps): Router {
           intent: action === 'send_to_evaluator' ? 'evaluate' : 'orchestrate',
           instructions: instructionsFromBody(body),
         });
-        const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(String(touch.id)) as Record<string, unknown>);
+        const updatedTouch = parseTouch(db.prepare('SELECT * FROM flow_touches WHERE id = ?').get(String(touch.id)) as Record<string, unknown>);
         const updatedTask = touch.task_id
           ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(String(touch.task_id))
           : null;
@@ -248,7 +248,7 @@ export function createTouchesRouter(deps: TouchesDeps): Router {
           message = 'Marked for inspection.';
         } else if (action === 'escalate') {
           db.prepare(`
-          UPDATE baton_touches
+          UPDATE flow_touches
           SET manual_priority_boost = MIN(1.0, COALESCE(manual_priority_boost, 0) + 0.2),
               score = MIN(100, COALESCE(score, 0) + 4),
               updated_at = datetime('now')
@@ -258,7 +258,7 @@ export function createTouchesRouter(deps: TouchesDeps): Router {
         }
 
         db.prepare(`
-        UPDATE baton_touches
+        UPDATE flow_touches
         SET status = ?, last_touched_at = datetime('now'), snoozed_until = ?, resolved_at = ?, updated_at = datetime('now')
         WHERE id = ?
       `).run(touchStatus, snoozedUntil, resolvedAt, touch.id);
@@ -287,7 +287,7 @@ export function createTouchesRouter(deps: TouchesDeps): Router {
         } else {
           rankOpenTouches(db);
         }
-        const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(String(touch.id)) as Record<string, unknown>);
+        const updatedTouch = parseTouch(db.prepare('SELECT * FROM flow_touches WHERE id = ?').get(String(touch.id)) as Record<string, unknown>);
         const updatedTask = touch.task_id
           ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(String(touch.task_id))
           : null;

@@ -66,7 +66,7 @@ export function createDispatchRouter(deps: DispatchDeps): Router {
         };
       if (!task) return res.status(404).json({ error: `unknown task_id: ${body.task_id}` });
       const touch = body.touch_id
-        ? db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(String(body.touch_id))
+        ? db.prepare('SELECT * FROM flow_touches WHERE id = ?').get(String(body.touch_id))
         : {
           id: 'dry_touch',
           title: task.title,

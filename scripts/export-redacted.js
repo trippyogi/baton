@@ -208,7 +208,7 @@ function main() {
     const opts = parseArgs(process.argv.slice(2));
     const db = require('../server/db');
     const tasks = db.prepare('SELECT * FROM tasks ORDER BY created_at ASC').all();
-    const touches = db.prepare('SELECT * FROM baton_touches ORDER BY COALESCE(rank, 9999), created_at ASC').all();
+    const touches = db.prepare('SELECT * FROM flow_touches ORDER BY COALESCE(rank, 9999), created_at ASC').all();
     const agents = opts.includeAgents ? db.prepare('SELECT * FROM agents ORDER BY name ASC').all() : [];
     const runs = opts.includeRuns ? db.prepare('SELECT * FROM runs ORDER BY created_at ASC').all() : [];
     const exported = {

@@ -27,7 +27,7 @@ function upsertTouch(db, touch, context) {
   const score = scoreTouch(touch, context);
   const why = explainTouch({ ...touch, score }, context);
   const existing = db.prepare(`
-    SELECT * FROM baton_touches
+    SELECT * FROM flow_touches
     WHERE source = 'generated' AND type = ?
       AND COALESCE(task_id, '') = COALESCE(?, '')
       AND COALESCE(run_id, '') = COALESCE(?, '')
@@ -44,7 +44,7 @@ function upsertTouch(db, touch, context) {
     };
     const score = scoreTouch({ ...touch, ...preserved }, context);
     db.prepare(`
-      UPDATE baton_touches SET
+      UPDATE flow_touches SET
         title=@title, description=@description, primary_action=@primary_action,
         secondary_actions=@secondary_actions, why_now=@why_now, domain=@domain,
         project_key=@project_key, context_key=@context_key, mode_fit=@mode_fit,
@@ -62,7 +62,7 @@ function upsertTouch(db, touch, context) {
 
   const touchId = id('touch');
   db.prepare(`
-    INSERT INTO baton_touches (
+    INSERT INTO flow_touches (
       id, task_id, run_id, agent_id, title, description, type, status, primary_action,
       secondary_actions, why_now, domain, project_key, context_key, mode_fit, portfolio_weight,
       impact_score, effort_score, urgency_score, confidence_score, quality_score, risk_score,
@@ -83,7 +83,7 @@ function upsertTouch(db, touch, context) {
 
 function reactivateExpiredSnoozes(db) {
   return db.prepare(`
-    UPDATE baton_touches
+    UPDATE flow_touches
     SET status = 'pending', snoozed_until = NULL, updated_at = datetime('now')
     WHERE status = 'snoozed'
       AND snoozed_until IS NOT NULL
@@ -94,12 +94,12 @@ function reactivateExpiredSnoozes(db) {
 function rankOpenTouches(db) {
   reactivateExpiredSnoozes(db);
   const rows = db.prepare(`
-    SELECT id FROM baton_touches
+    SELECT id FROM flow_touches
     WHERE status IN ('pending', 'active')
       AND (snoozed_until IS NULL OR snoozed_until <= datetime('now'))
     ORDER BY pinned DESC, score DESC, created_at ASC
   `).all();
-  const update = db.prepare('UPDATE baton_touches SET rank = ?, updated_at = datetime(\'now\') WHERE id = ?');
+  const update = db.prepare('UPDATE flow_touches SET rank = ?, updated_at = datetime(\'now\') WHERE id = ?');
   rows.forEach((row, index) => update.run(index + 1, row.id));
 }
 
@@ -123,10 +123,10 @@ function rebuildTouches(db) {
       if (result.updated) updated += 1;
     }
 
-    const openGenerated = db.prepare(`SELECT * FROM baton_touches WHERE source = 'generated' AND ${activeWhere()}`).all(...ACTIVE_STATUSES);
+    const openGenerated = db.prepare(`SELECT * FROM flow_touches WHERE source = 'generated' AND ${activeWhere()}`).all(...ACTIVE_STATUSES);
     for (const row of openGenerated) {
       if (!candidateKeys.has(rowKey(row)) && row.status !== 'snoozed') {
-        db.prepare(`UPDATE baton_touches SET status = 'archived', updated_at = datetime('now') WHERE id = ?`).run(row.id);
+        db.prepare(`UPDATE flow_touches SET status = 'archived', updated_at = datetime('now') WHERE id = ?`).run(row.id);
         archived += 1;
       }
     }
@@ -140,7 +140,7 @@ function rebuildTouches(db) {
 function listOpenTouches(db, limit = 7) {
   reactivateExpiredSnoozes(db);
   const rows = db.prepare(`
-    SELECT * FROM baton_touches
+    SELECT * FROM flow_touches
     WHERE status IN ('pending', 'active')
       AND (snoozed_until IS NULL OR snoozed_until <= datetime('now'))
     ORDER BY pinned DESC, score DESC, created_at ASC

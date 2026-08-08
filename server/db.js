@@ -8,6 +8,19 @@ fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 const db = new Database(DB_PATH);
 
+// Pre-schema: rename legacy Flow table before schema.sql creates an empty flow_touches.
+(function pretouchRename() {
+  const tables = new Set(
+    db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r) => r.name)
+  );
+  if (tables.has('baton_touches') && !tables.has('flow_touches')) {
+    const cols = db.prepare('PRAGMA table_info(baton_touches)').all().map((c) => c.name);
+    if (cols.includes('title') && cols.includes('type') && !cols.includes('dedupe_key')) {
+      db.exec('ALTER TABLE baton_touches RENAME TO flow_touches');
+    }
+  }
+})();
+
 // Apply schema
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
@@ -34,10 +47,13 @@ db.exec(schema);
   if (!cols.includes('review_packet_id'))   db.exec('ALTER TABLE runs ADD COLUMN review_packet_id TEXT');
   if (!cols.includes('error'))              db.exec('ALTER TABLE runs ADD COLUMN error TEXT');
 
-  const touchCols = db.prepare('PRAGMA table_info(baton_touches)').all().map(c => c.name);
-  if (!touchCols.includes('manual_priority_boost')) db.exec('ALTER TABLE baton_touches ADD COLUMN manual_priority_boost REAL DEFAULT 0');
-  if (!touchCols.includes('pinned'))                db.exec('ALTER TABLE baton_touches ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0');
-  if (!touchCols.includes('manual_override_until')) db.exec('ALTER TABLE baton_touches ADD COLUMN manual_override_until TEXT');
+  const flowTouchTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('flow_touches','baton_touches') ORDER BY CASE name WHEN 'flow_touches' THEN 0 ELSE 1 END LIMIT 1").get()?.name;
+  if (flowTouchTable) {
+    const touchCols = db.prepare(`PRAGMA table_info(${flowTouchTable})`).all().map(c => c.name);
+    if (!touchCols.includes('manual_priority_boost')) db.exec(`ALTER TABLE ${flowTouchTable} ADD COLUMN manual_priority_boost REAL DEFAULT 0`);
+    if (!touchCols.includes('pinned'))                db.exec(`ALTER TABLE ${flowTouchTable} ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0`);
+    if (!touchCols.includes('manual_override_until')) db.exec(`ALTER TABLE ${flowTouchTable} ADD COLUMN manual_override_until TEXT`);
+  }
 
   const taskCols = db.prepare('PRAGMA table_info(tasks)').all().map(c => c.name);
   if (!taskCols.includes('domain'))                 db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'product'");
@@ -154,6 +170,31 @@ db.exec(schema);
     SET dispatch_enabled = 1, dispatch_transport = 'webhook', dispatch_target = 'SPECTRE_WEBHOOK_URL', dispatch_config = ?
     WHERE id = 'spectre'
   `).run(JSON.stringify(spectreDispatchConfig));
+})();
+
+// Numbered Phase 3+ migrations (canonical domain + baton_touches projection).
+(function autoMigrate() {
+  if (process.env.BATON_AUTO_MIGRATE === '0') return;
+  const {
+    applyMigrations,
+    listMigrationFiles,
+    ensureSchemaMigrations,
+    DEFAULT_MIGRATIONS_DIR,
+  } = require('../scripts/lib/migrate-db');
+  ensureSchemaMigrations(db);
+  const applied = new Set(
+    db.prepare('SELECT id FROM schema_migrations').all().map((r) => r.id)
+  );
+  const pending = listMigrationFiles(DEFAULT_MIGRATIONS_DIR).some((f) => !applied.has(f.id));
+  const shouldBackup =
+    pending &&
+    process.env.BATON_MIGRATE_BACKUP !== '0' &&
+    fs.existsSync(DB_PATH) &&
+    fs.statSync(DB_PATH).size > 0;
+  applyMigrations(db, {
+    dbPath: DB_PATH,
+    backup: shouldBackup,
+  });
 })();
 
 function defaultAgentPermissions(agentId) {

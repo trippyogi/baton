@@ -87,7 +87,7 @@ function generateCandidates(db, context = {}) {
   const candidates = [];
   const staleThresholdHours = (STALE_THRESHOLDS_MINUTES[context.mode || 'triage'] || 30) / 60;
   const preparedTaskIds = new Set(db.prepare(`
-    SELECT DISTINCT task_id FROM baton_touches
+    SELECT DISTINCT task_id FROM flow_touches
     WHERE status = 'prepared' AND task_id IS NOT NULL
   `).all().map(row => row.task_id));
 
