@@ -140,7 +140,7 @@ BATON is safe to run with your own tasks and agents locally. Keep private data i
 
 The Requests screen is optional and token-protected; set `SHARED_REQUESTS_TOKEN` in `.env` to enable it locally.
 
-BATON is pinned to Node 20 via `.nvmrc`; `package.json` supports Node `>=20 <21` because `better-sqlite3` is a native dependency.
+BATON is pinned to Node 24 via `.nvmrc`; `package.json` supports Node `>=24 <25`.
 
 ## Versioning
 

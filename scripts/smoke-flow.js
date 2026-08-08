@@ -47,42 +47,74 @@ async function waitForHealth(timeoutMs = 10000) {
 
 async function startServerIfNeeded() {
   if (BASE) return;
+  const root = path.join(__dirname, '..');
+  const contractsDist = path.join(root, 'packages', 'contracts', 'dist', 'index.js');
+  if (!fs.existsSync(contractsDist)) {
+    const { spawnSync } = require('child_process');
+    const build = spawnSync('npm', ['run', 'build', '-w', '@baton/contracts'], {
+      cwd: root,
+      shell: true,
+      encoding: 'utf8',
+    });
+    if (build.status !== 0) {
+      throw new Error(`contracts build failed:\n${build.stdout || ''}\n${build.stderr || ''}`);
+    }
+  }
   const port = String(4800 + Math.floor(Math.random() * 1000));
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-smoke-'));
   const dbPath = path.join(tempDir, 'smoke.db');
   BASE = `http://127.0.0.1:${port}`;
-  child = spawn(process.execPath, ['server/index.js'], {
-    cwd: path.join(__dirname, '..'),
-    env: {
-      ...process.env,
-      VMC_PORT: port,
-      BATON_DB_PATH: dbPath,
-      REDIS_URL: 'redis://127.0.0.1:0',
-    },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  child.stdout.on('data', data => {
-    childOut += data.toString();
-    if (process.env.BATON_SMOKE_VERBOSE) process.stdout.write(data);
-  });
-  child.stderr.on('data', data => {
-    childErr += data.toString();
-    if (process.env.BATON_SMOKE_VERBOSE) process.stderr.write(data);
-  });
-  child.on('exit', code => {
-    if (code && code !== 0) {
-      console.error(`smoke server exited ${code}`);
-      printChildLogs();
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    childOut = '';
+    childErr = '';
+    child = spawn(process.execPath, ['apps/api/bootstrap.cjs'], {
+      cwd: root,
+      env: {
+        ...process.env,
+        VMC_PORT: port,
+        BATON_DB_PATH: dbPath,
+        REDIS_URL: 'redis://127.0.0.1:0',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    child.stdout.on('data', data => {
+      childOut += data.toString();
+      if (process.env.BATON_SMOKE_VERBOSE) process.stdout.write(data);
+    });
+    child.stderr.on('data', data => {
+      childErr += data.toString();
+      if (process.env.BATON_SMOKE_VERBOSE) process.stderr.write(data);
+    });
+    let onExit = null;
+    const earlyExit = new Promise((_, reject) => {
+      onExit = (code) => {
+        reject(new Error(`smoke server exited early with code ${code}`));
+      };
+      child.once('exit', onExit);
+    });
+    try {
+      await Promise.race([waitForHealth(), earlyExit]);
+      if (onExit) child.off('exit', onExit);
+      return;
+    } catch (err) {
+      lastError = err;
+      try { child.kill('SIGKILL'); } catch (_) {}
+      child = null;
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
-  });
-  await waitForHealth();
+  }
+  printChildLogs();
+  throw lastError || new Error('failed to start smoke server');
 }
 
 async function cleanup() {
   if (child) {
+    const exited = new Promise(resolve => child.once('exit', resolve));
     child.kill('SIGTERM');
-    await new Promise(resolve => setTimeout(resolve, 250));
-    if (!child.killed) child.kill('SIGKILL');
+    await Promise.race([exited, new Promise(resolve => setTimeout(resolve, 2000))]);
+    if (child.exitCode == null) child.kill('SIGKILL');
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
   if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
 }

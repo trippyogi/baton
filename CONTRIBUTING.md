@@ -13,7 +13,7 @@ git clone https://github.com/trippyogi/baton.git
 cd baton
 nvm use
 npm install
-# BATON currently requires Node 20 for native SQLite install consistency
+# BATON requires Node 24 for the TypeScript control-plane toolchain
 cp .env.example .env
 npm start
 ```
@@ -23,6 +23,8 @@ Open:
 ```text
 http://127.0.0.1:4200/#/flow
 ```
+
+`npm start` boots `apps/api/bootstrap.cjs` (validated port/host, then the current server). Zod config schemas live in `@baton/contracts` and are unit-tested; they are not loaded into the SQLite process on Windows yet because that combination has been unstable under Node 24. `npm run start:legacy` still runs `server/index.js` directly.
 
 Redis is optional for local Flow development. Queue screens degrade when Redis is unavailable.
 

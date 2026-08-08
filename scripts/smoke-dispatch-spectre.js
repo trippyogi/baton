@@ -41,31 +41,71 @@ async function waitFor(fn, label, timeoutMs = 10000) {
 }
 
 async function startBaton(extraEnv = {}) {
+  // Windows + better-sqlite3 can flake if a prior BATON process just exited.
+  await new Promise(resolve => setTimeout(resolve, 750));
+  const root = path.join(__dirname, '..');
+  const contractsDist = path.join(root, 'packages', 'contracts', 'dist', 'index.js');
+  if (!fs.existsSync(contractsDist)) {
+    const { spawnSync } = require('child_process');
+    const build = spawnSync('npm', ['run', 'build', '-w', '@baton/contracts'], {
+      cwd: root,
+      shell: true,
+      encoding: 'utf8',
+    });
+    if (build.status !== 0) {
+      throw new Error(`contracts build failed:\n${build.stdout || ''}\n${build.stderr || ''}`);
+    }
+  }
   const port = String(5600 + Math.floor(Math.random() * 500));
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'baton-dispatch-'));
   BASE = `http://127.0.0.1:${port}`;
-  baton = spawn(process.execPath, ['server/index.js'], {
-    cwd: path.join(__dirname, '..'),
-    env: {
-      ...process.env,
-      VMC_PORT: port,
-      BATON_PUBLIC_BASE_URL: BASE,
-      BATON_DB_PATH: path.join(tempDir, 'dispatch.db'),
-      REDIS_URL: 'redis://127.0.0.1:0',
-      SPECTRE_DISPATCH_TOKEN: 'change-me',
-      BATON_CALLBACK_TOKEN: 'callback-token',
-      SPECTRE_WEBHOOK_URL: fake.url,
-      SPECTRE_DISPATCH_TRANSPORT: 'webhook',
-      ...extraEnv,
-    },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  baton.stdout.on('data', data => { batonOut += data.toString(); if (process.env.BATON_SMOKE_VERBOSE) process.stdout.write(data); });
-  baton.stderr.on('data', data => { batonErr += data.toString(); if (process.env.BATON_SMOKE_VERBOSE) process.stderr.write(data); });
-  await waitFor(async () => {
-    try { return (await request('/api/health', { ok: false })).res.ok; }
-    catch (_) { return false; }
-  }, 'BATON health');
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    batonOut = '';
+    batonErr = '';
+    baton = spawn(process.execPath, ['apps/api/bootstrap.cjs'], {
+      cwd: root,
+      env: {
+        ...process.env,
+        VMC_PORT: port,
+        BATON_PUBLIC_BASE_URL: BASE,
+        BATON_DB_PATH: path.join(tempDir, `dispatch-${attempt}.db`),
+        REDIS_URL: 'redis://127.0.0.1:0',
+        SPECTRE_DISPATCH_TOKEN: 'change-me',
+        BATON_CALLBACK_TOKEN: 'callback-token',
+        SPECTRE_WEBHOOK_URL: fake.url,
+        SPECTRE_DISPATCH_TRANSPORT: 'webhook',
+        ...extraEnv,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    baton.stdout.on('data', data => { batonOut += data.toString(); if (process.env.BATON_SMOKE_VERBOSE) process.stdout.write(data); });
+    baton.stderr.on('data', data => { batonErr += data.toString(); if (process.env.BATON_SMOKE_VERBOSE) process.stderr.write(data); });
+    let onExit = null;
+    const earlyExit = new Promise((_, reject) => {
+      onExit = (code) => reject(new Error(`BATON exited early with code ${code}`));
+      baton.once('exit', onExit);
+    });
+    try {
+      await Promise.race([
+        waitFor(async () => {
+          try { return (await request('/api/health', { ok: false })).res.ok; }
+          catch (_) { return false; }
+        }, 'BATON health'),
+        earlyExit,
+      ]);
+      if (onExit) baton.off('exit', onExit);
+      return;
+    } catch (err) {
+      lastError = err;
+      try { baton.kill('SIGKILL'); } catch (_) {}
+      baton = null;
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+  console.error('BATON stdout:\n' + batonOut);
+  console.error('BATON stderr:\n' + batonErr);
+  throw lastError || new Error('failed to start BATON');
 }
 
 async function main() {

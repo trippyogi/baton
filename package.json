@@ -1,27 +1,48 @@
 {
   "name": "baton",
   "version": "0.1.0",
-  "description": "BATON Flow Ops \u2014 Next-Touch Engine",
+  "description": "BATON human-attention control plane",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js",
+    "start": "node apps/api/bootstrap.cjs",
+    "start:legacy": "node server/index.js",
+    "dev": "node apps/api/bootstrap.cjs",
+    "build": "npm run build -w @baton/contracts",
+    "typecheck": "npm run typecheck -w @baton/contracts && npm run typecheck -w @baton/api",
     "check:js": "node scripts/check-js.js",
     "smoke": "node scripts/smoke-flow.js",
     "audit": "npm audit --audit-level=moderate --omit=dev",
     "audit:private": "node scripts/audit-private-data.js",
     "import:local": "node scripts/import-local-profile.js",
     "export:redacted": "node scripts/export-redacted.js",
-    "test": "npm run check:js && npm run smoke",
-    "preinstall": "node -e \"const major=process.versions.node.split('.')[0]; if(major !== '20'){ console.error('BATON requires Node 20. Run: nvm use'); process.exit(1); }\"",
+    "test": "npm run check:js && npm run build && npm run typecheck && npm run test -w @baton/contracts && npm run smoke",
+    "test:unit": "npm run test -w @baton/contracts",
+    "generate:json-schema": "npm run generate:json-schema -w @baton/contracts",
+    "preinstall": "node -e \"const major=process.versions.node.split('.')[0]; if(major !== '24'){ console.error('BATON requires Node 24. Run: nvm use'); process.exit(1); }\"",
     "fake:spectre": "node scripts/fake-spectre.js",
     "smoke:dispatch": "node scripts/smoke-dispatch-spectre.js"
   },
   "dependencies": {
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^11.10.0",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "ioredis": "^5.11.1"
   },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "tsx": "^4.20.3",
+    "typescript": "~5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "trustedDependencies": [
+    "better-sqlite3",
+    "esbuild"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -32,6 +53,10 @@
   },
   "homepage": "https://github.com/trippyogi/baton#readme",
   "engines": {
-    "node": ">=20 <21"
+    "node": ">=24 <25"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.10.0": true,
+    "esbuild@0.28.1": true
   }
 }
