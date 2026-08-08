@@ -8,7 +8,7 @@ const path = require('path');
  * Returns null when the build output is missing.
  */
 function loadTypedApi() {
-  const typedApiDist = path.join(__dirname, '..', 'apps', 'api', 'dist');
+  const typedApiDist = path.join(__dirname, '..', '..', 'apps', 'api', 'dist');
   try {
     return {
       requestIdMiddleware: require(path.join(typedApiDist, 'middleware', 'request-id.js')).requestIdMiddleware,
