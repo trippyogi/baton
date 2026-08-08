@@ -1,4 +1,6 @@
-import type { ErrorRequestHandler } from 'express';
+import type { ErrorRequestHandler, NextFunction, Request, Response } from 'express';
+import { logStructured } from '../lib/log';
+import type { RequestWithId } from './request-id';
 
 export class HttpError extends Error {
   status: number;
@@ -14,14 +16,37 @@ export class HttpError extends Error {
   }
 }
 
+export function requestLogMiddleware(req: RequestWithId, res: Response, next: NextFunction): void {
+  const started = Date.now();
+  res.on('finish', () => {
+    logStructured('info', 'request', {
+      requestId: req.requestId || res.getHeader('x-request-id') || null,
+      method: req.method,
+      path: req.originalUrl || req.url,
+      status: res.statusCode,
+      duration_ms: Date.now() - started,
+    });
+  });
+  next();
+}
+
 export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
   const status = typeof err?.status === 'number' ? err.status : 500;
   const code = typeof err?.code === 'string' ? err.code : 'internal_error';
   const message = status >= 500 ? 'Internal server error' : String(err?.message || 'Request failed');
-  const requestId = (req as { requestId?: string }).requestId || res.getHeader('x-request-id') || null;
+  const requestId = (req as RequestWithId).requestId || res.getHeader('x-request-id') || null;
 
   if (status >= 500) {
-    console.error('[baton] request error', { requestId, err });
+    logStructured('error', 'request error', {
+      requestId,
+      method: req.method,
+      path: req.originalUrl || req.url,
+      err,
+      headers: {
+        authorization: req.headers.authorization,
+        cookie: req.headers.cookie,
+      },
+    });
   }
 
   res.status(status).json({

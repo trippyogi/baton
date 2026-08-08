@@ -14,6 +14,7 @@ const { markDomainTouched } = require('./lib/flow/portfolio');
 const { VALID_MODES, normalizeMode } = require('./lib/flow/modes');
 const { executeCommand } = require('./lib/flow/commands');
 const { validateReviewPacket, normalizeList } = require('./lib/flow/quality');
+const { createStrategyPacket, listStrategyPackets, getStrategyPacket } = require('./lib/strategy-packets');
 const { loadTypedApi } = require('./lib/typed-api');
 const { applyAccepted, applyFailed, publicBaseUrl, dispatchRun, resolveDispatch } = require('./lib/dispatch');
 const { buildDispatchEnvelope } = require('./lib/dispatch/envelope');
@@ -39,6 +40,7 @@ function createApp(options = {}) {
   const typed = loadTypedApi();
 
   if (typed?.requestIdMiddleware) app.use(typed.requestIdMiddleware);
+  if (typed?.requestLogMiddleware) app.use(typed.requestLogMiddleware);
 
   app.use(express.json({
     verify: (req, _res, buf) => { req.rawBody = buf; },
@@ -94,7 +96,11 @@ function createApp(options = {}) {
   }
   app.use('/api/costs',       require('./routes/costs'));
   app.use('/api/performance', require('./routes/performance'));
-  app.use('/api/memory',      require('./routes/memory'));
+  if (typed?.createMemoryRouter) {
+    app.use('/api/memory', typed.createMemoryRouter());
+  } else {
+    app.use('/api/memory', require('./routes/memory'));
+  }
   if (typed?.createTeamRouter) {
     app.use('/api/team', typed.createTeamRouter());
   } else {
@@ -154,7 +160,16 @@ function createApp(options = {}) {
   } else {
     app.use('/api/review-packets', require('./routes/review-packets'));
   }
-  app.use('/api/strategy-packets', require('./routes/strategy-packets'));
+  if (typed?.createStrategyPacketsRouter) {
+    app.use('/api/strategy-packets', typed.createStrategyPacketsRouter({
+      db,
+      listStrategyPackets,
+      getStrategyPacket,
+      createStrategyPacket,
+    }));
+  } else {
+    app.use('/api/strategy-packets', require('./routes/strategy-packets'));
+  }
   if (typed?.createQueueRouter) {
     app.use('/api/queue', typed.createQueueRouter({
       db,
@@ -176,9 +191,24 @@ function createApp(options = {}) {
   } else {
     app.use('/api/dispatch', require('./routes/dispatch'));
   }
-  app.use('/api/webhook/github',   require('./routes/webhook'));
-  app.use('/api/shared-requests', require('./routes/shared-requests'));
-  app.use('/api/creatives',      require('./routes/creatives'));
+  if (typed?.createWebhookRouter) {
+    app.use('/api/webhook/github', typed.createWebhookRouter({
+      db,
+      redis: createQueueRedis(),
+    }));
+  } else {
+    app.use('/api/webhook/github', require('./routes/webhook'));
+  }
+  if (typed?.createSharedRequestsRouter) {
+    app.use('/api/shared-requests', typed.createSharedRequestsRouter(db));
+  } else {
+    app.use('/api/shared-requests', require('./routes/shared-requests'));
+  }
+  if (typed?.createCreativesRouter) {
+    app.use('/api/creatives', typed.createCreativesRouter());
+  } else {
+    app.use('/api/creatives', require('./routes/creatives'));
+  }
 
   try {
     const result = rebuildTouches(db);
