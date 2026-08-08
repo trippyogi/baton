@@ -70,7 +70,7 @@ function getAirspace() {
     stale,
     failed,
     ready_to_pass: countTask('ready'),
-    prepared: db.prepare("SELECT COUNT(*) AS n FROM baton_touches WHERE status = 'prepared'").get().n,
+    prepared: db.prepare("SELECT COUNT(*) AS n FROM flow_touches WHERE status = 'prepared'").get().n,
     inbox: countTask('inbox'),
   };
 }

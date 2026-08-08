@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.get('/', (req, res) => {
   try {
-    let sql = `SELECT * FROM baton_touches WHERE 1=1`;
+    let sql = `SELECT * FROM flow_touches WHERE 1=1`;
     const params = [];
     if (req.query.status) { sql += ' AND status = ?'; params.push(req.query.status); }
     if (req.query.type) { sql += ' AND type = ?'; params.push(req.query.type); }
@@ -32,7 +32,7 @@ router.post('/rebuild', (_req, res) => {
 
 router.patch('/:id/action', async (req, res) => {
   try {
-    const touch = db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(req.params.id);
+    const touch = db.prepare('SELECT * FROM flow_touches WHERE id = ?').get(req.params.id);
     if (!touch) return res.status(404).json({ error: 'Not found' });
     const action = req.body.action;
     if (!action) return res.status(400).json({ error: 'action is required' });
@@ -47,7 +47,7 @@ router.patch('/:id/action', async (req, res) => {
     if (['delegate', 'assign', 'send_to_evaluator'].includes(action)) {
       const runId = createDispatchRun(touch, req.body, action);
       const result = await dispatchRun({ db, runId, intent: action === 'send_to_evaluator' ? 'evaluate' : 'orchestrate', instructions: instructionsFromBody(req.body) });
-      const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(touch.id));
+      const updatedTouch = parseTouch(db.prepare('SELECT * FROM flow_touches WHERE id = ?').get(touch.id));
       const updatedTask = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
       return res.json({ touch: updatedTouch, task: updatedTask, run: result.run, dispatch_status: result.dispatch_status, message: result.message, error: result.error || null });
     }
@@ -92,7 +92,7 @@ router.patch('/:id/action', async (req, res) => {
         message = 'Marked for inspection.';
       } else if (action === 'escalate') {
         db.prepare(`
-          UPDATE baton_touches
+          UPDATE flow_touches
           SET manual_priority_boost = MIN(1.0, COALESCE(manual_priority_boost, 0) + 0.2),
               score = MIN(100, COALESCE(score, 0) + 4),
               updated_at = datetime('now')
@@ -102,7 +102,7 @@ router.patch('/:id/action', async (req, res) => {
       }
 
       db.prepare(`
-        UPDATE baton_touches
+        UPDATE flow_touches
         SET status = ?, last_touched_at = datetime('now'), snoozed_until = ?, resolved_at = ?, updated_at = datetime('now')
         WHERE id = ?
       `).run(touchStatus, snoozedUntil, resolvedAt, touch.id);
@@ -121,7 +121,7 @@ router.patch('/:id/action', async (req, res) => {
       if (['accept', 'process', 'archive', 'answer', 'refine'].includes(action)) markDomainTouched(db, touch.domain);
       if (taskStatus || ['archive', 'snooze', 'accept', 'process'].includes(action)) rebuildTouches(db);
       else rankOpenTouches(db);
-      const updatedTouch = parseTouch(db.prepare('SELECT * FROM baton_touches WHERE id = ?').get(touch.id));
+      const updatedTouch = parseTouch(db.prepare('SELECT * FROM flow_touches WHERE id = ?').get(touch.id));
       const updatedTask = touch.task_id ? db.prepare('SELECT * FROM tasks WHERE id = ?').get(touch.task_id) : null;
       return { touch: updatedTouch, task: updatedTask, run: null, event_id: eventId, dispatch_status: dispatchStatus, message };
     });

@@ -159,7 +159,7 @@ export function createReviewPacketsRouter(deps: ReviewPacketsDeps): Router {
       const rebuild = rebuildTouches(db);
       const saved = parsePacket(db.prepare('SELECT * FROM review_packets WHERE id = ?').get(String(packet.id)) as Record<string, unknown>);
       const touch = packet.task_id
-        ? db.prepare(`SELECT * FROM baton_touches WHERE review_packet_id = ? AND status NOT IN ('archived','resolved') ORDER BY created_at DESC, rowid DESC LIMIT 1`).get(String(packet.id))
+        ? db.prepare(`SELECT * FROM flow_touches WHERE review_packet_id = ? AND status NOT IN ('archived','resolved') ORDER BY created_at DESC, rowid DESC LIMIT 1`).get(String(packet.id))
         : null;
       const reviewTouchId = validation.valid ? touch?.id || null : null;
       const refineTouchId = validation.valid ? null : touch?.id || null;

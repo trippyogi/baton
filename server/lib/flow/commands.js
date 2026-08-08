@@ -100,8 +100,8 @@ function executeCommand(db, input) {
       effort_score: 2,
     });
     rebuildTouches(db);
-    const touch = db.prepare(`SELECT * FROM baton_touches WHERE task_id = ? AND type = 'idle_agent' ORDER BY created_at DESC LIMIT 1`).get(task.id)
-      || db.prepare(`SELECT * FROM baton_touches WHERE task_id = ? ORDER BY created_at DESC LIMIT 1`).get(task.id);
+    const touch = db.prepare(`SELECT * FROM flow_touches WHERE task_id = ? AND type = 'idle_agent' ORDER BY created_at DESC LIMIT 1`).get(task.id)
+      || db.prepare(`SELECT * FROM flow_touches WHERE task_id = ? ORDER BY created_at DESC LIMIT 1`).get(task.id);
     return { interpreted_as: 'delegate_spectre', created: { task_id: task.id, touch_id: touch?.id || null }, message: 'Created a Spectre-ready task and assignment touch.' };
   }
 
@@ -109,7 +109,7 @@ function executeCommand(db, input) {
     const title = raw.slice(9).trim();
     const task = createTask(db, { title, status: 'ready', priority: 'medium' });
     rebuildTouches(db);
-    const touch = db.prepare(`SELECT * FROM baton_touches WHERE task_id = ? AND type = 'delegate' ORDER BY created_at DESC LIMIT 1`).get(task.id);
+    const touch = db.prepare(`SELECT * FROM flow_touches WHERE task_id = ? AND type = 'delegate' ORDER BY created_at DESC LIMIT 1`).get(task.id);
     return { interpreted_as: 'delegate', created: { task_id: task.id, touch_id: touch?.id || null }, message: 'Created a ready task and delegation touch.' };
   }
 
@@ -121,7 +121,7 @@ function executeCommand(db, input) {
 
   const task = createTask(db, { title, status: 'inbox', priority: 'medium' });
   rebuildTouches(db);
-  const touch = db.prepare(`SELECT * FROM baton_touches WHERE task_id = ? AND type = 'capture' ORDER BY created_at DESC LIMIT 1`).get(task.id);
+  const touch = db.prepare(`SELECT * FROM flow_touches WHERE task_id = ? AND type = 'capture' ORDER BY created_at DESC LIMIT 1`).get(task.id);
   return { interpreted_as: interpreted, created: { task_id: task.id, touch_id: touch?.id || null }, message: 'Captured to inbox and added a processing touch.' };
 }
 

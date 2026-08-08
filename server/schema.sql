@@ -107,7 +107,9 @@ CREATE TABLE IF NOT EXISTS portfolio_domains (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS baton_touches (
+-- Legacy Flow attention queue (compatibility window). Canonical projection is
+-- created by db/migrations/0005_baton_touches.sql as baton_touches.
+CREATE TABLE IF NOT EXISTS flow_touches (
   id TEXT PRIMARY KEY,
   task_id TEXT,
   run_id TEXT,
@@ -161,7 +163,7 @@ CREATE TABLE IF NOT EXISTS touch_events (
   actor TEXT DEFAULT 'human',
   payload TEXT DEFAULT '{}',
   created_at TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY(touch_id) REFERENCES baton_touches(id)
+  FOREIGN KEY(touch_id) REFERENCES flow_touches(id)
 );
 
 INSERT OR IGNORE INTO flow_settings (id, current_mode)

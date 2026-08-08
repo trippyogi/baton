@@ -52,7 +52,7 @@ export function createFlowRouter(deps: FlowDeps): Router {
       stale,
       failed,
       ready_to_pass: countTask('ready'),
-      prepared: Number(db.prepare("SELECT COUNT(*) AS n FROM baton_touches WHERE status = 'prepared'").get()?.n ?? 0),
+      prepared: Number(db.prepare("SELECT COUNT(*) AS n FROM flow_touches WHERE status = 'prepared'").get()?.n ?? 0),
       inbox: countTask('inbox'),
     };
   }

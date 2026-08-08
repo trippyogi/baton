@@ -156,7 +156,7 @@ export function createTasksRouter(deps: TasksDeps): Router {
 
   function latestTouchForTask(taskId: string): Record<string, unknown> | null {
     const row = db.prepare(`
-    SELECT * FROM baton_touches
+    SELECT * FROM flow_touches
     WHERE task_id = ? AND status NOT IN ('archived', 'resolved')
     ORDER BY CASE status WHEN 'active' THEN 0 WHEN 'pending' THEN 1 WHEN 'prepared' THEN 2 ELSE 3 END, created_at DESC
     LIMIT 1
@@ -253,7 +253,7 @@ export function createTasksRouter(deps: TasksDeps): Router {
 
     if (touch?.id) {
       db.prepare(`
-      UPDATE baton_touches
+      UPDATE flow_touches
       SET status = 'prepared', run_id = ?, updated_at = datetime('now')
       WHERE id = ?
     `).run(runId, touch.id);
@@ -366,7 +366,7 @@ export function createTasksRouter(deps: TasksDeps): Router {
     `).run(req.params.id);
       if (!result.changes) return res.status(404).json({ error: 'Not found' });
       db.prepare(`
-      UPDATE baton_touches
+      UPDATE flow_touches
       SET status = 'archived', updated_at = datetime('now')
       WHERE task_id = ? AND status NOT IN ('resolved', 'archived')
     `).run(req.params.id);
