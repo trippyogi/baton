@@ -53,13 +53,28 @@ function runIntegrityChecks(db) {
   }
 }
 
-function backupDatabase(dbPath, backupDir) {
-  if (!dbPath || dbPath === ':memory:' || dbPath.startsWith('file:')) return null;
+function backupDatabase(db, dbPath, backupDir) {
+  // Accept legacy (dbPath, backupDir) calls from older callers.
+  if (db && typeof db === 'string') {
+    backupDir = dbPath;
+    dbPath = db;
+    db = null;
+  }
+  if (!dbPath || dbPath === ':memory:' || String(dbPath).startsWith('file:')) return null;
   if (!fs.existsSync(dbPath)) return null;
   const dir = backupDir || path.join(path.dirname(dbPath), 'backups');
   fs.mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const dest = path.join(dir, `${path.basename(dbPath)}.${stamp}.bak`);
+
+  // Checkpoint WAL into the main DB file so the filesystem copy is consistent.
+  if (db && typeof db.pragma === 'function') {
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)');
+    } catch (_) {
+      /* ignore checkpoint failures on exotic paths */
+    }
+  }
   fs.copyFileSync(dbPath, dest);
   return dest;
 }
@@ -88,7 +103,7 @@ function applyMigrations(db, options = {}) {
   const files = listMigrationFiles(migrationsDir);
 
   if (options.backup) {
-    backupDatabase(options.dbPath, options.backupDir);
+    backupDatabase(db, options.dbPath, options.backupDir);
   }
 
   db.pragma('foreign_keys = ON');
@@ -96,28 +111,28 @@ function applyMigrations(db, options = {}) {
   const done = appliedIds(db);
   const applied = [];
 
-  const tx = db.transaction(() => {
-    for (const migration of files) {
-      if (done.has(migration.id)) {
-        const row = db.prepare('SELECT checksum FROM schema_migrations WHERE id = ?').get(migration.id);
-        const current = checksumFile(migration.filePath);
-        if (row && row.checksum !== current) {
-          throw new Error(
-            `Migration ${migration.id} checksum mismatch (db=${row.checksum}, file=${current})`
-          );
-        }
-        continue;
+  for (const migration of files) {
+    if (done.has(migration.id)) {
+      const row = db.prepare('SELECT checksum FROM schema_migrations WHERE id = ?').get(migration.id);
+      const current = checksumFile(migration.filePath);
+      if (row && row.checksum !== current) {
+        throw new Error(
+          `Migration ${migration.id} checksum mismatch (db=${row.checksum}, file=${current})`
+        );
       }
-      applyOne(db, migration);
-      const checksum = checksumFile(migration.filePath);
-      db.prepare(
-        'INSERT INTO schema_migrations (id, checksum, applied_at) VALUES (?, ?, datetime(\'now\'))'
-      ).run(migration.id, checksum);
-      applied.push(migration.id);
+      continue;
     }
-  });
 
-  tx();
+    // Apply outside a single wrapping transaction so migrations may toggle
+    // PRAGMA foreign_keys (required for legacy table rebuilds on SQLite).
+    applyOne(db, migration);
+    const checksum = checksumFile(migration.filePath);
+    db.prepare(
+      'INSERT INTO schema_migrations (id, checksum, applied_at) VALUES (?, ?, datetime(\'now\'))'
+    ).run(migration.id, checksum);
+    applied.push(migration.id);
+  }
+
   runIntegrityChecks(db);
   return { applied };
 }

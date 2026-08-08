@@ -102,9 +102,50 @@ function testGreenfieldSchemaThenMigrate() {
   });
 }
 
+function testSchemaSqlThenLegacyUpgradePath() {
+  withTempDb((dbPath) => {
+    const db = new Database(dbPath);
+    db.pragma('foreign_keys = ON');
+    db.exec(fs.readFileSync(FIXTURE, 'utf8'));
+    assert.equal(Number(db.prepare('SELECT COUNT(*) AS n FROM baton_touches').get().n), 1);
+
+    // Empty flow_touches shell collision (what schema.sql CREATE IF NOT EXISTS does
+    // on a legacy DB that still has baton_touches).
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS flow_touches (
+        id TEXT PRIMARY KEY,
+        task_id TEXT,
+        run_id TEXT,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        primary_action TEXT NOT NULL,
+        score INTEGER DEFAULT 0,
+        rank INTEGER,
+        source TEXT DEFAULT 'generated',
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      );
+    `);
+    assert.equal(Number(db.prepare('SELECT COUNT(*) AS n FROM flow_touches').get().n), 0);
+    assert.equal(Number(db.prepare('SELECT COUNT(*) AS n FROM baton_touches').get().n), 1);
+
+    applyMigrations(db, { dbPath, backup: false });
+
+    assert.equal(Number(db.prepare('SELECT COUNT(*) AS n FROM flow_touches').get().n), 1);
+    assert.equal(db.prepare('SELECT id FROM flow_touches').get().id, 'touch-legacy-1');
+    assert.equal(Number(db.prepare('SELECT COUNT(*) AS n FROM baton_touches').get().n), 0);
+    const cols = db.prepare('PRAGMA table_info(baton_touches)').all().map((c) => c.name);
+    assert.ok(cols.includes('dedupe_key'));
+
+    db.close();
+  });
+}
+
 function main() {
   testLegacyFixtureMigration();
   testGreenfieldSchemaThenMigrate();
+  testSchemaSqlThenLegacyUpgradePath();
   console.log('migration tests passed');
 }
 

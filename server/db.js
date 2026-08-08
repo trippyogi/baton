@@ -8,6 +8,19 @@ fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 const db = new Database(DB_PATH);
 
+// Pre-schema: rename legacy Flow table before schema.sql creates an empty flow_touches.
+(function pretouchRename() {
+  const tables = new Set(
+    db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map((r) => r.name)
+  );
+  if (tables.has('baton_touches') && !tables.has('flow_touches')) {
+    const cols = db.prepare('PRAGMA table_info(baton_touches)').all().map((c) => c.name);
+    if (cols.includes('title') && cols.includes('type') && !cols.includes('dedupe_key')) {
+      db.exec('ALTER TABLE baton_touches RENAME TO flow_touches');
+    }
+  }
+})();
+
 // Apply schema
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
@@ -162,10 +175,25 @@ db.exec(schema);
 // Numbered Phase 3+ migrations (canonical domain + baton_touches projection).
 (function autoMigrate() {
   if (process.env.BATON_AUTO_MIGRATE === '0') return;
-  const { applyMigrations } = require('../scripts/lib/migrate-db');
+  const {
+    applyMigrations,
+    listMigrationFiles,
+    ensureSchemaMigrations,
+    DEFAULT_MIGRATIONS_DIR,
+  } = require('../scripts/lib/migrate-db');
+  ensureSchemaMigrations(db);
+  const applied = new Set(
+    db.prepare('SELECT id FROM schema_migrations').all().map((r) => r.id)
+  );
+  const pending = listMigrationFiles(DEFAULT_MIGRATIONS_DIR).some((f) => !applied.has(f.id));
+  const shouldBackup =
+    pending &&
+    process.env.BATON_MIGRATE_BACKUP !== '0' &&
+    fs.existsSync(DB_PATH) &&
+    fs.statSync(DB_PATH).size > 0;
   applyMigrations(db, {
     dbPath: DB_PATH,
-    backup: false,
+    backup: shouldBackup,
   });
 })();
 

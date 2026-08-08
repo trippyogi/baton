@@ -182,25 +182,14 @@ CREATE TABLE IF NOT EXISTS agent_endpoints (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- One non-terminal run per task (canonical terminal statuses).
-CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_one_nonterminal_per_task
-  ON runs(task_id)
-  WHERE task_id IS NOT NULL
-    AND status NOT IN (
-      'completed',
-      'blocked',
-      'invalid_output',
-      'dispatch_failed',
-      'failed',
-      'lost',
-      'timed_out',
-      'cancelled'
-    );
+-- One non-terminal run per task / linear lineage unique indexes are deferred to
+-- T3.3 transition services after legacy multi-run rows are cleaned. Non-unique
+-- helpers still support lookups during the compatibility window.
+CREATE INDEX IF NOT EXISTS idx_runs_task_status
+  ON runs(task_id, status);
 
--- Linear lineage: at most one child per parent run.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_linear_parent
-  ON runs(parent_run_id)
-  WHERE parent_run_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_runs_parent_run_id
+  ON runs(parent_run_id);
 
 CREATE INDEX IF NOT EXISTS idx_dispatches_due
   ON dispatches(status, next_attempt_at);
