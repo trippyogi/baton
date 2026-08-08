@@ -18,10 +18,10 @@ import {
 import { getTask, setTaskCurrentRun } from '../repositories/tasks';
 
 function runTx<T>(db: DbLike, fn: () => T): T {
-  if (typeof db.transaction === 'function') {
-    return db.transaction(fn)();
+  if (typeof db.transaction !== 'function') {
+    throw new ConflictError('Database transaction support is required for domain writes');
   }
-  return fn();
+  return db.transaction(fn)();
 }
 
 export type TransitionRunInput = {
@@ -38,7 +38,7 @@ export function transitionRun(db: DbLike, input: TransitionRunInput): RunRow {
     assertRunVersion(run, input.expectedVersion);
     const from = normalizeRunStatus(run.status);
     const next = assertRunTransition(run.status, input.toStatus);
-    if (from === next) return run;
+    if (from === next && String(run.status) === next) return run;
     const endedAt = isTerminalRunStatus(next) ? nowIso() : null;
     return updateRunStatus(db, run.id, next, Number(run.version || 1), {
       endedAt,
@@ -70,11 +70,25 @@ export function createChildRun(db: DbLike, input: CreateChildRunInput): {
     let parent = getRun(db, input.parentRunId);
     assertRunVersion(parent, input.expectedParentVersion);
 
+    if (!parent.task_id) {
+      throw new InvalidTransitionError('Child run requires parent.task_id', {
+        parentRunId: parent.id,
+      });
+    }
+
     const existingChild = findChildRun(db, parent.id);
     if (existingChild) {
       throw new ConflictError('Linear lineage violated: parent already has a child run', {
         parentRunId: parent.id,
         childRunId: existingChild.id,
+      });
+    }
+
+    const active = listNonTerminalRunsForTask(db, parent.task_id).filter((r) => r.id !== parent.id);
+    if (active.length > 0) {
+      throw new ConflictError('Task already has a non-terminal run', {
+        taskId: parent.task_id,
+        activeRunIds: active.map((r) => r.id),
       });
     }
 
@@ -92,20 +106,6 @@ export function createChildRun(db: DbLike, input: CreateChildRunInput): {
       parent = updateRunStatus(db, parent.id, terminal, Number(parent.version || 1), {
         endedAt: nowIso(),
         resultKind: terminal,
-      });
-    }
-
-    if (!parent.task_id) {
-      throw new InvalidTransitionError('Child run requires parent.task_id', {
-        parentRunId: parent.id,
-      });
-    }
-
-    const active = listNonTerminalRunsForTask(db, parent.task_id).filter((r) => r.id !== parent.id);
-    if (active.length > 0) {
-      throw new ConflictError('Task already has a non-terminal run', {
-        taskId: parent.task_id,
-        activeRunIds: active.map((r) => r.id),
       });
     }
 
@@ -128,11 +128,12 @@ export function assertOneActiveRun(db: DbLike, taskId: string, ignoreRunId?: str
 
 export function acknowledgeRun(db: DbLike, runId: string, expectedVersion?: number): RunRow {
   const run = getRun(db, runId);
+  assertRunVersion(run, expectedVersion);
   const from = normalizeRunStatus(run.status);
   if (from === 'acknowledged' || from === 'running') return run;
   return transitionRun(db, {
     runId,
     toStatus: 'acknowledged',
-    expectedVersion,
+    expectedVersion: Number(run.version || 1),
   });
 }
