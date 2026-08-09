@@ -93,6 +93,27 @@ function applyOne(db, migration) {
   db.exec(sql);
 }
 
+function repairLegacySchema(db) {
+  // Legacy BATON DBs had a different run_events shape. CREATE TABLE IF NOT EXISTS
+  // would no-op and then canonical indexes fail with "no such column".
+  const hasRunEvents = db
+    .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='run_events'")
+    .get();
+  if (!hasRunEvents) return;
+  const cols = new Set(
+    db.prepare('PRAGMA table_info(run_events)').all().map((row) => row.name)
+  );
+  if (cols.has('source_sequence') && cols.has('payload_json')) return;
+  const hasLegacy = db
+    .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='legacy_run_events'")
+    .get();
+  if (hasLegacy) {
+    db.exec('DROP TABLE run_events');
+    return;
+  }
+  db.exec('ALTER TABLE run_events RENAME TO legacy_run_events');
+}
+
 /**
  * Apply pending numbered migrations under db/migrations.
  * @param {import('better-sqlite3').Database} db
@@ -108,6 +129,7 @@ function applyMigrations(db, options = {}) {
 
   db.pragma('foreign_keys = ON');
   ensureSchemaMigrations(db);
+  repairLegacySchema(db);
   const done = appliedIds(db);
   const applied = [];
 
@@ -150,6 +172,7 @@ module.exports = {
   backupDatabase,
   ensureSchemaMigrations,
   listMigrationFiles,
+  repairLegacySchema,
   runIntegrityChecks,
   tableNames,
 };
