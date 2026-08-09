@@ -57,11 +57,21 @@ module.exports = function evolveWorkflowTables(db) {
     addColumnIfMissing(db, 'runs', 'failure_message', 'failure_message TEXT');
     addColumnIfMissing(db, 'runs', 'cost_usd', 'cost_usd REAL NOT NULL DEFAULT 0');
     addColumnIfMissing(db, 'runs', 'token_usage_json', "token_usage_json TEXT NOT NULL DEFAULT '{}'");
-    // SQLite forbids non-constant defaults on ALTER TABLE ADD COLUMN.
-    addColumnIfMissing(db, 'runs', 'updated_at', "updated_at TEXT NOT NULL DEFAULT ''");
+    // SQLite forbids expression defaults on ALTER TABLE ADD COLUMN, but allows CURRENT_TIMESTAMP.
+    addColumnIfMissing(
+      db,
+      'runs',
+      'updated_at',
+      'updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP'
+    );
     db.exec(`
       UPDATE runs
-      SET updated_at = COALESCE(NULLIF(updated_at, ''), started_at, created_at, datetime('now'))
+      SET updated_at = COALESCE(
+            NULLIF(updated_at, ''),
+            NULLIF(started_at, ''),
+            NULLIF(created_at, ''),
+            datetime('now')
+          )
       WHERE updated_at IS NULL OR updated_at = ''
     `);
     db.exec(`
