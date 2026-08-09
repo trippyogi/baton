@@ -59,6 +59,9 @@ function createApp(options = {}) {
   } else {
     app.use('/api/health', require('./routes/health'));
   }
+  if (typed?.createV1Router) {
+    app.use('/api/v1', typed.createV1Router(db));
+  }
   if (typed?.createOverviewRouter) {
     app.use('/api/overview', typed.createOverviewRouter(db));
   } else {

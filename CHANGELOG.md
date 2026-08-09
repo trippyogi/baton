@@ -6,6 +6,7 @@ BATON follows [Semantic Versioning](https://semver.org/). While the project is p
 
 ### Added
 
+- Phase 3 control-plane domain: idempotent `baton_touches` projection, touch-rank-v1, `/api/v1` attention + decision/blocker/review endpoints, and one-way Flow→BatonTouch migration (`0007`).
 - API routes now support global bearer-token protection and require `BATON_API_TOKEN` when BATON is bound outside localhost.
 - Private-boundary audit now catches private terms in tracked code outside allowlisted public metadata/spec files.
 - Task detail modals now include Dispatch Prep for creating/reusing a manual, non-launching dispatch envelope.
