@@ -63,7 +63,7 @@ async function startBaton(extraEnv = {}) {
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     batonOut = '';
     batonErr = '';
-    baton = spawn(process.execPath, ['apps/api/bootstrap.cjs'], {
+    baton = spawn(process.execPath, ['--expose-gc', 'apps/api/bootstrap.cjs'], {
       cwd: root,
       env: {
         ...process.env,

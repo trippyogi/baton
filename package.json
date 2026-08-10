@@ -9,9 +9,9 @@
   ],
   "main": "server/index.js",
   "scripts": {
-    "start": "node apps/api/bootstrap.cjs",
-    "start:legacy": "node server/index.js",
-    "dev": "node apps/api/bootstrap.cjs",
+    "start": "node --expose-gc apps/api/bootstrap.cjs",
+    "start:legacy": "node --expose-gc server/index.js",
+    "dev": "node --expose-gc apps/api/bootstrap.cjs",
     "build": "npm run build -w @baton/contracts && npm run build -w @baton/api && npm run build -w @baton/web",
     "typecheck": "npm run typecheck -w @baton/contracts && npm run typecheck -w @baton/api && npm run typecheck -w @baton/sdk && npm run typecheck -w @baton/web",
     "dev:web": "npm run dev -w @baton/web",
