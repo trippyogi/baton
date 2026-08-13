@@ -1,4 +1,4 @@
-# Baton Core
+# Baton
 
 Reusable core for a two-agent operations dashboard: plan, queue, execute, inspect, and keep a human in the loop.
 
@@ -20,21 +20,33 @@ Orchestrator -> Queue -> Executor -> Dashboard
 - Memory/context management
 - Extension system for private business logic
 
-## Getting started
+## Install
 
-From the parent `vector-mission-control` repo:
+Requires Node.js 20 or newer. Install from npm:
 
 ```bash
+npm install @trippyogi/baton
+cd node_modules/@trippyogi/baton
+cp .env.example .env
+npm start
+```
+
+For development from a source checkout:
+
+```bash
+git clone https://github.com/trippyogi/baton.git
+cd baton
 npm install
 cp .env.example .env
 npm start
 ```
 
-The parent app loads `baton-core` plus optional internal extensions.
+Baton listens on `127.0.0.1:4200` by default. Set `HOST` and `PORT` to change
+the bind address. Redis-backed queue and webhook features use `REDIS_URL`.
 
 ## Extending Baton
 
-Create `baton-internal/extension.js` alongside `baton-core`:
+Create `baton-internal/extension.js` alongside Baton:
 
 ```js
 module.exports = {
@@ -50,4 +62,4 @@ Baton detects and loads the extension at startup. It falls back gracefully when 
 
 ## License
 
-MIT, unless overridden by the parent repo.
+[MIT](LICENSE)

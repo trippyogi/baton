@@ -1,11 +1,12 @@
 'use strict';
 const express = require('express');
 const path    = require('path');
+const db      = require('./db');
 require('dotenv').config();
 
 const app  = express();
-const PORT = process.env.VMC_PORT || 4200;
-const HOST = '127.0.0.1';
+const PORT = process.env.PORT || process.env.VMC_PORT || 4200;
+const HOST = process.env.HOST || '127.0.0.1';
 
 app.use(express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
@@ -44,7 +45,6 @@ try {
 
 const server = app.listen(PORT, HOST, () => {
   console.log(`Vector Mission Control running at http://${HOST}:${PORT}`);
-  console.log(`SSH tunnel: ssh -L ${PORT}:${HOST}:${PORT} ubuntu@18.144.11.180`);
 });
 
 // Graceful shutdown

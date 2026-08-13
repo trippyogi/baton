@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const db = require('../db');
 const Redis = require('ioredis');
 const redisClient = new Redis(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
+redisClient.on('error', () => {});
 const router = express.Router();
 
 // Function to validate the HMAC — must use raw body bytes (not re-serialized JSON)
